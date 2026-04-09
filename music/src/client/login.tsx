@@ -100,35 +100,20 @@ export default function Login() {
             type="submit"
             onClick={(e) => {
               e.preventDefault();
-              fetch('/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password }),
-  credentials: 'include'
-})
-.then(async res => {
-  const contentType = res.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return res.json().then(data => ({ ok: res.ok, data }));
-  } else {
-    const text = await res.text();
-    console.error('Non-JSON response:', text);
-    throw new Error(`Server returned non-JSON (status ${res.status}): ${text.substring(0, 100)}`);
-  }
-})
-.then(({ ok, data }) => {
-  if (ok && data.success) {
-    localStorage.setItem('user', JSON.stringify(data.user));
-    window.location.href = '/dashboard';
-  } else {
-    alert(data.msg || 'Đăng nhập thất bại');
-  }
-})
-.catch(err => {
-  console.error('Login error:', err);
-  alert('Lỗi kết nối hoặc server phản hồi không hợp lệ');
-});
-              }}
+              fetch(`/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json"},
+                body: JSON.stringify({ email, password }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.success) {
+                 localStorage.setItem("user", JSON.stringify(data.user));
+                window.location.href = "/dashboard";
+              } else {
+                alert(data.msg);
+              }
+            })}}
             className="relative w-full py-3.5 px-4 bg-linear-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl shadow-xl transform transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/30 active:translate-y-0.5 active:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 overflow-hidden group"
           >
             <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
