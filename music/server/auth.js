@@ -1,5 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
 const dotenv = require("dotenv");
 const multer = require('multer');
@@ -14,6 +15,30 @@ const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3002',
+  'https://musicplayer-frontend-865e.onrender.com'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Cho phép request không có origin (như từ Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`CORS blocked origin: ${origin}`);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,  // Quan trọng nếu dùng cookie
+  optionsSuccessStatus: 200
+}));
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
