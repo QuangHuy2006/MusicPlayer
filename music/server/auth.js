@@ -127,7 +127,7 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(200).json({
       success: true,
       msg: "Đăng nhập thành công",
-      user: { id: user.id, name: user.name, role: user.role, email: user.email },
+      user: { id: user.id, name: user.name, role: user.role, email: user.email, token },
     });
   } catch (err) {
     console.error("Login error:", err);
