@@ -29,6 +29,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       const res = await fetch(`${API_BASE}/api/songs`, {
         method: 'POST',
         credentials: 'include',
+        headers: {authorization: `Bearer ${localStorage.getItem("token")}`},
         body: formData,
       });
       const data = await res.json();
