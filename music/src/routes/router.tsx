@@ -16,7 +16,9 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/auth/verify`, { credentials: "include" })
+    fetch(`${API_BASE}/api/auth/verify`, { headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  } })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {
@@ -47,7 +49,9 @@ const AdminRoute = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/auth/verify`, { credentials: "include" })
+    fetch(`${API_BASE}/api/auth/verify`, { headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  } })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {
