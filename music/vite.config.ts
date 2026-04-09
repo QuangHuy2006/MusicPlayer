@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import rewriteAll from 'vite-plugin-rewrite-all';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
@@ -18,7 +17,7 @@ export default defineConfig(({ mode }) => {
         }
       } : undefined,
     },
-    plugins: [react(), tailwindcss(), rewriteAll()],
+    plugins: [react(), tailwindcss()],
     // Để Vite có thể thay thế biến môi trường khi build
     define: {
       // Không cần thiết nếu bạn dùng import.meta.env
