@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const bcrypt = require("bcrypt");
 const { createClient } = require("@supabase/supabase-js");
 const dotenv = require("dotenv");
@@ -15,29 +14,6 @@ const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
-// ---------- CORS Configuration (MUST BE FIRST) ----------
-const allowedOrigins = [
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3002",
-  "https://musicplayer-frontend-865e.onrender.com"
-];
-app.use(cors({ origin: true, credentials: true }));
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  console.log("Request origin:", origin);
-  // Cho phép tất cả origin (chỉ để test)
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
