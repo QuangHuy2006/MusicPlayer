@@ -103,7 +103,7 @@ export default function Login() {
               fetch('/api/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ name, password }),
+  body: JSON.stringify({ email, password }),
   credentials: 'include'
 })
 .then(async res => {
