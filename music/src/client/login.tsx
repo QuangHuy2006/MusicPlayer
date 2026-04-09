@@ -105,21 +105,20 @@ export default function Login() {
             onClick={(e) => {
               e.preventDefault();
               fetch(`${API_BASE}/api/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json"},
-                body: JSON.stringify({ email, password }),
-              })
-                .then((res) => res.json())
-                .then((data) => {
-                  if (data.success) {
-                 localStorage.setItem("user", JSON.stringify(data.user));
-                    setTimeout(() => {
-                      navigate("/dashboard");
-                    }, 1000);
-              } else {
-                alert(data.msg);
-              }
-            })}}
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
+})
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      localStorage.setItem("token", data.token);   // lưu token
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/dashboard");
+    } else {
+      alert(data.msg);
+    }
+  })}}
             className="relative w-full py-3.5 px-4 bg-linear-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl shadow-xl transform transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/30 active:translate-y-0.5 active:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 overflow-hidden group"
           >
             <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
