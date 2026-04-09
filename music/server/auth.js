@@ -15,26 +15,28 @@ const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3002",
-    "https://musicplayer-frontend-865e.onrender.com"
-  ];
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+// ---------- CORS Configuration (MUST BE FIRST) ----------
+const allowedOrigins = [
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3002",
+  "https://musicplayer-frontend-865e.onrender.com"
+];
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`Blocked CORS for origin: ${origin}`);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
 
 // Middleware
 app.use(express.json());
