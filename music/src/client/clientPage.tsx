@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import type Song from '../interface/song';
+import { API_BASE } from '../config';
 
 const MySongs = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
-
-  const API_BASE = import.meta.env.VITE_API_URL || '';
 
   const fetchMySongs = async () => {
     try {

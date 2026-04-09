@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type Song from "../interface/song";
+import { API_BASE } from '../config';
 
 const AdminDashboard = () => {
   const [pendingSongs, setPendingSongs] = useState<Song[]>([]);
@@ -9,7 +10,6 @@ const AdminDashboard = () => {
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  const API_BASE = import.meta.env.VITE_API_URL || '';
 
   const fetchPendingSongs = async () => {
     try {

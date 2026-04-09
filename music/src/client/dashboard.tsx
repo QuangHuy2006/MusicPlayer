@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import "../App.css";
+import { API_BASE } from '../config';
 import {
   FaHeadphonesAlt,
   FaStepBackward,
@@ -29,10 +30,6 @@ const MusicPlayer = () => {
   const progressRef = useRef(null);
 
   const navigate = useNavigate();
-
-  const API_BASE = import.meta.env.VITE_API_URL || '';
-
-  console.log('API_BASE:', API_BASE);
 
   // Tải danh sách bài hát
   const loadSongs = useCallback(async () => {

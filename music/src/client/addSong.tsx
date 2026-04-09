@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { API_BASE } from '../config';
 
 const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [name, setName] = useState('');
@@ -6,7 +7,6 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const API_BASE = import.meta.env.VITE_API_URL || '';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.files && e.target.files[0]) {
