@@ -8,6 +8,7 @@ import NotFound from "../client/notFound";
 import AdminDashboard from "../admin/adminPage";
 import MySongs from "../client/clientPage";
 import type User from "../interface/user";
+import { API_BASE } from '../config';
 
 // eslint-disable-next-line react-refresh/only-export-components
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -15,7 +16,7 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/auth/verify", { credentials: "include" })
+    fetch(`${API_BASE}/api/auth/verify`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {
@@ -46,7 +47,7 @@ const AdminRoute = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/auth/verify", { credentials: "include" })
+    fetch(`${API_BASE}/api/auth/verify`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {
