@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useNavigate } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import "../App.css";
 import {
   FaHeadphonesAlt,
@@ -26,8 +26,6 @@ const MusicPlayer = () => {
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef(null);
-
-  const navigate = useNavigate();
 
   const API_BASE = import.meta.env.VITE_API_URL || '';
 
