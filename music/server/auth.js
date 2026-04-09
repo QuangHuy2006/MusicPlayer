@@ -15,10 +15,6 @@ const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
-
 // CORS config
 const allowedOrigins = [
   "http://localhost:3001",
@@ -36,8 +32,13 @@ app.use(cors({
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
+
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
 
 // ---------- Middleware Auth ----------
 async function auth(req, res, next) {
