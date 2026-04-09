@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Layout from "../layout/layout";
 import Dashboard from "../client/dashboard";
 import Login from "../client/login";
@@ -7,10 +7,11 @@ import Login from "../client/login";
 import NotFound from "../client/notFound";
 import AdminDashboard from "../admin/adminPage";
 import MySongs from "../client/clientPage";
+import type User from "../interface/user";
 
-// Component bảo vệ route yêu cầu đăng nhập
-const ProtectedRoute = ({ children }) => {
-  const [user, setUser] = useState(null);
+// eslint-disable-next-line react-refresh/only-export-components
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,9 +40,9 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Component bảo vệ route admin (yêu cầu role admin)
-const AdminRoute = ({ children }) => {
-  const [user, setUser] = useState(null);
+// eslint-disable-next-line react-refresh/only-export-components
+const AdminRoute = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

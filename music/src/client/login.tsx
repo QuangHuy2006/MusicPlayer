@@ -6,9 +6,9 @@ export default function Login() {
   const [password, setPassword] = useState("");
   
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden p-4" >
+    <div className="relative min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden p-4" >
       {/* 🌟 CHUYỂN ĐỘNG INFINITE - Vòng tròn 3D xoay */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] pointer-events-none">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 pointer-events-none">
         <div
           className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-400 border-r-purple-400 border-b-pink-400 border-l-blue-400"
           style={{ animation: "spin 8s linear infinite" }}
@@ -17,7 +17,7 @@ export default function Login() {
           className="absolute inset-8 rounded-full border-4 border-transparent border-t-purple-400 border-r-pink-400 border-b-cyan-400 border-l-blue-400"
           style={{ animation: "spin-reverse 12s linear infinite" }}
         />
-        <div className="absolute inset-16 rounded-full bg-gradient-to-br from-cyan-500/10 to-purple-500/10 backdrop-blur-3xl" />
+        <div className="absolute inset-16 rounded-full bg-linear-to-br from-cyan-500/10 to-purple-500/10 backdrop-blur-3xl" />
       </div>
 
       {/* 🌊 Sóng SVG uốn lượn dưới đáy */}
@@ -55,16 +55,16 @@ export default function Login() {
       </div>
 
       {/* ✨ FORM ĐĂNG NHẬP (giữ nguyên thiết kế 3D đẹp mắt) */}
-      <div className="relative z-10 w-full max-w-md p-1 rounded-2xl bg-gradient-to-br from-cyan-400/30 to-purple-500/30 animate-pulse-slow">
+      <div className="relative z-10 w-full max-w-md p-1 rounded-2xl bg-linear-to-br from-cyan-400/30 to-purple-500/30 animate-pulse-slow">
         <form className="relative w-full p-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl transform transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_20px_60px_rgba(139,92,246,0.3)]">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+          <div className="absolute inset-0 rounded-2xl bg-linear-to-r from-transparent via-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-          <h2 className="text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400 drop-shadow-lg animate-pulse">
+          <h2 className="text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-linear-to-r from-cyan-300 to-purple-400 drop-shadow-lg animate-pulse">
             Đăng Nhập
           </h2>
 
           <div className="mb-6 group perspective-1000">
-            <label className="block text-sm font-medium text-gray-300 mb-2 ml-1 transition-transform duration-300 group-focus-within:translate-y-[-2px]">
+            <label className="block text-sm font-medium text-gray-300 mb-2 ml-1 transition-transform duration-300 group-focus-within:translate-y-0.5">
               👤 Tên người dùng
             </label>
             <div className="relative">
@@ -81,7 +81,7 @@ export default function Login() {
           </div>
 
           <div className="mb-8 group">
-            <label className="block text-sm font-medium text-gray-300 mb-2 ml-1 transition-transform duration-300 group-focus-within:translate-y-[-2px]">
+            <label className="block text-sm font-medium text-gray-300 mb-2 ml-1 transition-transform duration-300 group-focus-within:translate-y-0.5">
               🔒 Mật khẩu
             </label>
             <div className="relative">
@@ -114,9 +114,9 @@ export default function Login() {
                 alert(data.msg);
               }
             })}}
-            className="relative w-full py-3.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl shadow-xl transform transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/30 active:translate-y-0.5 active:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 overflow-hidden group"
+            className="relative w-full py-3.5 px-4 bg-linear-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl shadow-xl transform transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/30 active:translate-y-0.5 active:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 overflow-hidden group"
           >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+            <span className="absolute inset-0 w-full h-full bg-linear-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
             <span className="relative z-10">Đăng Nhập</span>
           </button>
 
@@ -126,7 +126,7 @@ export default function Login() {
               className="text-gray-400 hover:text-purple-300 transition-colors duration-300 relative group"
             >
               Tạo tài khoản
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-500 group-hover:w-full transition-all duration-300" />
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-linear-to-r from-purple-400 to-pink-500 group-hover:w-full transition-all duration-300" />
             </a>
           </div>
         </form>

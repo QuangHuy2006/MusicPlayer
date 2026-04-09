@@ -10,9 +10,10 @@ import {
   FaRedo,
   FaEllipsisH,
 } from "react-icons/fa";
+import type Song from "../interface/song";
 
 const MusicPlayer = () => {
-  const [songs, setSongs] = useState([]);
+  const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
@@ -23,7 +24,7 @@ const MusicPlayer = () => {
   const [duration, setDuration] = useState(0);
   const [refresh, setRefresh] = useState(0);
 
-  const audioRef = useRef(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef(null);
 
   // Tải danh sách bài hát
@@ -37,7 +38,6 @@ const MusicPlayer = () => {
       setError(null);
     } catch (err) {
       console.error("Failed to fetch songs:", err);
-      setError("Không thể tải danh sách nhạc");
     } finally {
       setLoading(false);
     }
@@ -93,18 +93,25 @@ const MusicPlayer = () => {
 
   // Phát hoặc tạm dừng khi isPlaying thay đổi hoặc currentSong thay đổi
   useEffect(() => {
-  if (!currentSong) return;
-  const audio = audioRef.current;
-  if (!audio) return;
+    if (!currentSong) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
-  if (isPlaying) {
-    console.log("Play, currentTime:", audio.currentTime);
-    audio.play().catch(e => console.log("Play error:", e));
-  } else {
-    console.log("Pause, currentTime:", audio.currentTime);
-    audio.pause();
-  }
-}, [isPlaying, currentSong]);
+    if (isPlaying) {
+      // Chỉ play khi đã có metadata, nếu chưa thì đợi
+      if (audio.readyState >= 2) {
+        audio.play().catch((e) => console.error("Play error:", e));
+      } else {
+        const onCanPlay = () => {
+          audio.play().catch((e) => console.error("Play error:", e));
+          audio.removeEventListener("canplay", onCanPlay);
+        };
+        audio.addEventListener("canplay", onCanPlay);
+      }
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying, currentSong]);
 
   // Gắn sự kiện cho audio (progress, duration, ended)
   useEffect(() => {
@@ -141,20 +148,23 @@ const MusicPlayer = () => {
   const toggleRandom = () => setIsRandom((prev) => !prev);
   const toggleRepeat = () => setIsRepeat((prev) => !prev);
 
-  const handleProgressChange = (e) => {
-    const newTime = (e.target.value / 100) * duration;
-    audioRef.current.currentTime = newTime;
-    setProgress(e.target.value);
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value); // hoặc Number(e.target.value)
+    const newTime = (value / 100) * duration;
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+      setProgress(value);
+    }
   };
 
   // Sửa handleSelectSong: nếu chọn chính bài đang phát thì không làm gì
-  const handleSelectSong = (index) => {
+  const handleSelectSong = (index: number) => {
     if (index === currentSongIndex) return; // thêm dòng này
     setCurrentSongIndex(index);
     setIsPlaying(false);
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     if (isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);

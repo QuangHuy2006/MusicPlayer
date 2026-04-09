@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type Song from '../interface/song';
 
 const MySongs = () => {
-  const [songs, setSongs] = useState([]);
+  const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
 
   const fetchMySongs = async () => {
     try {
@@ -12,7 +13,7 @@ const MySongs = () => {
       if (data.success) setSongs(data.songs);
       else setMessage(data.msg || 'Lỗi tải danh sách');
     } catch (err) {
-      setMessage('Lỗi kết nối');
+      setMessage(err as string || 'Lỗi kết nối');
     } finally {
       setLoading(false);
     }
@@ -20,7 +21,7 @@ const MySongs = () => {
 
   useEffect(() => { fetchMySongs(); }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm('Xóa bài hát này?')) return;
     try {
       const res = await fetch(`/api/user/my-songs/${id}`, { method: 'DELETE', credentials: 'include' });
@@ -30,11 +31,11 @@ const MySongs = () => {
         fetchMySongs();
       } else setMessage(data.msg || 'Xóa thất bại');
     } catch (err) {
-      setMessage('Lỗi kết nối');
+      setMessage(err as string || 'Lỗi kết nối');
     }
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: Song['status']) => {
     switch(status) {
       case 'approved': return <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Đã duyệt</span>;
       case 'pending': return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Chờ duyệt</span>;

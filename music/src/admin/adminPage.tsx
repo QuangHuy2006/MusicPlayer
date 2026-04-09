@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import type Song from "../interface/song";
 
 const AdminDashboard = () => {
-  const [pendingSongs, setPendingSongs] = useState([]);
+  const [pendingSongs, setPendingSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [selectedSongId, setSelectedSongId] = useState(null);
+  const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
   const fetchPendingSongs = async () => {
@@ -15,7 +16,7 @@ const AdminDashboard = () => {
       });
       if (!res.ok) throw new Error("Không thể tải dữ liệu");
       const data = await res.json();
-      const pending = data.songs.filter(song => song.status === "pending");
+      const pending = data.songs.filter((song: Song) => song.status === "pending");
       setPendingSongs(pending);
     } catch (err) {
       console.error(err);
@@ -29,7 +30,7 @@ const AdminDashboard = () => {
     fetchPendingSongs();
   }, []);
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id: number) => {
     try {
       const res = await fetch(`/api/songs/${id}/approve`, {
         method: "PUT",
@@ -48,7 +49,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleRejectClick = (id) => {
+  const handleRejectClick = (id: number) => {
     setSelectedSongId(id);
     setRejectReason("");
     setShowRejectModal(true);
