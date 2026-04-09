@@ -41,7 +41,8 @@ app.use(cors({
 
 // ---------- Middleware Auth ----------
 async function auth(req, res, next) {
-  const token = req.cookies.access_token;
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
   if (!token) return res.status(401).json({ msg: "No token" });
 
   const { data: session, error } = await supabase
@@ -117,13 +118,12 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(500).json({ success: false, msg: "Lỗi lưu phiên đăng nhập" });
     }
 
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 8 * 60 * 60 * 1000
-    });
-
+    return res.status(200).json({
+  success: true,
+  msg: "Đăng nhập thành công",
+  token: token,   // ← gửi token về client
+  user: { id: user.id, name: user.name, role: user.role, email: user.email },
+});
     return res.status(200).json({
       success: true,
       msg: "Đăng nhập thành công",
