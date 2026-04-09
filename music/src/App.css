@@ -1,0 +1,97 @@
+@import "tailwindcss";
+/* App.css - Thêm vào cuối file */
+
+/* Animation cho container chính */
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-slideUp {
+  animation: slideUp 0.5s ease-out;
+}
+
+/* Animation cho từng item trong playlist */
+@keyframes slideInRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-slideInRight {
+  animation: slideInRight 0.4s ease forwards;
+  opacity: 0;
+}
+
+/* Animation sóng nền */
+@keyframes wave {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.animate-wave {
+  animation: wave 18s linear infinite;
+}
+.animate-wave1 {
+  animation-duration: 15s;
+}
+.animate-wave2 {
+  animation-duration: 12s;
+  animation-direction: reverse;
+}
+.animate-wave3 {
+  animation-duration: 10s;
+}
+
+/* Animation thanh sóng âm thanh */
+@keyframes wave-bar {
+  0%, 100% {
+    height: 10px;
+  }
+  50% {
+    height: 25px;
+  }
+}
+.animate-wave-bar {
+  animation: wave-bar 1.1s ease-in-out infinite;
+}
+.bar1 { animation-delay: 0s; }
+.bar2 { animation-delay: 0.2s; }
+.bar3 { animation-delay: 0.4s; }
+.bar4 { animation-delay: 0.6s; }
+.bar5 { animation-delay: 0.8s; }
+.bar6 { animation-delay: 1s; }
+.bar7 { animation-delay: 1.2s; }
+.bar8 { animation-delay: 1.4s; }
+.bar9 { animation-delay: 1.6s; }
+.bar10 { animation-delay: 1.8s; }
+.bar11 { animation-delay: 2s; }
+.bar12 { animation-delay: 2.2s; }
+.bar13 { animation-delay: 2.4s; }
+.bar14 { animation-delay: 2.6s; }
+.bar15 { animation-delay: 2.8s; }
+
+/* Hiệu ứng glow cho nút */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(126, 217, 87, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(126, 217, 87, 0.8);
+  }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
