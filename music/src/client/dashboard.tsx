@@ -11,6 +11,7 @@ import {
   FaEllipsisH,
 } from "react-icons/fa";
 import type Song from "../interface/song";
+import { useNavigate } from "react-router-dom";
 
 const MusicPlayer = () => {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -26,6 +27,8 @@ const MusicPlayer = () => {
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef(null);
+
+  const navigate = useNavigate();
 
   const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -182,12 +185,12 @@ const MusicPlayer = () => {
           localStorage.setItem("user", JSON.stringify(data.user));
         } else {
           localStorage.removeItem("user");
-          window.location.href = "/login";
+          navigate("/login");
         }
       })
       .catch(() => {
         localStorage.removeItem("user");
-        window.location.href = "/login";
+        navigate("/login");
       });
   }, []);
 
