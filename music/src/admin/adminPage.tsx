@@ -14,7 +14,9 @@ const AdminDashboard = () => {
   const fetchPendingSongs = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/songs`, {
-        credentials: "include",
+        headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  }
       });
       if (!res.ok) throw new Error("Không thể tải dữ liệu");
       const data = await res.json();
@@ -36,7 +38,9 @@ const AdminDashboard = () => {
     try {
       const res = await fetch(`${API_BASE}/api/songs/${id}/approve`, {
         method: "PUT",
-        credentials: "include",
+        headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  }
       });
       const data = await res.json();
       if (data.success) {
@@ -62,7 +66,9 @@ const AdminDashboard = () => {
     try {
       const res = await fetch(`${API_BASE}/api/songs/${selectedSongId}/reject`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  },
         credentials: "include",
         body: JSON.stringify({ reason: rejectReason }),
       });
