@@ -35,7 +35,9 @@ const MusicPlayer = () => {
   const loadSongs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/songs`, { credentials: "include" });
+      const res = await fetch(`${API_BASE}/api/songs`, { headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setSongs(data.songs || []);
@@ -177,7 +179,9 @@ const MusicPlayer = () => {
 
   // Xác thực đăng nhập
   useEffect(() => {
-    fetch(`${API_BASE}/api/auth/verify`, { credentials: "include" })
+    fetch(`${API_BASE}/api/auth/verify`, { headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  } })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {
