@@ -15,12 +15,26 @@ const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
-// CORS config
-app.use(cors({
-  origin: 'https://musicplayer-frontend-865e.onrender.com', // hoặc dùng hàm
-  credentials: true,
-  optionsSuccessStatus: 200
-}));
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3002",
+    "https://musicplayer-frontend-865e.onrender.com"
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Middleware
 app.use(express.json());
