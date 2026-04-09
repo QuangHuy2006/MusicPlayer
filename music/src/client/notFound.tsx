@@ -63,7 +63,7 @@ const NotFound = () => {
           borderRadius: "50%",
           bottom: "-100px",
           left: "-100px",
-          z-index: 1,
+          zIndex: 1,
         }}
       ></div>
     </div>
