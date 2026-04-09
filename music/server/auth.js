@@ -16,22 +16,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
 // CORS config
-const allowedOrigins = [
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3002",
-  "https://musicplayer-frontend-865e.onrender.com"
-];
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-  },
+  origin: 'https://musicplayer-frontend-865e.onrender.com', // hoặc dùng hàm
   credentials: true,
   optionsSuccessStatus: 200
 }));
