@@ -113,8 +113,9 @@ export default function Login() {
                 .then((data) => {
                   if (data.success) {
                  localStorage.setItem("user", JSON.stringify(data.user));
-                    document.cookie = `access_token=${data.user.token}`;
-                navigate("/dashboard");
+                    setTimeout(() => {
+                      navigate("/dashboard");
+                    }, 1000);
               } else {
                 alert(data.msg);
               }
