@@ -9,9 +9,11 @@ const AdminDashboard = () => {
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+
   const fetchPendingSongs = async () => {
     try {
-      const res = await fetch("/api/songs", {
+      const res = await fetch(`${API_BASE}/api/songs`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Không thể tải dữ liệu");
@@ -32,7 +34,7 @@ const AdminDashboard = () => {
 
   const handleApprove = async (id: number) => {
     try {
-      const res = await fetch(`/api/songs/${id}/approve`, {
+      const res = await fetch(`${API_BASE}/api/songs/${id}/approve`, {
         method: "PUT",
         credentials: "include",
       });
@@ -58,7 +60,7 @@ const AdminDashboard = () => {
   const confirmReject = async () => {
     if (!selectedSongId) return;
     try {
-      const res = await fetch(`/api/songs/${selectedSongId}/reject`, {
+      const res = await fetch(`${API_BASE}/api/songs/${selectedSongId}/reject`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

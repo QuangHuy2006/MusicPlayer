@@ -27,11 +27,13 @@ const MusicPlayer = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef(null);
 
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+
   // Tải danh sách bài hát
   const loadSongs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/songs", { credentials: "include" });
+      const res = await fetch(`${API_BASE}/api/songs`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setSongs(data.songs || []);
@@ -173,7 +175,7 @@ const MusicPlayer = () => {
 
   // Xác thực đăng nhập
   useEffect(() => {
-    fetch("/api/auth/verify", { credentials: "include" })
+    fetch(`${API_BASE}/api/auth/verify`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {

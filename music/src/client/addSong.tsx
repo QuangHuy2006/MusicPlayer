@@ -6,6 +6,8 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
@@ -24,7 +26,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/songs', {
+      const res = await fetch(`${API_BASE}/api/songs`, {
         method: 'POST',
         credentials: 'include',
         body: formData,

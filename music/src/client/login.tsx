@@ -4,6 +4,7 @@ import { useState } from "react";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const API_BASE = import.meta.env.VITE_API_URL || '';
   
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden p-4" >
@@ -100,7 +101,7 @@ export default function Login() {
             type="submit"
             onClick={(e) => {
               e.preventDefault();
-              fetch(`/api/auth/login`, {
+              fetch(`${API_BASE}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json"},
                 body: JSON.stringify({ email, password }),

@@ -5,6 +5,7 @@ import AddSongPopup from "../client/addSong";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
+    const API_BASE = import.meta.env.VITE_API_URL || '';
   return (
     <div className="min-h-screen bg-linear-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] flex flex-col z-20">
       {/* ===== HEADER ===== */}
@@ -26,7 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   to="/"
                   className="hover:text-[#7ed957] transition-colors duration-200"
                 >
-                  Player
+                 Admin
                 </Link>
               </li>
               <li>
@@ -57,7 +58,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <a
                   onClick={async (e) => {
                     e.preventDefault();
-                    await fetch("http://localhost:3001/api/auth/logout", {
+                    await fetch(`${API_BASE}/api/auth/logout`, {
                       method: "POST",
                       credentials: "include",
                     });

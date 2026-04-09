@@ -6,9 +6,11 @@ const MySongs = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+
   const fetchMySongs = async () => {
     try {
-      const res = await fetch('/api/user/my-songs', { credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/user/my-songs`, { credentials: 'include' });
       const data = await res.json();
       if (data.success) setSongs(data.songs);
       else setMessage(data.msg || 'Lỗi tải danh sách');
@@ -24,7 +26,7 @@ const MySongs = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Xóa bài hát này?')) return;
     try {
-      const res = await fetch(`/api/user/my-songs/${id}`, { method: 'DELETE', credentials: 'include' });
+      const res = await fetch(`${API_BASE}/api/user/my-songs/${id}`, { method: 'DELETE', credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         setMessage('Xóa thành công');
