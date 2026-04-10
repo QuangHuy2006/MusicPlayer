@@ -117,7 +117,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             <input
               id="fileInputPopup"
               type="file"
-              accept="png/pdf/webg"
+              accept="image/png, image/jpeg, image/gif"
               onChange={handleImageChange}
               className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
               required
