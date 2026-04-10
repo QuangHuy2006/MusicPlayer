@@ -221,7 +221,7 @@ const MusicPlayer = () => {
             <div
               className={`w-full pt-[100%] rounded-full bg-cover bg-center mx-auto shadow-[0_10px_40px_rgba(0,0,0,0.5),0_0_0_8px_rgba(126,217,87,0.2),0_0_0_12px_rgba(0,188,212,0.1)] relative transition-all hover:scale-105 hover:shadow-[0_15px_50px_rgba(0,0,0,0.6),0_0_0_10px_rgba(126,217,87,0.3),0_0_0_15px_rgba(0,188,212,0.2)] ${isPlaying ? "animate-[spin_3s_linear_infinite]" : ""}`}
               style={{
-                backgroundImage: `url('${currentSong.image || "https://tse3.mm.bing.net/th/id/OIP.lucx6lfHqnK0P6dzh6-t0wAAAA?w=180&h=180&rs=1&pid=ImgDetMain&o=7&rm=3"}')`,
+                backgroundImage: `url('${currentSong.image_url || "https://tse3.mm.bing.net/th/id/OIP.lucx6lfHqnK0P6dzh6-t0wAAAA?w=180&h=180&rs=1&pid=ImgDetMain&o=7&rm=3"}')`,
               }}
             >
               <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-linear-to-br from-white/40 to-transparent rounded-full pointer-events-none" />
@@ -305,7 +305,7 @@ const MusicPlayer = () => {
               <div
                 className="w-12.5 h-12.5 rounded-[10px] bg-cover bg-center mx-2 shadow-[0_4px_15px_rgba(0,0,0,0.3)] transition-all group-hover:scale-110 group-hover:rotate-6"
                 style={{
-                  backgroundImage: `url('${song.image || "https://via.placeholder.com/50?text=Song"}')`,
+                  backgroundImage: `url('${song.image_url || "https://via.placeholder.com/50?text=Song"}')`,
                 }}
               />
               <div className="flex-1 px-4">
