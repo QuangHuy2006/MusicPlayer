@@ -309,13 +309,13 @@ app.post('/api/songs', auth, upload.single('file'), async (req, res) => {
 
 app.get('/api/songs', auth, async (req, res) => {
   try {
-    let query = supabase.from('songs').select('id, name, url').eq('status', 'approved');
+    let query = supabase.from('songs').select('id, name, url, status').eq('status', 'approved');
     const { data: songs, error } = await query.order('created_at', { ascending: false });
     if (error) {
       console.error('DB error:', error);
       return res.status(500).json({ success: false, msg: 'Lỗi lấy danh sách bài hát' });
     }
-    res.json({ success: true, songs: songs.map(song => ({ name: song.name, url: song.url, id: song.id })) });
+    res.json({ success: true, songs: songs.map(song => ({ name: song.name, url: song.url, id: song.id, status: song.status })) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, msg: 'Lỗi server' });
