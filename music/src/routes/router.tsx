@@ -54,7 +54,7 @@ const AdminRoute = ({ children }: { children: ReactNode }) => {
   } })
       .then((res) => res.json())
       .then((data) => {
-        if (data.valid && data.user) {
+        if (data.valid && data.user && data.user.role === "ADMIN") {
           setUser(data.user);
           localStorage.setItem("user", JSON.stringify(data.user));
         } else {
