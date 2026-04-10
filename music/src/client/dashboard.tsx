@@ -42,9 +42,9 @@ const MusicPlayer = () => {
       const approved = data.songs.filter((song: Song) => song.status === "approved");
       setSongs(approved || []);
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch songs:", err);
-      setError(err.message);
+      setError(err?.message);
     } finally {
       setLoading(false);
     }
