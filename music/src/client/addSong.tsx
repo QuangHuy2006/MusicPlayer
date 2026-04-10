@@ -6,11 +6,18 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [author, setAuthor] = useState('');
+  const [image, setImage] = useState<File | null>(null);
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if(e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+    }
+  };
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if(e.target.files && e.target.files[0]) {
+      setImage(e.target.files[0]);
     }
   };
 
@@ -24,6 +31,8 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     const formData = new FormData();
     formData.append('name', name);
     formData.append('file', file);
+    formData.append('image', image);
+    formData.append('author', author);
 
     try {
       const res = await fetch(`${API_BASE}/api/songs`, {
@@ -78,6 +87,18 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tên tác giả
+            </label>
+            <input
+              type="text"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              required
+            />
+          </div>
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               File MP3
             </label>
             <input
@@ -85,6 +106,19 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               type="file"
               accept="audio/mpeg"
               onChange={handleFileChange}
+              className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
+              required
+            />
+          </div>
+          <div className="mb-10">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              File Ảnh
+            </label>
+            <input
+              id="fileInputPopup"
+              type="file"
+              accept="png/pdf/webg"
+              onChange={handleImageChange}
               className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
               required
             />
