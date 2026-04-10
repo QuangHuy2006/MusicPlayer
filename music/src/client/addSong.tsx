@@ -30,42 +30,44 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!name || !file) {
-      setMessage('Vui lòng nhập tên bài hát và chọn file MP3');
-      return;
-    }
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('file', file);
+  e.preventDefault();
+  if (!name || !file) {
+    setMessage('Vui lòng nhập tên bài hát và chọn file MP3');
+    return;
+  }
+  setLoading(true);
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('file', file);
+  if (image) {
     formData.append('image', image);
-    formData.append('author', author);
+  }
+  formData.append('author', author);
 
-    try {
-      const res = await fetch(`${API_BASE}/api/songs`, {
-        method: 'POST',
-         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-         },
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessage('Thêm nhạc thành công!');
-       resetForm();
-        onClose();
-      } else {
-        setMessage(data.msg || 'Lỗi khi thêm nhạc');
-      }
-    } catch (err) {
-      console.error(err);
-      setMessage('Lỗi kết nối server');
-    } finally {
-      setLoading(false);
+  try {
+    const res = await fetch(`${API_BASE}/api/songs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: formData,
+    });
+    const data = await res.json();
+    if (data.success) {
+      setMessage('Thêm nhạc thành công!');
+      resetForm();
+      onClose();
+    } else {
+      setMessage(data.msg || 'Lỗi khi thêm nhạc');
     }
-  };
-
+  } catch (err) {
+    console.error(err);
+    setMessage('Lỗi kết nối server');
+  } finally {
+    setLoading(false);
+  }
+};
+  
   if (!isOpen) return null;
 
   return (
