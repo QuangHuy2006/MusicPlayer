@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import "../App.css";
-import { API_BASE } from '../config';
+import { API_BASE } from "../config";
 import {
   FaHeadphonesAlt,
   FaStepBackward,
@@ -12,8 +12,6 @@ import {
   FaEllipsisH,
 } from "react-icons/fa";
 import type Song from "../interface/song";
-import { useNavigate } from "react-router-dom";
-
 const MusicPlayer = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,8 +26,6 @@ const MusicPlayer = () => {
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef(null);
-
-  const navigate = useNavigate();
 
   // Tải danh sách bài hát
   const loadSongs = useCallback(async () => {
@@ -177,26 +173,6 @@ const MusicPlayer = () => {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  // Xác thực đăng nhập
-  useEffect(() => {
-    fetch(`${API_BASE}/api/auth/verify`, { headers: {
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
-  } })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.valid && data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
-        } else {
-          localStorage.removeItem("user");
-          navigate("/login");
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem("user");
-        navigate("/login");
-      });
-  }, []);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen text-white">
@@ -216,7 +192,7 @@ const MusicPlayer = () => {
   return (
     <div className="relative max-w-120 mx-auto animate-slideUp">
       {/* Background animation */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden">
+      <div className="top-0 left-0 w-full h-full overflow-hidden">
         <div className="absolute bottom-0 left-0 w-[200%] h-25 bg-linear-to-r from-[#7ed957] to-[#00bcd4] opacity-10 animate-wave animate-wave1" />
         <div className="absolute bottom-2.5 left-0 w-[200%] h-25 bg-linear-to-r from-[#7ed957] to-[#00bcd4] opacity-10 animate-wave animate-wave2" />
         <div className="absolute bottom-5 left-0 w-[200%] h-25 bg-linear-to-r from-[#7ed957] to-[#00bcd4] opacity-8 animate-wave animate-wave3" />
@@ -224,7 +200,7 @@ const MusicPlayer = () => {
 
       <div className="flex flex-col items-center gap-5">
         {/* Dashboard */}
-        <div className="fixed w-full max-w-120 px-5 pt-6 pb-4 bg-linear-to-br from-[rgba(126,217,87,0.1)] to-[rgba(0,188,212,0.1)] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(126,217,87,0.3)] rounded-b-[30px] z-10">
+        <div className="w-full max-w-120 px-5 pt-6 pb-4 bg-linear-to-br from-[rgba(126,217,87,0.1)] to-[rgba(0,188,212,0.1)] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(126,217,87,0.3)] rounded-b-[30px] z-10">
           <header className="text-center mb-4">
             <div className="inline-flex items-center gap-2 bg-linear-to-r from-[#7ed957] to-[#00bcd4] py-2 px-5 rounded-full mb-3 shadow-[0_4px_15px_rgba(126,217,87,0.4)] animate-pulse-glow">
               <FaHeadphonesAlt className="text-[#1a1a2e] text-base" />
@@ -314,7 +290,7 @@ const MusicPlayer = () => {
         </div>
 
         {/* Playlist */}
-        <div className="mt-150 p-3 pb-20">
+        <div className="mt-10 p-3 pb-20">
           {songs.map((song, index) => (
             <div
               key={song.id}

@@ -7,7 +7,6 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const crypto = require('crypto');
-const cookieParser = require("cookie-parser");
 
 dotenv.config();
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -17,14 +16,10 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cookieParser());
 
 // CORS config
 const allowedOrigins = [
-  "http://localhost:3001",
   "http://localhost:3002",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3002",
   "https://musicplayer-frontend-865e.onrender.com"
 ];
 app.use(cors({
@@ -72,7 +67,7 @@ async function auth(req, res, next) {
 }
 
 function adminOnly(req, res, next) {
-  if (req.user.role !== 'ADMIN') {
+  if (req.user.id !== 1 && req.user.role !== 'ADMIN') {
     return res.status(403).json({ success: false, msg: "Requires admin role" });
   }
   next();
@@ -124,11 +119,6 @@ app.post("/api/auth/login", async (req, res) => {
   token: token,   // ← gửi token về client
   user: { id: user.id, name: user.name, role: user.role, email: user.email },
 });
-    return res.status(200).json({
-      success: true,
-      msg: "Đăng nhập thành công",
-      user: { id: user.id, name: user.name, role: user.role, email: user.email, token },
-    });
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ success: false, msg: "Lỗi máy chủ" });
