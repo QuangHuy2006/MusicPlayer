@@ -108,7 +108,7 @@ const AdminDashboard = () => {
                 {/* Ảnh bìa */}
                 <div className="flex-shrink-0">
                   <img
-                    src={song.image_url || "https://via.placeholder.com/80?text=No+Image"}
+                    src={song.imageUrl || "https://via.placeholder.com/80?text=No+Image"}
                     alt={song.name}
                     className="w-20 h-20 object-cover rounded-md border"
                   />
