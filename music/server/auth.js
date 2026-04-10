@@ -178,7 +178,7 @@ app.get('/api/user/my-songs', auth, async (req, res) => {
   try {
     const { data: songs, error } = await supabase
       .from('songs')
-      .select('*')
+      .select('id, name, url, status, author, image_url, rejection_reason, created_at')
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false });
 
@@ -229,93 +229,166 @@ app.delete('/api/user/my-songs/:id', auth, async (req, res) => {
   }
 });
 
-app.post("/api/auth/logout", async (req, res) => {
-  const token = req.cookies.access_token;
-  if (token) {
-    await supabase.from('user_tokens').delete().eq('token', token);
+app.post("/api/auth/logout", auth, async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      await supabase.from('user_tokens').delete().eq('token', token);
+    }
+    res.json({ success: true, msg: "Đăng xuất thành công" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ success: false, msg: "Lỗi máy chủ khi đăng xuất" });
   }
-  res.clearCookie("access_token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict"
-  });
-  res.json({ success: true, msg: "Đã đăng xuất" });
 });
 
 // ---------- Multer config ----------
 const storage = multer.memoryStorage();
+// Multer config: nhận tối đa 2 file: 'file' (mp3) và 'image' (ảnh bìa)
 const upload = multer({
   storage,
-  limits: { fileSize: 30 * 1024 * 1024 },
+  limits: { fileSize: 30 * 1024 * 1024 }, // tổng kích thước tối đa 30MB
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'audio/mpeg') cb(null, true);
-    else cb(new Error('Only MP3 files are allowed'), false);
+    if (file.fieldname === 'file') {
+      // Chỉ chấp nhận MP3
+      if (file.mimetype === 'audio/mpeg') cb(null, true);
+      else cb(new Error('Only MP3 files are allowed for music'));
+    } else if (file.fieldname === 'image') {
+      // Chỉ chấp nhận ảnh JPEG/PNG/GIF
+      if (['image/jpeg', 'image/png', 'image/gif'].includes(file.mimetype)) cb(null, true);
+      else cb(new Error('Only JPEG, PNG, GIF images are allowed'));
+    } else {
+      cb(new Error('Unexpected field'));
+    }
   }
 });
 
 // ---------- Songs Routes ----------
-app.post('/api/songs', auth, upload.single('file'), async (req, res) => {
+app.post('/api/songs', auth, upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'image', maxCount: 1 }
+]), async (req, res) => {
   try {
-    const { name } = req.body;
-    const file = req.file;
-    if (!name || !file) {
+    const { name, author } = req.body;
+    const musicFile = req.files?.['file']?.[0];
+    const imageFile = req.files?.['image']?.[0];
+
+    if (!name || !musicFile) {
       return res.status(400).json({ success: false, msg: 'Thiếu tên bài hát hoặc file MP3' });
     }
 
-    const fileExt = path.extname(file.originalname);
-    const fileName = `${uuidv4()}${fileExt}`;
-    const filePath = `songs/${fileName}`;
+    // --- Upload file nhạc lên bucket 'Music' ---
+    const musicExt = path.extname(musicFile.originalname);
+    const musicFileName = `${uuidv4()}${musicExt}`;
+    const musicFilePath = `songs/${musicFileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: musicUploadError } = await supabase.storage
       .from('Music')
-      .upload(filePath, file.buffer, {
+      .upload(musicFilePath, musicFile.buffer, {
         contentType: 'audio/mpeg',
         cacheControl: '3600',
       });
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      return res.status(500).json({ success: false, msg: 'Lỗi upload file' });
+    if (musicUploadError) {
+      console.error('Music upload error:', musicUploadError);
+      return res.status(500).json({ success: false, msg: 'Lỗi upload file nhạc' });
     }
 
-    const { data: urlData } = supabase.storage.from('Music').getPublicUrl(filePath);
-    const songUrl = urlData.publicUrl;
+    const { data: musicUrlData } = supabase.storage.from('Music').getPublicUrl(musicFilePath);
+    const songUrl = musicUrlData.publicUrl;
 
-    // 👇 Kiểm tra role: admin -> approved, user -> pending
+    // --- Upload ảnh bìa lên bucket 'Image' (nếu có) ---
+    let imageUrl = null;
+    if (imageFile) {
+      const imageExt = path.extname(imageFile.originalname);
+      const imageFileName = `${uuidv4()}${imageExt}`;
+      const imageFilePath = `images/${imageFileName}`;
+
+      const { error: imageUploadError } = await supabase.storage
+        .from('Image')
+        .upload(imageFilePath, imageFile.buffer, {
+          contentType: imageFile.mimetype,
+          cacheControl: '3600',
+        });
+
+      if (imageUploadError) {
+        console.error('Image upload error:', imageUploadError);
+        // Nếu upload ảnh lỗi, có thể xóa file nhạc đã upload để tránh rác
+        await supabase.storage.from('Music').remove([musicFilePath]);
+        return res.status(500).json({ success: false, msg: 'Lỗi upload ảnh bìa' });
+      }
+
+      const { data: imageUrlData } = supabase.storage.from('Image').getPublicUrl(imageFilePath);
+      imageUrl = imageUrlData.publicUrl;
+    }
+
+    // --- Lưu thông tin vào bảng songs ---
     const status = req.user.role === 'ADMIN' ? 'approved' : 'pending';
+
+    const songData = {
+      name,
+      url: songUrl,
+      user_id: req.user.id,
+      status,
+      author: author || null,           // lưu author (có thể rỗng)
+      image_url: imageUrl,              // lưu URL ảnh (có thể null)
+    };
 
     const { data: song, error: dbError } = await supabase
       .from('songs')
-      .insert([{ name, url: songUrl, user_id: req.user.id, status}])
+      .insert([songData])
       .select()
       .single();
 
     if (dbError) {
-      console.error('DB error:', dbError);
-      await supabase.storage.from('Music').remove([filePath]);
+      console.error('DB insert error:', dbError);
+      // Rollback: xóa cả file nhạc và ảnh nếu đã upload
+      await supabase.storage.from('Music').remove([musicFilePath]);
+      if (imageUrl) {
+        const imagePath = imageUrl.split('/Image/')[1];
+        if (imagePath) await supabase.storage.from('Image').remove([imagePath]);
+      }
       return res.status(500).json({ success: false, msg: 'Lỗi lưu thông tin bài hát' });
     }
 
-    const msg = status === 'approved' 
-      ? 'Thêm nhạc thành công' 
+    const msg = status === 'approved'
+      ? 'Thêm nhạc thành công'
       : 'Thêm nhạc thành công, chờ admin duyệt';
 
     res.json({ success: true, msg, song });
+
   } catch (err) {
-    console.error(err);
+    console.error('Server error:', err);
     res.status(500).json({ success: false, msg: 'Lỗi server' });
   }
 });
 
 app.get('/api/songs', auth, async (req, res) => {
   try {
-    let query = supabase.from('songs').select('id, name, url, status').eq('status', 'approved');
-    const { data: songs, error } = await query.order('created_at', { ascending: false });
+    // Lấy tất cả bài hát đã duyệt, kèm author và image_url
+    const { data: songs, error } = await supabase
+      .from('songs')
+      .select('id, name, url, status, author, image_url')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
     if (error) {
       console.error('DB error:', error);
       return res.status(500).json({ success: false, msg: 'Lỗi lấy danh sách bài hát' });
     }
-    res.json({ success: true, songs: songs.map(song => ({ name: song.name, url: song.url, id: song.id, status: song.status })) });
+
+    res.json({
+      success: true,
+      songs: songs.map(song => ({
+        id: song.id,
+        name: song.name,
+        url: song.url,
+        status: song.status,
+        author: song.author,
+        imageUrl: song.image_url,  // đổi tên thành imageUrl cho dễ hiểu
+      }))
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, msg: 'Lỗi server' });
