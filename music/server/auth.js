@@ -370,7 +370,6 @@ app.get('/api/songs', auth, async (req, res) => {
     const { data: songs, error } = await supabase
       .from('songs')
       .select('id, name, url, status, author, image_url')
-      .eq('status', 'approved')
       .order('created_at', { ascending: false });
 
     if (error) {
