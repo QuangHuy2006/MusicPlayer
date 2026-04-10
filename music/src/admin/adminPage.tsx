@@ -10,16 +10,16 @@ const AdminDashboard = () => {
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-
   const fetchPendingSongs = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/songs`, {
         headers: {
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
-  }
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       if (!res.ok) throw new Error("Không thể tải dữ liệu");
       const data = await res.json();
+      // Lọc những bài có status 'pending' (có thể lấy từ API riêng nếu có)
       const pending = data.songs.filter((song: Song) => song.status === "pending");
       setPendingSongs(pending);
     } catch (err) {
@@ -39,8 +39,8 @@ const AdminDashboard = () => {
       const res = await fetch(`${API_BASE}/api/songs/${id}/approve`, {
         method: "PUT",
         headers: {
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
-  }
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       const data = await res.json();
       if (data.success) {
@@ -67,9 +67,9 @@ const AdminDashboard = () => {
       const res = await fetch(`${API_BASE}/api/songs/${selectedSongId}/reject`, {
         method: "PUT",
         headers: {
-    'Authorization': `Bearer ${localStorage.getItem('token')}`
-  },
-        credentials: "include",
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ reason: rejectReason }),
       });
       const data = await res.json();
@@ -104,24 +104,35 @@ const AdminDashboard = () => {
         <div className="space-y-4">
           {pendingSongs.map((song) => (
             <div key={song.id} className="border rounded-lg p-4 shadow-sm">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold">{song.name}</h3>
-                  <p className="text-sm text-gray-600">
-                    Người upload: {song.user_id} (ID)
-                  </p>
-                  <audio controls src={song.url} className="mt-2 h-10" />
+              <div className="flex items-start gap-4">
+                {/* Ảnh bìa */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={song.image_url || "https://via.placeholder.com/80?text=No+Image"}
+                    alt={song.name}
+                    className="w-20 h-20 object-cover rounded-md border"
+                  />
                 </div>
-                <div className="space-x-2">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{song.name}</h3>
+                  <p className="text-sm text-gray-600">
+                    Tác giả: {song.author || "Không rõ"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Người upload ID: {song.user_id}
+                  </p>
+                  <audio controls src={song.url} className="mt-2 h-10 w-full max-w-md" />
+                </div>
+                <div className="flex flex-col gap-2 ml-4">
                   <button
                     onClick={() => handleApprove(song.id)}
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 whitespace-nowrap"
                   >
                     Duyệt
                   </button>
                   <button
                     onClick={() => handleRejectClick(song.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 whitespace-nowrap"
                   >
                     Từ chối
                   </button>
