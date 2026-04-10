@@ -317,7 +317,7 @@ const MusicPlayer = () => {
                 <div
                   className={`text-xs ${index === currentSongIndex ? "text-[#1a1a2e]" : "text-[#a8a8a8]"}`}
                 >
-                  {song.singer || "Unknown Artist"}
+                  {song.author || "Unknown Artist"}
                 </div>
               </div>
               <button className="p-4 text-[#a8a8a8] text-lg transition-all hover:text-[#7ed957] hover:rotate-90">
