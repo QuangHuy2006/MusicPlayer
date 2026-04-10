@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
         }
       } : undefined,
     },
-    plugins: [react(), tailwindcss(), require('tailwind-scrollbar-hide')],
+    plugins: [react(), tailwindcss()],
     // Để Vite có thể thay thế biến môi trường khi build
     define: {
       // Không cần thiết nếu bạn dùng import.meta.env
