@@ -21,6 +21,14 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     }
   };
 
+  const resetForm = () => {
+    setName('');
+    setFile(null);
+    setAuthor('');
+    setImage(null);
+    setMessage('');
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!name || !file) {
@@ -37,7 +45,6 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     try {
       const res = await fetch(`${API_BASE}/api/songs`, {
         method: 'POST',
-        credentials: 'include',
          headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
          },
@@ -46,8 +53,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       const data = await res.json();
       if (data.success) {
         setMessage('Thêm nhạc thành công!');
-        setName('');
-        setFile(null);
+       resetForm();
         onClose();
       } else {
         setMessage(data.msg || 'Lỗi khi thêm nhạc');
@@ -120,7 +126,6 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               accept="image/png, image/jpeg, image/gif"
               onChange={handleImageChange}
               className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100"
-              required
             />
           </div>
           <button
