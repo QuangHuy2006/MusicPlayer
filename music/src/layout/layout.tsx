@@ -24,7 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <ul className="flex gap-6 text-white/80 font-medium">
               <li>
                 <Link
-                  to="/"
+                  to="/admin"
                   className="hover:text-[#7ed957] transition-colors duration-200"
                 >
                  Admin
