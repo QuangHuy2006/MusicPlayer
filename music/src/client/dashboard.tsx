@@ -36,6 +36,7 @@ const MusicPlayer = () => {
   } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      const approved = data.songs.filter((song: Song) => song.status === "approved");
       setSongs(data.songs || []);
       setError(null);
     } catch (err) {
