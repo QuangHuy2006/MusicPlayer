@@ -2,7 +2,7 @@ export default interface Song {
   id: number;
   name: string;
   url: string;
-  image_url?: string;
+  imageUrl?: string;
   author?: string;
   status?: 'pending' | 'approved' | 'rejected';
   user_id?: number;
