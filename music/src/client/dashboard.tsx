@@ -313,7 +313,10 @@ const MusicPlayer = () => {
         </div>
 
         {/* Playlist */}
-        <div className="w-full md:w-3/5 lg:w-2/3 p-3 pb-20 md:pb-3 max-h-[calc(100vh-2rem)] md:max-h-screen overflow-y-auto scrollbar-hide">
+        <div className="w-full md:w-3/5 lg:w-2/3 p-3 pb-20 md:pb-3 max-h-[calc(100vh-2rem)] md:max-h-screen overflow-y-auto" style={{ 
+    scrollbarWidth: 'none', 
+    msOverflowStyle: 'none' 
+  }}>
           {songs.map((song, index) => (
             <div
               key={song.id}
