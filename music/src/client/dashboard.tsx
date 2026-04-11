@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import "../App.css";
 import { API_BASE } from "../config";
+import AddToPlaylistModal from "./addToPlaylistModal";
 import {
   FaHeadphonesAlt,
   FaStepBackward,
@@ -12,11 +13,16 @@ import {
   FaEllipsisH,
 } from "react-icons/fa";
 import type Song from "../interface/song";
+import { useSearchParams } from "react-router-dom";
+
+interface PlaylistSong extends Song {
+  addedAt?: string;
+}
 
 const MusicPlayer = () => {
-  const [songs, setSongs] = useState<Song[]>([]);
+  const [songs, setSongs] = useState<PlaylistSong[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRandom, setIsRandom] = useState(false);
@@ -24,35 +30,64 @@ const MusicPlayer = () => {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [refresh, setRefresh] = useState(0);
+  const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
+  const [searchParams] = useSearchParams();
+  const playlistId = searchParams.get('playlist');
+  const [playlistName, setPlaylistName] = useState('');
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLInputElement>(null);
 
-  // Tải danh sách bài hát
+  // Tải danh sách bài hát dựa trên playlistId
   const loadSongs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/songs`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const approved = data.songs.filter((song: Song) => song.status === "approved");
-      setSongs(approved || []);
+      const url = `${API_BASE}/api/songs`;
+      let songsData: Song[] = [];
+
+      if (playlistId) {
+        // Gọi API lấy chi tiết playlist
+        const res = await fetch(`${API_BASE}/api/playlists/${playlistId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.success) {
+          setPlaylistName(data.playlist.name);
+          songsData = data.playlist.songs.map((s: Song) => ({
+            ...s,
+            status: 'approved', // đảm bảo
+          }));
+        } else {
+          throw new Error(data.msg || 'Không thể tải playlist');
+        }
+      } else {
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        songsData = data.songs.filter((song: Song) => song.status === "approved");
+        setPlaylistName('');
+      }
+
+      setSongs(songsData || []);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to fetch songs:", err);
-      setError(err?.message);
+      setError("Không thể tải danh sách bài hát");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [playlistId]);
 
   useEffect(() => {
     loadSongs();
-  }, [refresh, loadSongs]);
+  }, [refresh, playlistId, loadSongs]);
 
   const onSongAdded = useCallback(() => {
     setRefresh((prev) => prev + 1);
@@ -71,7 +106,6 @@ const MusicPlayer = () => {
     setDuration(0);
   }, [currentSongIndex]);
 
-  // Xử lý next/prev
   const handleNext = useCallback(() => {
     if (songs.length === 0) return;
     if (isRandom) {
@@ -119,7 +153,6 @@ const MusicPlayer = () => {
     }
   }, [isPlaying, currentSong]);
 
-  // Gắn sự kiện audio
   useEffect(() => {
     if (!currentSong) return;
     const audio = audioRef.current;
@@ -196,19 +229,19 @@ const MusicPlayer = () => {
     <div className="relative max-w-7xl mx-auto p-4 animate-slideUp">
       {/* Background animation */}
       <div className="top-0 left-0 w-full h-full overflow-hidden fixed inset-0 -z-10">
-        <div className="absolute bottom-0 left-0 w-[200%] h-25 bg-gradient-to-r from-[#7ed957] to-[#00bcd4] opacity-10 animate-wave animate-wave1" />
-        <div className="absolute bottom-2.5 left-0 w-[200%] h-25 bg-gradient-to-r from-[#7ed957] to-[#00bcd4] opacity-10 animate-wave animate-wave2" />
-        <div className="absolute bottom-5 left-0 w-[200%] h-25 bg-gradient-to-r from-[#7ed957] to-[#00bcd4] opacity-8 animate-wave animate-wave3" />
+        <div className="absolute bottom-0 left-0 w-[200%] h-25 bg-linear-to-r from-[#7ed957] to-[#00bcd4] opacity-10 animate-wave animate-wave1" />
+        <div className="absolute bottom-2.5 left-0 w-[200%] h-25 bg-linear-to-r from-[#7ed957] to-[#00bcd4] opacity-10 animate-wave animate-wave2" />
+        <div className="absolute bottom-5 left-0 w-[200%] h-25 bg-linear-to-r from-[#7ed957] to-[#00bcd4] opacity-8 animate-wave animate-wave3" />
       </div>
 
       <div className="flex flex-col md:flex-row gap-5 md:gap-8">
         {/* Dashboard - Player */}
-        <div className="w-full md:w-2/5 lg:w-1/3 bg-gradient-to-br from-[rgba(126,217,87,0.1)] to-[rgba(0,188,212,0.1)] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(126,217,87,0.3)] rounded-b-[30px] z-10 p-5 pt-6 pb-4">
+        <div className="w-full md:w-2/5 lg:w-1/3 bg-linear-to-br from-[rgba(126,217,87,0.1)] to-[rgba(0,188,212,0.1)] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(126,217,87,0.3)] rounded-b-[30px] z-10 p-5 pt-6 pb-4">
           <header className="text-center mb-4">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7ed957] to-[#00bcd4] py-2 px-5 rounded-full mb-3 shadow-[0_4px_15px_rgba(126,217,87,0.4)] animate-pulse-glow">
+            <div className="inline-flex items-center gap-2 bg-linear-to-r from-[#7ed957] to-[#00bcd4] py-2 px-5 rounded-full mb-3 shadow-[0_4px_15px_rgba(126,217,87,0.4)] animate-pulse-glow">
               <FaHeadphonesAlt className="text-[#1a1a2e] text-base" />
               <span className="font-semibold text-sm text-[#1a1a2e] tracking-wide">
-                Quang Huy Music
+                {playlistName ? playlistName : "Quang Huy Music"}
               </span>
             </div>
             <h4 className="text-[#a8a8a8] text-xs uppercase tracking-[2px] mb-2">
@@ -223,7 +256,7 @@ const MusicPlayer = () => {
           </header>
 
           {/* CD */}
-          <div className="flex flex-col items-center my-5 w-full max-w-[250px] md:max-w-full mx-auto relative">
+          <div className="flex flex-col items-center my-5 w-full max-w-62.5 md:max-w-full mx-auto relative">
             <div
               className={`w-full pt-[100%] rounded-full bg-cover bg-center mx-auto shadow-[0_10px_40px_rgba(0,0,0,0.5),0_0_0_8px_rgba(126,217,87,0.2),0_0_0_12px_rgba(0,188,212,0.1)] relative transition-all hover:scale-105 hover:shadow-[0_15px_50px_rgba(0,0,0,0.6),0_0_0_10px_rgba(126,217,87,0.3),0_0_0_15px_rgba(0,188,212,0.2)] ${
                 isPlaying ? "animate-[spin_3s_linear_infinite]" : ""
@@ -235,7 +268,7 @@ const MusicPlayer = () => {
                 }')`,
               }}
             >
-              <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-gradient-to-br from-white/40 to-transparent rounded-full pointer-events-none" />
+              <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-linear-to-br from-white/40 to-transparent rounded-full pointer-events-none" />
             </div>
             <div
               className={`flex items-center justify-center gap-1 mt-5 h-10 ${
@@ -245,7 +278,7 @@ const MusicPlayer = () => {
               {[...Array(15)].map((_, i) => (
                 <span
                   key={i}
-                  className={`w-1 h-3 bg-gradient-to-t from-[#7ed957] to-[#00bcd4] rounded-sm ${
+                  className={`w-1 h-3 bg-linear-to-t from-[#7ed957] to-[#00bcd4] rounded-sm ${
                     isPlaying ? "animate-wave-bar bar" + (i + 1) : ""
                   }`}
                 />
@@ -273,7 +306,7 @@ const MusicPlayer = () => {
             </button>
             <button
               onClick={togglePlay}
-              className="w-16 h-16 rounded-full text-2xl text-[#1a1a2e] flex items-center justify-center bg-gradient-to-r from-[#7ed957] to-[#00bcd4] shadow-[0_8px_25px_rgba(126,217,87,0.5)] transition-all hover:scale-110 hover:shadow-[0_12px_35px_rgba(126,217,87,0.7)] active:scale-95"
+              className="w-16 h-16 rounded-full text-2xl text-[#1a1a2e] flex items-center justify-center bg-linear-to-r from-[#7ed957] to-[#00bcd4] shadow-[0_8px_25px_rgba(126,217,87,0.5)] transition-all hover:scale-110 hover:shadow-[0_12px_35px_rgba(126,217,87,0.7)] active:scale-95"
             >
               {isPlaying ? <FaPause /> : <FaPlay />}
             </button>
@@ -306,7 +339,7 @@ const MusicPlayer = () => {
               step="0.1"
               value={progress}
               onChange={handleProgressChange}
-              className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-[#7ed957] [&::-webkit-slider-thumb]:to-[#00bcd4] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(126,217,87,0.8)] [&::-webkit-slider-thumb]:transition-all hover:[&::-webkit-slider-thumb]:scale-125"
+              className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-linear-to-r [&::-webkit-slider-thumb]:from-[#7ed957] [&::-webkit-slider-thumb]:to-[#00bcd4] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(126,217,87,0.8)] [&::-webkit-slider-thumb]:transition-all hover:[&::-webkit-slider-thumb]:scale-125"
             />
             <span>{formatTime(duration)}</span>
           </div>
@@ -314,22 +347,22 @@ const MusicPlayer = () => {
 
         {/* Playlist */}
         <div className="w-full md:w-3/5 lg:w-2/3 p-3 pb-20 md:pb-3 max-h-[calc(100vh-2rem)] md:max-h-screen overflow-y-auto" style={{ 
-    scrollbarWidth: 'none', 
-    msOverflowStyle: 'none' 
-  }}>
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none' 
+        }}>
           {songs.map((song, index) => (
             <div
               key={song.id}
               onClick={() => handleSelectSong(index)}
-              className={`flex items-center mb-3 p-3 rounded-xl cursor-pointer transition-all duration-300 bg-gradient-to-br from-[rgba(126,217,87,0.05)] to-[rgba(0,188,212,0.05)] backdrop-blur-sm border border-white/10 animate-slideInRight hover:bg-gradient-to-br hover:from-[rgba(126,217,87,0.15)] hover:to-[rgba(0,188,212,0.15)] hover:translate-x-2.5 hover:shadow-[0_8px_25px_rgba(126,217,87,0.3)] ${
+              className={`flex items-center mb-3 p-3 rounded-xl cursor-pointer transition-all duration-300 bg-linear-to-br from-[rgba(126,217,87,0.05)] to-[rgba(0,188,212,0.05)] backdrop-blur-sm border border-white/10 animate-slideInRight hover:bg-linear-to-br hover:from-[rgba(126,217,87,0.15)] hover:to-[rgba(0,188,212,0.15)] hover:translate-x-2.5 hover:shadow-[0_8px_25px_rgba(126,217,87,0.3)] ${
                 index === currentSongIndex
-                  ? "!bg-gradient-to-r !from-[#7ed957] !to-[#00bcd4] shadow-[0_8px_30px_rgba(126,217,87,0.5)] translate-x-2.5 scale-[1.02]"
+                  ? "bg-linear-to-r! from-[#7ed957]! to-[#00bcd4]! shadow-[0_8px_30px_rgba(126,217,87,0.5)] translate-x-2.5 scale-[1.02]"
                   : ""
               }`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div
-                className="w-12 h-12 rounded-[10px] bg-cover bg-center mx-2 shadow-[0_4px_15px_rgba(0,0,0,0.3)] transition-all group-hover:scale-110 group-hover:rotate-6 flex-shrink-0"
+                className="w-12 h-12 rounded-[10px] bg-cover bg-center mx-2 shadow-[0_4px_15px_rgba(0,0,0,0.3)] transition-all group-hover:scale-110 group-hover:rotate-6 shrink-0"
                 style={{
                   backgroundImage: `url('${
                     song.imageUrl || "https://via.placeholder.com/50?text=Song"
@@ -352,7 +385,13 @@ const MusicPlayer = () => {
                   {song.author || "Unknown Artist"}
                 </div>
               </div>
-              <button className="p-4 text-[#a8a8a8] text-lg transition-all hover:text-[#7ed957] hover:rotate-90">
+              <button 
+                className="p-4 text-[#a8a8a8] text-lg transition-all hover:text-[#7ed957] hover:rotate-90" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSongId(song.id);
+                }}
+              >
                 <FaEllipsisH />
               </button>
             </div>
@@ -364,6 +403,17 @@ const MusicPlayer = () => {
       {currentSong && (
         <audio ref={audioRef} src={currentSong.url} preload="metadata" />
       )}
+      <AddToPlaylistModal
+        isOpen={selectedSongId !== null}
+        onClose={() => setSelectedSongId(null)}
+        songId={selectedSongId!}
+        onAdded={() => {
+          // Nếu đang ở playlist view, có thể cần refresh danh sách bài hát trong playlist
+          if (playlistId) {
+            loadSongs();
+          }
+        }}
+      />
     </div>
   );
 };

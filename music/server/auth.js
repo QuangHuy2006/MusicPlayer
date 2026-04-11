@@ -101,12 +101,18 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
+    const adminToken = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 8);
 
     const { error: insertError } = await supabase
       .from('user_tokens')
-      .insert([{ user_id: user.id, token, expires_at: expiresAt }]);
+      .insert([{ user_id: user.id, token, expires_at: expiresAt }])
+      .eq('role', 'USER');
+        await supabase
+      .from('user_tokens')
+      .insert([{ user_id: user.id, token: adminToken, expires_at: expiresAt }])
+      .eq('role', 'ADMIN');
 
     if (insertError) {
       console.error('Insert token error:', insertError);
@@ -447,6 +453,243 @@ app.delete('/api/songs/:id', auth, adminOnly, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, msg: 'Lỗi xóa bài hát' });
+  }
+});
+
+// ---------- Playlist Routes ----------
+
+// Tạo playlist mới
+app.post('/api/playlists', auth, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ success: false, msg: 'Tên playlist không được để trống' });
+    }
+
+    const { data, error } = await supabase
+      .from('playlists')
+      .insert([{ user_id: req.user.id, name: name.trim() }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, msg: 'Tạo playlist thành công', playlist: data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tạo playlist' });
+  }
+});
+
+// Lấy danh sách playlist của user hiện tại
+app.get('/api/playlists', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('playlists')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({ success: true, playlists: data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi lấy danh sách playlist' });
+  }
+});
+
+// Lấy chi tiết playlist (kèm danh sách bài hát)
+app.get('/api/playlists/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const playlistId = parseInt(id, 10);
+    if (isNaN(playlistId)) {
+      return res.status(400).json({ success: false, msg: 'ID playlist không hợp lệ' });
+    }
+
+    // Kiểm tra playlist tồn tại và thuộc về user
+    const { data: playlist, error: playlistError } = await supabase
+      .from('playlists')
+      .select('*')
+      .eq('id', playlistId)
+      .single();
+
+    if (playlistError || !playlist) {
+      return res.status(404).json({ success: false, msg: 'Playlist không tồn tại' });
+    }
+    if (playlist.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, msg: 'Bạn không có quyền xem playlist này' });
+    }
+
+    // Lấy danh sách song_id từ playlist_songs
+    const { data: playlistSongs, error: psError } = await supabase
+      .from('playlist_songs')
+      .select('song_id, added_at')
+      .eq('playlist_id', playlistId);
+
+    if (psError) throw psError;
+
+    if (!playlistSongs.length) {
+      return res.json({
+        success: true,
+        playlist: { ...playlist, songs: [] }
+      });
+    }
+
+    const songIds = playlistSongs.map(ps => ps.song_id);
+    // Lấy thông tin chi tiết các bài hát (chỉ approved)
+    const { data: songs, error: songsError } = await supabase
+      .from('songs')
+      .select('id, name, url, author, image_url, status')
+      .in('id', songIds)
+      .eq('status', 'approved');
+
+    if (songsError) throw songsError;
+
+    // Ghép thêm added_at
+    const songsWithAddedAt = songs.map(song => ({
+      ...song,
+      imageUrl: song.image_url,
+      addedAt: playlistSongs.find(ps => ps.song_id === song.id)?.added_at
+    }));
+
+    res.json({
+      success: true,
+      playlist: {
+        id: playlist.id,
+        name: playlist.name,
+        created_at: playlist.created_at,
+        songs: songsWithAddedAt,
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi lấy chi tiết playlist' });
+  }
+});
+
+// Thêm bài hát vào playlist
+app.post('/api/playlists/:id/songs', auth, async (req, res) => {
+  try {
+    const { id: playlistId } = req.params;
+    const { songId } = req.body;
+
+    if (!songId) {
+      return res.status(400).json({ success: false, msg: 'Thiếu songId' });
+    }
+
+    // Kiểm tra playlist thuộc về user
+    const { data: playlist, error: playlistError } = await supabase
+      .from('playlists')
+      .select('user_id')
+      .eq('id', playlistId)
+      .single();
+
+    if (playlistError || !playlist) {
+      return res.status(404).json({ success: false, msg: 'Playlist không tồn tại' });
+    }
+    if (playlist.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, msg: 'Bạn không có quyền sửa playlist này' });
+    }
+
+    // Kiểm tra bài hát tồn tại và đã được duyệt (nên chỉ thêm bài approved)
+    const { data: song, error: songError } = await supabase
+      .from('songs')
+      .select('id, status')
+      .eq('id', songId)
+      .single();
+
+    if (songError || !song) {
+      return res.status(404).json({ success: false, msg: 'Bài hát không tồn tại' });
+    }
+    if (song.status !== 'approved') {
+      return res.status(400).json({ success: false, msg: 'Chỉ có thể thêm bài hát đã được duyệt vào playlist' });
+    }
+
+    // Thêm vào bảng playlist_songs (nếu đã có thì bỏ qua lỗi unique)
+    const { error: insertError } = await supabase
+      .from('playlist_songs')
+      .insert([{ playlist_id: playlistId, song_id: songId }]);
+
+    if (insertError) {
+      if (insertError.code === '23505') { // unique violation
+        return res.status(409).json({ success: false, msg: 'Bài hát đã có trong playlist' });
+      }
+      throw insertError;
+    }
+
+    res.json({ success: true, msg: 'Đã thêm bài hát vào playlist' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi thêm bài hát vào playlist' });
+  }
+});
+
+// Xóa bài hát khỏi playlist
+app.delete('/api/playlists/:id/songs/:songId', auth, async (req, res) => {
+  try {
+    const { id: playlistId, songId } = req.params;
+
+    // Kiểm tra quyền sở hữu playlist
+    const { data: playlist, error: playlistError } = await supabase
+      .from('playlists')
+      .select('user_id')
+      .eq('id', playlistId)
+      .single();
+
+    if (playlistError || !playlist) {
+      return res.status(404).json({ success: false, msg: 'Playlist không tồn tại' });
+    }
+    if (playlist.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, msg: 'Bạn không có quyền sửa playlist này' });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('playlist_songs')
+      .delete()
+      .eq('playlist_id', playlistId)
+      .eq('song_id', songId);
+
+    if (deleteError) throw deleteError;
+
+    res.json({ success: true, msg: 'Đã xóa bài hát khỏi playlist' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi xóa bài hát khỏi playlist' });
+  }
+});
+
+// Xóa toàn bộ playlist
+app.delete('/api/playlists/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Kiểm tra quyền sở hữu
+    const { data: playlist, error: playlistError } = await supabase
+      .from('playlists')
+      .select('user_id')
+      .eq('id', id)
+      .single();
+
+    if (playlistError || !playlist) {
+      return res.status(404).json({ success: false, msg: 'Playlist không tồn tại' });
+    }
+    if (playlist.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, msg: 'Bạn không có quyền xóa playlist này' });
+    }
+
+    const { error: deleteError } = await supabase
+      .from('playlists')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) throw deleteError;
+
+    res.json({ success: true, msg: 'Xóa playlist thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi xóa playlist' });
   }
 });
 

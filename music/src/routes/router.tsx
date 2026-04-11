@@ -9,6 +9,7 @@ import AdminDashboard from "../admin/adminPage";
 import MySongs from "../client/clientPage";
 import type User from "../interface/user";
 import { API_BASE } from '../config';
+import Playlist from "../client/playlistsPage";
 
 // eslint-disable-next-line react-refresh/only-export-components
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -116,6 +117,16 @@ const router = createBrowserRouter([
     <ProtectedRoute>
       <Layout>
         <MySongs />
+      </Layout>
+    </ProtectedRoute>
+  ),
+},
+  {
+  path: "/playlist",
+  element: (
+    <ProtectedRoute>
+      <Layout>
+        <Playlist />
       </Layout>
     </ProtectedRoute>
   ),
