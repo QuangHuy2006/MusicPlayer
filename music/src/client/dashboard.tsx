@@ -414,10 +414,6 @@ const MusicPlayer = () => {
           }
         }}
       />
-      <AddSongPopup
-        isOpen={isPopupOpen}
-        onClose={() => setIsPopupOpen(false)}
-      />
     </div>
   );
 };
