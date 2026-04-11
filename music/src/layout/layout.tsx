@@ -1,10 +1,8 @@
 import { Link } from "react-router-dom";
 import { FaHeadphones, FaGithub, FaHeart } from "react-icons/fa";
 import { useState } from "react";
-import AddSongPopup from "../client/addSong";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-    const [isPopupOpen, setIsPopupOpen] = useState(false);
     const API_BASE = import.meta.env.VITE_API_URL || '';
   return (
     <div className="min-h-screen bg-linear-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] flex flex-col z-20">
