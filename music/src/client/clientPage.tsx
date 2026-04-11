@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import type Song from '../interface/song';
 import { API_BASE } from '../config';
+import AddSongPopup from './addSong';
 
 const MySongs = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
 
 
   const fetchMySongs = async () => {
