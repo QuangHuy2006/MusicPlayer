@@ -77,10 +77,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* ===== MAIN CONTENT ===== */}
       <main className="flex-1 container mx-auto px-4 py-6 relative">
         <div className="absolute top-5 right-0 z-50">
-          <button
-            onClick={() => setIsPopupOpen(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-md transition flex items-center gap-2 min-w-15 min-h-15"
-          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
