@@ -12,7 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/10 shadow-lg">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           {/* Logo / Brand */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to="/dashboard" className="flex items-center gap-2 group">
             <FaHeadphones className="text-2xl text-[#7ed957] group-hover:scale-110 transition-transform" />
             <span className="text-xl font-bold bg-linear-to-r from-[#7ed957] to-[#00bcd4] bg-clip-text text-transparent">
               Quang Huy Music
