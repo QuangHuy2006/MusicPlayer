@@ -54,7 +54,15 @@ const MySongs = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Bài hát của tôi</h1>
+      <div className="flex justify-between items-center mb-4">
+  <h1 className="text-2xl font-bold">Bài hát của tôi</h1>
+  <button
+    onClick={() => setIsPopupOpen(true)}
+    className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-md transition flex items-center gap-2"
+  >
+    <FaPlus /> Tạo playlist
+  </button>
+</div>
       {message && <div className="mb-4 p-2 bg-blue-100 text-blue-800 rounded">{message}</div>}
       {songs.length === 0 ? (
         <p>Bạn chưa gửi bài hát nào.</p>
