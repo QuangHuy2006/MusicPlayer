@@ -236,7 +236,7 @@ const MusicPlayer = () => {
 
       <div className="flex flex-col md:flex-row gap-5 md:gap-8">
         {/* Dashboard - Player */}
-        <div className="w-full md:w-2/5 lg:w-1/3 bg-linear-to-br from-[rgba(126,217,87,0.1)] to-[rgba(0,188,212,0.1)] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(126,217,87,0.3)] rounded-b-[30px] z-10 p-5 pt-6 pb-4">
+        <div className="w-full md:w-2/5 lg:w-1/3 bg-linear-to-br from-[rgba(126,217,87,0.1)] to-[rgba(0,188,212,0.1)] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(126,217,87,0.3)] rounded-b-[30px] rounded-t-[15px] z-10 p-5 pt-6 pb-4">
           <header className="text-center mb-4">
             <div className="inline-flex items-center gap-2 bg-linear-to-r from-[#7ed957] to-[#00bcd4] py-2 px-5 rounded-full mb-3 shadow-[0_4px_15px_rgba(126,217,87,0.4)] animate-pulse-glow">
               <FaHeadphonesAlt className="text-[#1a1a2e] text-base" />
