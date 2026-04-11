@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { FaHeadphones, FaGithub, FaHeart } from "react-icons/fa";
-import { useState } from "react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const API_BASE = import.meta.env.VITE_API_URL || '';
