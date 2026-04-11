@@ -101,18 +101,12 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
-    const adminToken = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 8);
 
     const { error: insertError } = await supabase
       .from('user_tokens')
       .insert([{ user_id: user.id, token, expires_at: expiresAt }])
-      .eq('role', 'USER');
-        await supabase
-      .from('user_tokens')
-      .insert([{ user_id: user.id, token: adminToken, expires_at: expiresAt }])
-      .eq('role', 'ADMIN');
 
     if (insertError) {
       console.error('Insert token error:', insertError);
