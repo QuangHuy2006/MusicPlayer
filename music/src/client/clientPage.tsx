@@ -89,6 +89,10 @@ const MySongs = () => {
           ))}
         </div>
       )}
+      <AddSongPopup
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+      />
     </div>
   );
 };
