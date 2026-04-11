@@ -89,8 +89,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 clipRule="evenodd"
               />
             </svg>
-            Thêm nhạc
-          </button>
         </div>
         {children}
       </main>
