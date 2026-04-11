@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type Song from '../interface/song';
 import { API_BASE } from '../config';
 import AddSongPopup from './addSong';
+import { FaPlus } from "react-icons/fa";
 
 const MySongs = () => {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -62,7 +63,7 @@ const MySongs = () => {
     onClick={() => setIsPopupOpen(true)}
     className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-md transition flex items-center gap-2"
   >
-    <FaPlus /> Tạo playlist
+    <FaPlus /> Thêm Nhạc
   </button>
 </div>
       {message && <div className="mb-4 p-2 bg-blue-100 text-blue-800 rounded">{message}</div>}
