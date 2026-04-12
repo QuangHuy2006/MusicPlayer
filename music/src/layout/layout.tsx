@@ -37,14 +37,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </li>
               <li>
                 <Link
-                  to="/about"
-                  className="hover:text-[#7ed957] transition-colors duration-200"
-                >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
                   to="/my-songs"
                   className="hover:text-[#7ed957] transition-colors duration-200"
                 >
