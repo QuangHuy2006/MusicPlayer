@@ -36,8 +36,12 @@ const MusicPlayer = () => {
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const [searchParams] = useSearchParams();
   const [isThisSongPlayed, setIsThisSongPlayed] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true); // 🔔 Bật/tắt thông báo
   const playlistId = searchParams.get("playlist");
   const [playTing] = useSound(tingSound, { volume: 1 });
+  const currentSong = songs[currentSongIndex];
+
+  // Toast state
   let toastTimeout: ReturnType<typeof setTimeout>;
   const [toast, setToast] = useState<{
     visible: boolean;
@@ -49,9 +53,13 @@ const MusicPlayer = () => {
     exiting: false,
   });
 
+  // Auto-next timer
+  const autoNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLInputElement>(null);
 
+  // ========== LOAD SONGS ==========
   const loadSongs = useCallback(async () => {
     setLoading(true);
     try {
@@ -100,59 +108,167 @@ const MusicPlayer = () => {
     setRefresh((prev) => prev + 1);
   }, []);
 
-  const handleAnimationEnd = () => {
-    // Chỉ xóa khi đã chạy xong animation biến mất
-    if (toast.exiting) {
-      setToast({ visible: false, message: "", exiting: false });
-    }
-  };
-
   useEffect(() => {
     window.addEventListener("songAdded", onSongAdded);
     return () => window.removeEventListener("songAdded", onSongAdded);
   }, [onSongAdded]);
 
-  const currentSong = songs[currentSongIndex];
+  // ========== TOAST UTILS ==========
+  const showToast = (msg: string, durationMs = 3000) => {
+    if (!notificationsEnabled) return; // 🔔 Chỉ hiển thị nếu bật thông báo
+    if (toastTimeout) clearTimeout(toastTimeout);
+    setToast({ visible: true, message: msg, exiting: false });
+    toastTimeout = setTimeout(() => {
+      setToast((prev) => ({ ...prev, exiting: true }));
+    }, durationMs);
+    playTing();
+  };
 
+  const handleAnimationEnd = () => {
+    if (toast.exiting) {
+      setToast({ visible: false, message: "", exiting: false });
+    }
+  };
+
+  // ========== AUTO-NEXT TIMER CONTROL ==========
+  const clearAutoNextTimer = () => {
+    if (autoNextTimerRef.current) {
+      clearTimeout(autoNextTimerRef.current);
+      autoNextTimerRef.current = null;
+    }
+  };
+
+  // Hàm chuyển bài thực tế (không kèm toast)
+  const jumpToSong = (newIndex: number, autoPlay = true) => {
+    if (newIndex === currentSongIndex) return;
+    setCurrentSongIndex(newIndex);
+    if (autoPlay) {
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(false);
+    }
+  };
+
+  // Xử lý khi bài hát kết thúc
+  const handleEnded = useCallback(() => {
+    if (isRepeat) {
+      // Lặp lại bài hiện tại: tua về 0 và phát tiếp
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch((e) => console.error(e));
+      }
+      return;
+    }
+
+    // Tính bài tiếp theo
+    let nextIndex: number;
+    if (isRandom) {
+      do {
+        nextIndex = Math.floor(Math.random() * songs.length);
+      } while (nextIndex === currentSongIndex && songs.length > 1);
+    } else {
+      nextIndex =
+        currentSongIndex === songs.length - 1 ? 0 : currentSongIndex + 1;
+    }
+
+    const nextSong = songs[nextIndex];
+    if (!nextSong) return;
+
+    // Hủy timer cũ
+    clearAutoNextTimer();
+
+    if (notificationsEnabled) {
+      // 🔔 Bật thông báo: đợi 800ms -> hiện toast -> đợi 3300ms -> chuyển bài
+      setTimeout(() => {
+        showToast(`Tiếp theo: ${nextSong.name}`, 3300);
+      }, 800);
+      autoNextTimerRef.current = setTimeout(() => {
+        jumpToSong(nextIndex, true);
+        autoNextTimerRef.current = null;
+      }, 3300);
+    } else {
+      // 🔕 Tắt thông báo: chuyển bài ngay lập tức
+      jumpToSong(nextIndex, true);
+    }
+  }, [isRepeat, isRandom, songs, currentSongIndex, notificationsEnabled]);
+
+  // ========== HANDLE NEXT/PREV ==========
+  const handleNext = useCallback(() => {
+    clearAutoNextTimer();
+    if (songs.length === 0) return;
+    let newIndex: number;
+    if (isRandom) {
+      do {
+        newIndex = Math.floor(Math.random() * songs.length);
+      } while (newIndex === currentSongIndex && songs.length > 1);
+    } else {
+      newIndex =
+        currentSongIndex === songs.length - 1 ? 0 : currentSongIndex + 1;
+    }
+    jumpToSong(newIndex, true);
+  }, [songs, isRandom, currentSongIndex]);
+
+  const handlePrev = useCallback(() => {
+    clearAutoNextTimer();
+    if (songs.length === 0) return;
+    let newIndex: number;
+    if (isRandom) {
+      do {
+        newIndex = Math.floor(Math.random() * songs.length);
+      } while (newIndex === currentSongIndex && songs.length > 1);
+    } else {
+      newIndex =
+        currentSongIndex === 0 ? songs.length - 1 : currentSongIndex - 1;
+    }
+    jumpToSong(newIndex, true);
+  }, [songs, isRandom, currentSongIndex]);
+
+  // ========== TOGGLE RANDOM/REPEAT ==========
+  const toggleRandom = () => {
+    clearAutoNextTimer();
+    setIsRandom((prev) => !prev);
+  };
+  const toggleRepeat = () => {
+    clearAutoNextTimer();
+    setIsRepeat((prev) => !prev);
+  };
+
+  // ========== TOGGLE NOTIFICATIONS ==========
+  const toggleNotifications = () => {
+    setNotificationsEnabled((prev) => !prev);
+  };
+
+  // ========== CHỌN BÀI TỪ PLAYLIST ==========
+  const handleSelectSong = (index: number) => {
+    if (index === currentSongIndex) return;
+    clearAutoNextTimer();
+    setCurrentSongIndex(index);
+    setIsPlaying(false);
+  };
+
+  // ========== PROGRESS & AUDIO SYNC ==========
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearAutoNextTimer();
+    const value = parseFloat(e.target.value);
+    const newTime = (value / 100) * duration;
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+      setProgress(value);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  // ========== EFFECTS ==========
   useEffect(() => {
     setProgress(0);
     setDuration(0);
   }, [currentSongIndex]);
-
-  const showToast = (msg: string, duration = 3000) => {
-    if (toastTimeout) clearTimeout(toastTimeout);
-    setToast({ visible: true, message: msg, exiting: false });
-    toastTimeout = setTimeout(() => {
-      // Bắt đầu hiệu ứng biến mất
-      setToast((prev) => ({ ...prev, exiting: true }));
-    }, duration);
-  };
-
-  const handleNext = useCallback(() => {
-    if (songs.length === 0) return;
-    if (isRandom) {
-      let newIndex;
-      do {
-        newIndex = Math.floor(Math.random() * songs.length);
-      } while (newIndex === currentSongIndex && songs.length > 1);
-      setCurrentSongIndex(newIndex);
-    } else {
-      setCurrentSongIndex((prev) => (prev === songs.length - 1 ? 0 : prev + 1));
-    }
-  }, [songs, isRandom, currentSongIndex]);
-
-  const handlePrev = useCallback(() => {
-    if (songs.length === 0) return;
-    if (isRandom) {
-      let newIndex;
-      do {
-        newIndex = Math.floor(Math.random() * songs.length);
-      } while (newIndex === currentSongIndex && songs.length > 1);
-      setCurrentSongIndex(newIndex);
-    } else {
-      setCurrentSongIndex((prev) => (prev === 0 ? songs.length - 1 : prev - 1));
-    }
-  }, [songs, isRandom, currentSongIndex]);
 
   useEffect(() => {
     if (!currentSong) return;
@@ -188,14 +304,6 @@ const MusicPlayer = () => {
       setProgress(value);
     };
     const setAudioDuration = () => setDuration(audio.duration);
-    const handleEnded = () => {
-      if (isRepeat) {
-        audio.currentTime = 0;
-        audio.play().catch((e) => console.log(e));
-      } else {
-        handleNext();
-      }
-    };
 
     audio.addEventListener("timeupdate", updateProgress);
     audio.addEventListener("loadedmetadata", setAudioDuration);
@@ -206,34 +314,34 @@ const MusicPlayer = () => {
       audio.removeEventListener("loadedmetadata", setAudioDuration);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [currentSong, isRepeat, handleNext]);
+  }, [currentSong, handleEnded]);
 
-  const togglePlay = () => setIsPlaying((prev) => !prev);
-  const toggleRandom = () => setIsRandom((prev) => !prev);
-  const toggleRepeat = () => setIsRepeat((prev) => !prev);
+  useEffect(() => {
+    return () => {
+      clearAutoNextTimer();
+    };
+  }, []);
 
-  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    const newTime = (value / 100) * duration;
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-      setProgress(value);
+  // ========== TOGGLE PLAY ==========
+  const togglePlay = () => {
+    if (!isPlaying) {
+      if (!isThisSongPlayed) {
+        if (notificationsEnabled) {
+          showToast(`${currentSong.name}`);
+          setTimeout(() => setIsThisSongPlayed(true), 2000);
+          setTimeout(() => setIsPlaying(true), 3300);
+        }else{
+          setIsPlaying(true);
+        }
+      } else {
+        setIsPlaying(true);
+      }
+    } else {
+      setIsPlaying(false);
     }
   };
 
-  const handleSelectSong = (index: number) => {
-    if (index === currentSongIndex) return;
-    setCurrentSongIndex(index);
-    setIsPlaying(false);
-  };
-
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
-
+  // ========== RENDER ==========
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen text-white">
@@ -287,9 +395,9 @@ const MusicPlayer = () => {
               </div>
             </div>
           )}
-          <div className="absolute top-2.5 left-1/2 transform -translate-x-1/2 h-7  flex items-center justify-between px-7 z-20 w-full mt-2">
-            {/* Nội dung bên trái: thời gian hoặc ảnh + tên bài hát */}
-            <div className="flex items-center gap-2">
+          <div className="absolute top-2.5 left-1/2 transform -translate-x-1/2 h-7 flex items-center justify-between px-7 z-20 w-full mt-2">
+            {/* Nội dung bên trái: thời gian + nút setting + bell */}
+            <div className="flex items-center gap-1">
               <span className="text-[15px] font-semibold text-white/90 tabular-nums">
                 {new Date().toLocaleTimeString("vi-VN", {
                   hour: "2-digit",
@@ -297,6 +405,32 @@ const MusicPlayer = () => {
                   hour12: false,
                 })}
               </span>
+              {/* Nút Setting - bật/tắt thông báo */}
+              <button
+                onClick={toggleNotifications}
+                className="focus:outline-none hover:rotate-90 transition-transform duration-300"
+                title={notificationsEnabled ? "Tắt thông báo" : "Bật thông báo"}
+              >
+                <svg
+                  className={`w-4 h-4 ${notificationsEnabled ? "text-white/80" : "text-white/30"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.8}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.8}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </button>
               <div className="text-white/70">
                 {isThisSongPlayed ? <FaBell size={14} /> : ""}
               </div>
@@ -336,15 +470,12 @@ const MusicPlayer = () => {
             </div>
             {/* Nội dung bên phải: sóng, wifi, pin */}
             <div className="flex items-center gap-1.5">
-              {/* Sóng di động - dạng thanh bo tròn, tỷ lệ thực tế */}
               <div className="flex gap-0.5 items-end h-2.5">
                 <div className="w-[2.5px] h-1 bg-white/80 rounded-px"></div>
                 <div className="w-[2.5px] h-1.5 bg-white/80 rounded-px"></div>
                 <div className="w-[2.5px] h-2 bg-white/80 rounded-px"></div>
                 <div className="w-[2.5px] h-2.5 bg-white/80 rounded-px"></div>
               </div>
-
-              {/* Wi-Fi - 3 đường cong mềm mại, đúng chuẩn */}
               <svg
                 width="18"
                 height="13"
@@ -373,8 +504,6 @@ const MusicPlayer = () => {
                   fill="currentColor"
                 />
               </svg>
-
-              {/* Pin - viền ngoài mỏng, đầu pin tách biệt, mức pin rõ ràng */}
               <div className="flex items-center gap-px">
                 <div className="relative w-5 h-2.5 rounded-xs border border-white/40 bg-white/10">
                   <div className="absolute left-px top-px h-[calc(100%-2px)] w-[70%] bg-white/80 rounded-px"></div>
@@ -446,20 +575,7 @@ const MusicPlayer = () => {
               <FaStepBackward />
             </button>
             <button
-              onClick={() => {
-                if (!isPlaying) {
-                  if (!isThisSongPlayed) {
-                    showToast(`${currentSong.name}`);
-                    playTing();
-                    setTimeout(() => togglePlay(), 3300);
-                    setTimeout(() => setIsThisSongPlayed(true), 2000);
-                  } else {
-                    togglePlay();
-                  }
-                } else {
-                  togglePlay();
-                }
-              }}
+              onClick={togglePlay}
               className="w-14 h-14 rounded-full text-xl text-[#1a1a2e] flex items-center justify-center bg-linear-to-r from-[#7ed957] to-[#00bcd4] shadow-[0_10px_25px_rgba(126,217,87,0.5)] transition-all duration-200 active:scale-95 hover:shadow-[0_15px_35px_rgba(126,217,87,0.8)]"
             >
               {isPlaying ? <FaPause /> : <FaPlay />}
@@ -503,7 +619,7 @@ const MusicPlayer = () => {
           <div className="absolute -z-10 top-20 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#7ed957] opacity-20 rounded-full blur-3xl" />
         </div>
 
-        {/* Playlist - Danh sách bài hát bên phải */}
+        {/* Playlist */}
         <div
           className="w-full md:w-3/5 lg:w-2/3 p-3 pb-20 md:pb-3 max-h-[calc(100vh-2rem)] md:max-h-screen overflow-y-auto"
           style={{
