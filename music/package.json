@@ -29,6 +29,7 @@
     "routes": "^2.1.0",
     "tailwindcss": "^4.2.2",
     "tslib": "^2.8.1",
+    "use-sound": "^5.0.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
