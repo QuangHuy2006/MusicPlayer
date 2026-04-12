@@ -1,20 +1,12 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+*{
+  font-family: 'Roboto', sans-serif;
+}
 /* App.css - Thêm vào cuối file */
 
 /* Animation cho container chính */
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-.animate-slideUp {
-  animation: slideUp 0.5s ease-out;
-}
+
 
 /* Animation cho từng item trong playlist */
 @keyframes slideInRight {
@@ -82,6 +74,12 @@
 .bar13 { animation-delay: 2.4s; }
 .bar14 { animation-delay: 2.6s; }
 .bar15 { animation-delay: 2.8s; }
+.barAtDynamic1 { animation-delay: 0s; }
+.barAtDynamic2 { animation-delay: 0.2s; }
+.barAtDynamic3 { animation-delay: 0.4s; }
+.barAtDynamic4 { animation-delay: 0.6s; }
+.barAtDynamic5 { animation-delay: 0.8s; }
+.barAtDynamic6 { animation-delay: 1s; }
 
 /* Hiệu ứng glow cho nút */
 @keyframes pulse-glow {
@@ -94,4 +92,105 @@
 }
 .animate-pulse-glow {
   animation: pulse-glow 2s infinite;
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #7ed957 0%,
+    #00bcd4 30%,
+    #7ed957 60%,
+    #00bcd4 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Slow spin animation for CD */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 4s linear infinite;
+}
+
+/* Marquee animation for song title */
+.marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 8s linear infinite;
+  padding-left: 100%; /* Bắt đầu từ bên phải */
+  will-change: transform;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Chỉ chạy khi hover hoặc luôn? Ở đây là luôn chạy nếu text dài hơn container */
+.marquee-container {
+  overflow: hidden;
+  width: 100%;
+  white-space: nowrap;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-slideUp {
+  animation: slideUp 0.6s ease;
+}
+
+@keyframes slideUpForMsg {
+  from {
+    transform: translate(-50%,20px);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 0;
+  }
+}
+.animate-slideUpForMsg {
+  animation: slideUpForMsg 0.3s ease-out forwards;
 }
