@@ -20,7 +20,8 @@ app.use(express.json());
 // CORS config
 const allowedOrigins = [
   "http://localhost:3002",
-  "https://musicplayer-frontend-865e.onrender.com"
+  "https://musicplayer-frontend-865e.onrender.com",
+ "https://music.werchat.io.vn"
 ];
 app.use(cors({
   origin: function (origin, callback) {
