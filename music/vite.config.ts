@@ -1,21 +1,10 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
-  const isDev = mode === 'development';
-
-  return {
+export default defineConfig({
     server: {
-      port: 3001,
-      // Chỉ dùng proxy khi đang chạy `npm run dev` (development)
-      proxy: isDev ? {
-        '/api': {
-          target: 'http://localhost:3001',
-          changeOrigin: true,
-          // Không cần rewrite vì backend đã có prefix /api
-        }
-      } : undefined,
+      allowedHosts: true, // Cho phép tất cả host (dùng khi dev qua tunnel)
     },
     plugins: [react(), tailwindcss()],
     // Để Vite có thể thay thế biến môi trường khi build
@@ -24,7 +13,6 @@ export default defineConfig(({ mode }) => {
     },
     // Tùy chọn: chỉ rõ thư mục build (mặc định là 'dist')
     build: {
-      outDir: 'dist',
-    }
-  }
+      outDir: "dist",
+    },
 });
