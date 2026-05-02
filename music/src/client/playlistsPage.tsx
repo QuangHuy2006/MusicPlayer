@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { FaPlus, FaTrash, FaMusic } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaMusic, FaList } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 import { API_BASE } from '../config';
 import type { Playlist, PlaylistDetail } from '../interface/playlist';
 import type Song from '../interface/song';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
+import { SkeletonPlaylistCard } from '../components/Skeleton';
 
 const PlaylistsPage = () => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -16,6 +18,7 @@ const PlaylistsPage = () => {
   const [loadingSongs, setLoadingSongs] = useState<boolean>(false);
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const fetchPlaylists = async () => {
     try {
@@ -72,10 +75,11 @@ const PlaylistsPage = () => {
         setPlaylists([data.playlist, ...playlists]);
         setShowCreateModal(false);
         setNewPlaylistName('');
+        toast.success('Tạo playlist thành công');
       }
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
-      alert('Lỗi tạo playlist: ' + message);
+      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
+      toast.error('Lỗi tạo playlist: ' + message);
     }
   };
 
@@ -90,9 +94,10 @@ const PlaylistsPage = () => {
       if (!res.ok) throw new Error(data.msg || 'Xóa thất bại');
       setPlaylists(playlists.filter(p => p.id !== playlistId));
       if (selectedPlaylist?.id === playlistId) setSelectedPlaylist(null);
+      toast.success('Đã xóa playlist');
     } catch (err) {
-    const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
-      alert('Xóa thất bại: ' + message);
+      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
+      toast.error('Xóa thất bại: ' + message);
     }
   };
 
@@ -108,8 +113,8 @@ const PlaylistsPage = () => {
         setSelectedPlaylist(data.playlist);
       }
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
-      alert('Không thể tải chi tiết playlist: ' + message);
+      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
+      toast.error('Không thể tải chi tiết playlist: ' + message);
     } finally {
       setLoadingSongs(false);
     }
@@ -129,9 +134,10 @@ const PlaylistsPage = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.msg || 'Lỗi thêm bài hát');
       await viewPlaylistDetail(selectedPlaylist);
+      toast.success('Đã thêm bài hát vào playlist');
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
-      alert(message || 'Lỗi thêm bài hát');
+      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
+      toast.error(message || 'Lỗi thêm bài hát');
     }
   };
 
@@ -145,9 +151,10 @@ const PlaylistsPage = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.msg || 'Xóa thất bại');
       await viewPlaylistDetail(selectedPlaylist);
+      toast.success('Đã xóa bài hát khỏi playlist');
     } catch (err) {
-        const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
-      alert('Xóa bài hát khỏi playlist thất bại: ' + message);
+      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
+      toast.error('Xóa bài hát khỏi playlist thất bại: ' + message);
     }
   };
 
@@ -155,42 +162,60 @@ const PlaylistsPage = () => {
     song => !selectedPlaylist?.songs?.some(s => s.id === song.id)
   );
 
-  if (loading) return <div className="flex justify-center items-center h-64">Đang tải...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 md:p-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between mb-10">
+             <div className="h-10 bg-slate-800/50 rounded w-1/3 animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+             {[1,2,3,4].map(i => <SkeletonPlaylistCard key={i} />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-purple-900 via-indigo-900 to-gray-900 p-6">
+    <div className="p-6 md:p-10 animate-[fade-in_0.5s_ease-out]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white flex items-center gap-3">
-            <FaMusic className="text-pink-400" /> Playlists của tôi
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-white flex items-center gap-3">
+            <FaMusic className="text-cyan-400" /> Playlists của tôi
           </h1>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-pink-500 hover:bg-pink-600 text-white px-5 py-2 rounded-full flex items-center gap-2 transition"
+            className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 px-5 py-2.5 rounded-full flex items-center gap-2 transition-all hover:scale-105 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
           >
             <FaPlus /> Tạo playlist
           </button>
         </div>
 
         {/* Danh sách playlist */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {playlists.map(pl => (
-            <div key={pl.id} className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden border border-white/20 transition hover:scale-105" onClick={() => handlePlaylistClick(pl.id)}>
+            <div key={pl.id} className="group relative bg-slate-900/40 backdrop-blur-xl rounded-3xl overflow-hidden border border-slate-800 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-900/20 hover:border-cyan-500/30 cursor-pointer" onClick={() => handlePlaylistClick(pl.id)}>
+              <div className="aspect-video bg-gradient-to-br from-cyan-900/40 to-purple-900/40 relative">
+                <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-100 transition-opacity">
+                  <FaMusic className="text-4xl text-cyan-400" />
+                </div>
+              </div>
               <div className="p-5">
                 <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-semibold text-white truncate">{pl.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-100 group-hover:text-cyan-400 transition-colors truncate pr-2">{pl.name}</h3>
                   <button
-                    onClick={() => handleDeletePlaylist(pl.id)}
-                    className="text-gray-300 hover:text-red-400 transition"
+                    onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(pl.id); }}
+                    className="text-slate-500 hover:text-red-400 transition-colors p-1"
                   >
-                    <FaTrash />
+                    <FaTrash size={14} />
                   </button>
                 </div>
-                <p className="text-gray-300 text-sm mt-1">Tạo: {new Date(pl.created_at).toLocaleDateString()}</p>
+                <p className="text-slate-500 text-xs mt-1 font-medium">Tạo: {new Date(pl.created_at).toLocaleDateString()}</p>
                 <button
-                  onClick={(e) => {viewPlaylistDetail(pl); e.stopPropagation();}}
-                  className="mt-4 w-full bg-white/20 hover:bg-white/30 text-white py-2 rounded-lg transition"
+                  onClick={(e) => { e.stopPropagation(); viewPlaylistDetail(pl); }}
+                  className="mt-5 w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-colors"
                 >
                   Xem chi tiết
                 </button>
@@ -198,33 +223,40 @@ const PlaylistsPage = () => {
             </div>
           ))}
           {playlists.length === 0 && (
-            <div className="col-span-full text-center text-white/70 py-12">
-              Bạn chưa có playlist nào. Hãy tạo playlist đầu tiên!
+            <div className="col-span-full flex flex-col items-center justify-center text-slate-500 py-20 bg-slate-900/20 border border-dashed border-slate-800 rounded-3xl">
+              <FaList size={48} className="mb-4 opacity-20" />
+              <p className="text-lg">Bạn chưa có playlist nào.</p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="mt-4 text-cyan-400 hover:underline"
+              >
+                Tạo playlist đầu tiên!
+              </button>
             </div>
           )}
         </div>
 
         {/* Modal tạo playlist */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-2xl p-6 w-96 shadow-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-white">Tạo playlist mới</h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white">
-                  <MdClose size={24} />
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-[fade-in_0.2s_ease-out]">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl scale-100 animate-[zoom-in_0.2s_ease-out]">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Tạo playlist mới</h2>
+                <button onClick={() => setShowCreateModal(false)} className="text-slate-500 hover:text-white transition-colors bg-slate-800 rounded-full p-2">
+                  <MdClose size={20} />
                 </button>
               </div>
               <input
                 type="text"
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
-                placeholder="Tên playlist..."
-                className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-pink-500"
+                placeholder="Nhập tên playlist..."
+                className="w-full px-5 py-3 rounded-xl bg-slate-950 text-white border border-slate-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-600"
                 autoFocus
               />
-              <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-gray-300">Hủy</button>
-                <button onClick={handleCreatePlaylist} className="px-4 py-2 bg-pink-500 text-white rounded-lg">Tạo</button>
+              <div className="flex justify-end gap-3 mt-8">
+                <button onClick={() => setShowCreateModal(false)} className="px-5 py-2.5 text-sm font-semibold text-slate-400 hover:text-white transition-colors">Hủy</button>
+                <button onClick={handleCreatePlaylist} className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-cyan-500/25 transition-all active:scale-95">Tạo ngay</button>
               </div>
             </div>
           </div>
@@ -232,58 +264,78 @@ const PlaylistsPage = () => {
 
         {/* Modal chi tiết playlist */}
         {selectedPlaylist && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto shadow-2xl border border-gray-700">
-              <div className="sticky top-0 bg-gray-900 p-5 border-b border-gray-700 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-white">{selectedPlaylist.name}</h2>
-                <button onClick={() => setSelectedPlaylist(null)} className="text-gray-400 hover:text-white">
-                  <MdClose size={28} />
+          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fade-in_0.2s_ease-out]">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+              <div className="bg-slate-900/80 backdrop-blur-md p-6 border-b border-slate-800 flex justify-between items-center z-10 shrink-0">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 truncate pr-4">{selectedPlaylist.name}</h2>
+                <button onClick={() => setSelectedPlaylist(null)} className="text-slate-500 hover:text-white transition-colors bg-slate-800 rounded-full p-2 shrink-0">
+                  <MdClose size={20} />
                 </button>
               </div>
-              <div className="p-5">
-                <h3 className="text-lg font-semibold text-white mb-3">Bài hát trong playlist</h3>
-                {loadingSongs ? (
-                  <div className="text-center py-8 text-gray-400">Đang tải...</div>
-                ) : selectedPlaylist.songs?.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">Chưa có bài hát nào. Hãy thêm từ danh sách bên dưới.</div>
-                ) : (
-                  <div className="space-y-2 mb-8">
-                    {selectedPlaylist.songs.map(song => (
-                      <div key={song.id} className="bg-gray-800 rounded-lg p-3 flex justify-between items-center">
-                        <div>
-                          <p className="text-white font-medium">{song.name}</p>
-                          <p className="text-gray-400 text-sm">{song.author || 'Không rõ'}</p>
-                        </div>
-                        <button
-                          onClick={() => removeSongFromPlaylist(song.id)}
-                          className="text-red-400 hover:text-red-300 transition"
-                        >
-                          <FaTrash />
-                        </button>
+
+              <div className="flex-1 overflow-y-auto p-6" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Cột trái: Bài hát trong playlist */}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Trong playlist
+                    </h3>
+                    {loadingSongs ? (
+                      <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div></div>
+                    ) : selectedPlaylist.songs?.length === 0 ? (
+                      <div className="text-center py-10 text-slate-500 bg-slate-950/50 rounded-2xl border border-dashed border-slate-800">
+                        Chưa có bài hát nào.
                       </div>
-                    ))}
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedPlaylist.songs.map(song => (
+                          <div key={song.id} className="group bg-slate-950/50 hover:bg-slate-800 rounded-xl p-3 flex justify-between items-center transition-colors border border-slate-800/50">
+                            <div className="min-w-0 pr-4">
+                              <p className="text-slate-200 font-medium truncate">{song.name}</p>
+                              <p className="text-slate-500 text-xs truncate">{song.author || 'Không rõ'}</p>
+                            </div>
+                            <button
+                              onClick={() => removeSongFromPlaylist(song.id)}
+                              className="text-slate-600 hover:text-red-400 transition-colors p-2 shrink-0"
+                              title="Xóa khỏi playlist"
+                            >
+                              <FaTrash size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-                <h3 className="text-lg font-semibold text-white mb-3">Thêm bài hát từ thư viện</h3>
-                <div className="max-h-64 overflow-y-auto space-y-2 border-t border-gray-700 pt-3">
-                  {songsNotInPlaylist.length === 0 ? (
-                    <p className="text-gray-400 text-center py-4">Tất cả bài hát đã có trong playlist này</p>
-                  ) : (
-                    songsNotInPlaylist.map(song => (
-                      <div key={song.id} className="bg-gray-800 rounded-lg p-3 flex justify-between items-center">
-                        <div>
-                          <p className="text-white font-medium">{song.name}</p>
-                          <p className="text-gray-400 text-sm">{song.author || 'Không rõ'}</p>
-                        </div>
-                        <button
-                          onClick={() => addSongToPlaylist(song.id)}
-                          className="text-green-400 hover:text-green-300 transition"
-                        >
-                          <FaPlus />
-                        </button>
-                      </div>
-                    ))
-                  )}
+
+                  {/* Cột phải: Thư viện bài hát */}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple-400"></span> Thêm từ thư viện
+                    </h3>
+                    <div className="space-y-2">
+                      {songsNotInPlaylist.length === 0 ? (
+                        <p className="text-slate-500 text-center py-10 bg-slate-950/50 rounded-2xl border border-dashed border-slate-800">
+                          Tất cả bài hát đã được thêm
+                        </p>
+                      ) : (
+                        songsNotInPlaylist.map(song => (
+                          <div key={song.id} className="group bg-slate-950/50 hover:bg-slate-800 rounded-xl p-3 flex justify-between items-center transition-colors border border-slate-800/50">
+                            <div className="min-w-0 pr-4">
+                              <p className="text-slate-200 font-medium truncate">{song.name}</p>
+                              <p className="text-slate-500 text-xs truncate">{song.author || 'Không rõ'}</p>
+                            </div>
+                            <button
+                              onClick={() => addSongToPlaylist(song.id)}
+                              className="text-cyan-600 hover:text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-full p-2 shrink-0 transition-all"
+                              title="Thêm vào playlist"
+                            >
+                              <FaPlus size={14} />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

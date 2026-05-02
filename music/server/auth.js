@@ -19,9 +19,9 @@ app.use(express.json());
 
 // CORS config
 const allowedOrigins = [
-  "http://localhost:3002",
+  "http://localhost:5173",
   "https://musicplayer-frontend-865e.onrender.com",
- "https://music.werchat.io.vn"
+  "https://music.werchat.io.vn"
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -56,13 +56,18 @@ async function auth(req, res, next) {
     return res.status(401).json({ msg: "Token expired" });
   }
 
-  const { data: user } = await supabase
+  const { data: user, error: userError } = await supabase
     .from('users')
-    .select('id, name, role, email')
+    .select('*')
     .eq('id', session.user_id)
     .single();
 
+  if (userError) {
+    console.error("Supabase user fetch error:", userError);
+  }
+
   if (!user) return res.status(401).json({ msg: "User not found" });
+  if (user.is_banned) return res.status(403).json({ msg: "Tài khoản của bạn đã bị khóa" });
   req.user = user;
   next();
 }
@@ -115,11 +120,11 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     return res.status(200).json({
-  success: true,
-  msg: "Đăng nhập thành công",
-  token: token,   // ← gửi token về client
-  user: { id: user.id, name: user.name, role: user.role, email: user.email },
-});
+      success: true,
+      msg: "Đăng nhập thành công",
+      token: token,   // ← gửi token về client
+      user: { id: user.id, name: user.name, role: user.role, email: user.email },
+    });
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ success: false, msg: "Lỗi máy chủ" });
@@ -685,6 +690,158 @@ app.delete('/api/playlists/:id', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, msg: 'Lỗi xóa playlist' });
+  }
+});
+
+// ========== PHASE 3: LIKED SONGS & HISTORY ==========
+
+app.get('/api/likes', auth, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('liked_songs')
+      .select('song_id, created_at, songs (id, name, url, image_url, author, status)')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    // Map to match song interface
+    const songs = data.map(item => ({
+      ...item.songs,
+      liked_at: item.created_at
+    })).filter(s => s.status === 'approved');
+
+    res.json({ success: true, songs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải danh sách yêu thích' });
+  }
+});
+
+app.post('/api/likes/:songId', auth, async (req, res) => {
+  try {
+    const { songId } = req.params;
+
+    // Check if already liked
+    const { data: existing } = await supabase
+      .from('liked_songs')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .eq('song_id', songId)
+      .maybeSingle();
+
+    if (existing) {
+      // Unlike
+      await supabase.from('liked_songs').delete().eq('user_id', req.user.id).eq('song_id', songId);
+      res.json({ success: true, liked: false, msg: 'Đã bỏ thích' });
+    } else {
+      // Like
+      await supabase.from('liked_songs').insert([{ user_id: req.user.id, song_id: songId }]);
+      res.json({ success: true, liked: true, msg: 'Đã thích bài hát' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi server' });
+  }
+});
+
+app.get('/api/history', auth, async (req, res) => {
+  try {
+    // get unique recently played songs (latest 50 raw)
+    const { data, error } = await supabase
+      .from('play_history')
+      .select('song_id, played_at, songs (id, name, url, image_url, author, status)')
+      .eq('user_id', req.user.id)
+      .order('played_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    // Filter duplicates and unapproved
+    const uniqueSongs = [];
+    const seen = new Set();
+
+    for (const item of data) {
+      if (item.songs?.status === 'approved' && !seen.has(item.song_id)) {
+        seen.add(item.song_id);
+        uniqueSongs.push({
+          ...item.songs,
+          played_at: item.played_at
+        });
+        if (uniqueSongs.length >= 20) break;
+      }
+    }
+
+    res.json({ success: true, songs: uniqueSongs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải lịch sử' });
+  }
+});
+
+app.post('/api/history/:songId', auth, async (req, res) => {
+  try {
+    const { songId } = req.params;
+    await supabase.from('play_history').insert([{ user_id: req.user.id, song_id: songId }]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('History tracking error:', err);
+    res.status(500).json({ success: false });
+  }
+});
+
+// ========== PHASE 4: ADMIN ANALYTICS ==========
+app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
+  try {
+    const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    const { count: totalSongs } = await supabase.from('songs').select('*', { count: 'exact', head: true });
+    const { count: pendingSongs } = await supabase.from('songs').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const { count: totalPlaylists } = await supabase.from('playlists').select('*', { count: 'exact', head: true });
+
+    res.json({
+      success: true,
+      stats: {
+        totalUsers: totalUsers || 0,
+        totalSongs: totalSongs || 0,
+        pendingSongs: pendingSongs || 0,
+        totalPlaylists: totalPlaylists || 0
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi server' });
+  }
+});
+
+app.get('/api/admin/users', auth, adminOnly, async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, name, email, role, is_banned, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải danh sách người dùng' });
+  }
+});
+
+app.post('/api/admin/users/:id/ban', auth, adminOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id == 1) return res.status(403).json({ success: false, msg: 'Không thể khóa Admin gốc' });
+
+    const { data: user } = await supabase.from('users').select('is_banned').eq('id', id).single();
+    if (!user) return res.status(404).json({ success: false, msg: 'User not found' });
+
+    const { error } = await supabase.from('users').update({ is_banned: !user.is_banned }).eq('id', id);
+    if (error) throw error;
+
+    res.json({ success: true, is_banned: !user.is_banned, msg: !user.is_banned ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi server' });
   }
 });
 
