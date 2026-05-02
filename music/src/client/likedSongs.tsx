@@ -44,7 +44,7 @@ const LikedSongs = () => {
         <div className="max-w-5xl mx-auto">
           <div className="h-10 bg-slate-800/50 rounded w-1/3 animate-pulse mb-10"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {[1,2,3,4].map(i => <SkeletonSongCard key={i} />)}
+            {[1, 2, 3, 4].map(i => <SkeletonSongCard key={i} />)}
           </div>
         </div>
       </div>
@@ -74,22 +74,21 @@ const LikedSongs = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {songs.map((song, index) => {
+            {songs.map((song) => {
               const isActive = currentSong?.id === song.id;
-              
+
               return (
                 <div
                   key={song.id}
-                  onClick={() => playSong(song, songs, index)}
-                  className={`group relative flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 cursor-pointer ${
-                    isActive 
-                      ? 'bg-gradient-to-r from-pink-500/10 to-transparent border border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.1)]' 
-                      : 'bg-slate-900/40 hover:bg-slate-800/60 border border-slate-800/50 hover:border-slate-700'
-                  }`}
+                  onClick={() => playSong(song, songs)}
+                  className={`group relative flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 cursor-pointer ${isActive
+                    ? 'bg-gradient-to-r from-pink-500/10 to-transparent border border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.1)]'
+                    : 'bg-slate-900/40 hover:bg-slate-800/60 border border-slate-800/50 hover:border-slate-700'
+                    }`}
                 >
                   <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 shadow-lg group-hover:shadow-pink-500/10 transition-shadow">
-                    <img 
-                      src={song.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80'} 
+                    <img
+                      src={song.imageUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80'}
                       alt={song.name}
                       className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isActive && isPlaying ? 'animate-[spin_10s_linear_infinite]' : ''}`}
                     />
@@ -111,7 +110,7 @@ const LikedSongs = () => {
                     </p>
                   </div>
 
-                  <button 
+                  <button
                     onClick={(e) => handleUnlike(e, song.id)}
                     className="p-3 text-pink-500 hover:scale-110 transition-transform flex-shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     title="Bỏ thích"

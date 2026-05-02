@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { useEffect, useState, type ReactNode } from "react";
 import Layout from "../layout/layout";
 import Dashboard from "../client/dashboard";
@@ -18,9 +18,11 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/auth/verify`, { headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    } })
+    fetch(`${API_BASE}/api/auth/verify`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {
@@ -49,11 +51,14 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 const AdminRoute = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [authStatus, setAuthStatus] = useState<"LOADING" | "NOT_LOGGED_IN" | "NO_PERMISSION" | "ADMIN">("LOADING");
+  console.log(loading);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/auth/verify`, { headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-    } })
+    fetch(`${API_BASE}/api/auth/verify`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data.valid && data.user) {
