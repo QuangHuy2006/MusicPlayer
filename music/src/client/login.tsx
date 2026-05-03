@@ -2,104 +2,145 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from '../config';
 import { useToast } from '../context/ToastContext';
-
+import { FaHeadphones, FaEnvelope, FaLock, FaArrowRight } from "react-icons/fa";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    fetch(`${API_BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        setIsLoading(false);
+        if (data.success) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("user", JSON.stringify(data.user));
+          toast.success("Đăng nhập thành công!");
+          navigate("/dashboard");
+        } else {
+          toast.error(data.msg || "Đăng nhập thất bại");
+        }
+      })
+      .catch(() => {
+        setIsLoading(false);
+        toast.error("Lỗi kết nối");
+      });
+  };
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-slate-950 overflow-hidden p-4">
-      {/* 🌟 CHUYỂN ĐỘNG INFINITE - Vòng tròn 3D xoay */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none opacity-50">
-        <div
-          className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-500/30 border-r-purple-500/30 border-b-pink-500/30 border-l-blue-500/30"
-          style={{ animation: "spin 15s linear infinite" }}
-        />
-        <div
-          className="absolute inset-12 rounded-full border-4 border-transparent border-t-purple-500/20 border-r-pink-500/20 border-b-cyan-500/20 border-l-blue-500/20"
-          style={{ animation: "spin 20s linear infinite reverse" }}
-        />
-        <div className="absolute inset-24 rounded-full bg-gradient-to-br from-cyan-500/5 to-purple-500/5 backdrop-blur-3xl" />
+    <div className="flex min-h-screen bg-ambient-login text-slate-200 selection:bg-violet-500/30 font-sans">
+
+      {/* ===== LEFT SIDE: IMMERSIVE VISUAL ===== */}
+      <div className="hidden lg:flex flex-1 relative items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/30 rounded-full mix-blend-screen filter blur-[100px] animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600/30 rounded-full mix-blend-screen filter blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center text-center p-12 max-w-2xl animate-fade-in">
+          <div className="w-24 h-24 mb-8 rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-[0_0_40px_rgba(139,92,246,0.4)]">
+            <FaHeadphones className="text-white text-5xl" />
+          </div>
+          <h1 className="text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+            Trải nghiệm âm nhạc <br /><span className="text-gradient-aurora">đỉnh cao</span>
+          </h1>
+          <p className="text-xl text-slate-400 font-light leading-relaxed">
+            Hàng triệu bài hát, podcast và nội dung âm thanh độc quyền đang chờ bạn khám phá. Bắt đầu hành trình âm nhạc của bạn ngay hôm nay.
+          </p>
+        </div>
       </div>
 
-      {/* ✨ FORM ĐĂNG NHẬP */}
-      <div className="relative z-10 w-full max-w-md p-1 rounded-[2rem] bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-transparent shadow-2xl animate-[pulse_4s_ease-in-out_infinite]">
-        <form className="relative w-full p-8 sm:p-10 rounded-[2rem] bg-slate-900/80 backdrop-blur-2xl border border-white/5 shadow-2xl transform transition-all duration-500 hover:scale-[1.02]">
-          <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-white/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+      {/* ===== RIGHT SIDE: LOGIN FORM ===== */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 z-10 relative">
+        <div className="w-full max-w-md animate-fade-in" style={{ animationDelay: '0.1s' }}>
 
-          <h2 className="text-3xl font-bold text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 drop-shadow-sm">
-            Đăng Nhập
-          </h2>
-
-          <div className="mb-6 group">
-            <label className="block text-sm font-medium text-slate-400 mb-2 ml-1 transition-colors duration-300 group-focus-within:text-cyan-400">
-              Tên người dùng / Email
-            </label>
-            <input
-              type="email"
-              placeholder="nguyenvana@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-5 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300"
-            />
+          <div className="lg:hidden flex justify-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg">
+              <FaHeadphones className="text-white text-3xl" />
+            </div>
           </div>
 
-          <div className="mb-8 group">
-            <label className="block text-sm font-medium text-slate-400 mb-2 ml-1 transition-colors duration-300 group-focus-within:text-purple-400">
-              Mật khẩu
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-5 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300"
-            />
-          </div>
+          <div className="frosted-glass-card p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+            {/* Subtle top glare */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
-          <button
-            type="submit"
-            onClick={(e) => {
-              e.preventDefault();
-              fetch(`${API_BASE}/api/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-              })
-                .then(res => res.json())
-                .then(data => {
-                  if (data.success) {
-                    localStorage.setItem("token", data.token);
-                    localStorage.setItem("user", JSON.stringify(data.user));
-                    toast.success("Đăng nhập thành công!");
-                    navigate("/dashboard");
-                  } else {
-                    toast.error(data.msg);
-                  }
-                })
-            }}
-            className="relative w-full py-4 px-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold rounded-xl shadow-lg shadow-cyan-500/20 transform transition-all duration-300 hover:shadow-cyan-500/40 active:scale-95 focus:outline-none overflow-hidden group"
-          >
-            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
-            <span className="relative z-10">Đăng Nhập</span>
-          </button>
+            <div className="mb-10 text-center lg:text-left">
+              <h2 className="text-3xl font-bold mb-2 text-white">Đăng Nhập</h2>
+              <p className="text-slate-400">Chào mừng trở lại! Vui lòng nhập thông tin.</p>
+            </div>
 
-          <div className="mt-8 text-center text-sm">
-            <span className="text-slate-500">Chưa có tài khoản? </span>
-            <a
-              href="/register"
-              className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 font-semibold"
-            >
-              Đăng ký ngay
-            </a>
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300 ml-1">Email</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
+                    <FaEnvelope />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="nguyenvana@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full frosted-input py-3.5 pl-11 pr-4"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300 ml-1">Mật khẩu</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
+                    <FaLock />
+                  </div>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full frosted-input py-3.5 pl-11 pr-4"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 px-4 frosted-btn-primary flex items-center justify-center gap-2 mt-4 group disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <span className="text-lg">Đăng Nhập</span>
+                    <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-white/5 text-center">
+              <span className="text-slate-400">Chưa có tài khoản? </span>
+              <a
+                href="/register"
+                className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 font-semibold"
+              >
+                Đăng ký ngay
+              </a>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

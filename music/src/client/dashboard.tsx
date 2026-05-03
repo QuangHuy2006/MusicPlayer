@@ -139,7 +139,7 @@ const MusicPlayer = () => {
     <div className="max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-8 p-6 lg:p-10 h-full animate-[fade-in_0.5s_ease-out]">
       {/* ===== Left: Player Card ===== */}
       <div className="w-full lg:w-1/3 flex flex-col items-center shrink-0">
-        <div className="relative w-full max-w-sm aspect-square rounded-3xl overflow-hidden shadow-2xl shadow-cyan-900/20 group">
+        <div className="relative w-full max-w-sm aspect-square rounded-[24px] overflow-hidden premium-card group">
           <img
             src={
               displaySong?.imageUrl ||
@@ -148,29 +148,29 @@ const MusicPlayer = () => {
             alt={displaySong?.name || "Music"}
             className={`w-full h-full object-cover transition-transform duration-700 ${isPlaying && currentSong?.id === displaySong?.id ? 'scale-105' : 'scale-100'}`}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-80" />
           
           <div className="absolute top-4 w-full flex justify-between px-6 items-center">
-            <span className="px-3 py-1 bg-black/40 backdrop-blur-md rounded-full text-xs font-medium text-white/80 border border-white/10 flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${isPlaying && currentSong?.id === displaySong?.id ? 'bg-cyan-400 animate-pulse' : 'bg-slate-500'}`} />
+            <span className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-xs font-medium text-white/90 border border-white/10 shadow-[inset_1px_1px_3px_rgba(255,255,255,0.1)] flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${isPlaying && currentSong?.id === displaySong?.id ? 'bg-[var(--accent-gold)] animate-pulse' : 'bg-slate-500'}`} />
               {isPlaying && currentSong?.id === displaySong?.id ? 'Đang phát' : 'Đã dừng'}
             </span>
           </div>
         </div>
 
         {/* Player Controls Container */}
-        <div className="w-full max-w-sm mt-8 bg-slate-900/40 backdrop-blur-2xl border border-slate-800 rounded-3xl p-6 shadow-xl">
+        <div className="w-full max-w-sm mt-8 glass-panel-3d p-6">
           {/* Info */}
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-white truncate px-2">{displaySong?.name.trim() || "Chưa có bài hát"}</h2>
-            <p className="text-slate-400 text-sm mt-1 truncate px-2">{displaySong?.author || "Unknown Artist"}</p>
+            <p className="text-[var(--accent-gold)] text-sm mt-1 truncate px-2 font-medium">{displaySong?.author || "Unknown Artist"}</p>
           </div>
 
           {/* Controls */}
           <div className="flex items-center justify-between px-2 mt-4">
             <button
               onClick={toggleRepeat}
-              className={`p-3 rounded-full transition-colors ${isRepeat ? "text-cyan-400 bg-cyan-400/10" : "text-slate-400 hover:text-white"}`}
+              className={`p-3 rounded-full transition-colors ${isRepeat ? "text-[var(--accent-blue)] bg-blue-500/10 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5)]" : "text-slate-400 hover:text-white"}`}
             >
               <FaRedo size={16} />
             </button>
@@ -188,9 +188,11 @@ const MusicPlayer = () => {
                   togglePlay();
                 }
               }}
-              className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-purple-500 text-white shadow-lg shadow-cyan-500/30 hover:scale-105 transition-transform"
+              className="w-16 h-16 rounded-full flex items-center justify-center premium-btn text-white"
             >
-              {isPlaying && currentSong?.id === displaySong?.id ? <FaPause size={24} /> : <FaPlay size={24} className="ml-1" />}
+              <span className="relative z-10 flex items-center justify-center">
+                 {isPlaying && currentSong?.id === displaySong?.id ? <FaPause size={24} /> : <FaPlay size={24} className="ml-1 text-[var(--accent-gold)]" />}
+              </span>
             </button>
             <button
               onClick={playNext}
@@ -200,7 +202,7 @@ const MusicPlayer = () => {
             </button>
             <button
               onClick={toggleRandom}
-              className={`p-3 rounded-full transition-colors ${isRandom ? "text-cyan-400 bg-cyan-400/10" : "text-slate-400 hover:text-white"}`}
+              className={`p-3 rounded-full transition-colors ${isRandom ? "text-[var(--accent-blue)] bg-blue-500/10 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.5)]" : "text-slate-400 hover:text-white"}`}
             >
               <FaRandom size={16} />
             </button>
@@ -211,29 +213,29 @@ const MusicPlayer = () => {
       {/* ===== Right: Playlist ===== */}
       <div className="flex-1 lg:pl-4 flex flex-col h-full overflow-hidden">
         <div className="flex items-center justify-between mb-6 px-2">
-          <h3 className="text-xl font-bold text-white">Danh sách phát {searchQuery && `- Tìm kiếm: "${searchQuery}"`}</h3>
-          <span className="text-sm font-medium text-slate-500">{displaySongs.length} bài</span>
+          <h3 className="text-xl font-bold text-white drop-shadow-md">Danh sách phát {searchQuery && `- Tìm kiếm: "${searchQuery}"`}</h3>
+          <span className="text-sm font-medium text-[var(--accent-gold)]">{displaySongs.length} bài</span>
         </div>
         
-        <div className="flex-1 overflow-y-auto pr-2 space-y-2 pb-24 lg:pb-0" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
+        <div className="flex-1 overflow-y-auto pr-2 space-y-3 pb-24 lg:pb-0" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
           {displaySongs.map((song, index) => {
             const isActive = song.id === currentSong?.id;
             return (
               <div
                 key={song.id}
                 onClick={() => handleSelectSong(song)}
-                className={`group flex items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 ${
+                className={`group flex items-center p-3 rounded-[16px] cursor-pointer transition-all duration-300 ${
                   isActive
-                    ? "bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20"
-                    : "hover:bg-slate-800/50 border border-transparent"
+                    ? "premium-card border-[var(--accent-gold)]/30"
+                    : "border border-transparent hover:premium-card"
                 }`}
               >
-                <div className="w-8 flex justify-center text-slate-500 font-medium text-sm group-hover:text-cyan-400 transition-colors">
+                <div className="w-8 flex justify-center text-slate-500 font-medium text-sm group-hover:text-[var(--accent-gold)] transition-colors">
                   {isActive && isPlaying ? (
                     <div className="flex items-end gap-0.5 h-4">
-                      <div className="w-1 bg-cyan-400 animate-[bounce_1s_infinite] rounded-full" style={{ height: '60%' }}></div>
-                      <div className="w-1 bg-cyan-400 animate-[bounce_1.2s_infinite] rounded-full" style={{ height: '100%' }}></div>
-                      <div className="w-1 bg-cyan-400 animate-[bounce_0.8s_infinite] rounded-full" style={{ height: '40%' }}></div>
+                      <div className="w-1 bg-[var(--accent-gold)] animate-[bounce_1s_infinite] rounded-full" style={{ height: '60%' }}></div>
+                      <div className="w-1 bg-[var(--accent-gold)] animate-[bounce_1.2s_infinite] rounded-full" style={{ height: '100%' }}></div>
+                      <div className="w-1 bg-[var(--accent-gold)] animate-[bounce_0.8s_infinite] rounded-full" style={{ height: '40%' }}></div>
                     </div>
                   ) : (
                     <span>{index + 1}</span>
@@ -243,11 +245,11 @@ const MusicPlayer = () => {
                 <img
                   src={song.imageUrl || "https://tse3.mm.bing.net/th/id/OIP.lucx6lfHqnK0P6dzh6-t0wAAAA?w=180&h=180"}
                   alt={song.name}
-                  className="w-12 h-12 rounded-xl object-cover shadow-md mx-3"
+                  className="w-12 h-12 rounded-[12px] object-cover shadow-md mx-3"
                 />
                 
                 <div className="flex-1 min-w-0">
-                  <h4 className={`text-base font-semibold truncate ${isActive ? "text-cyan-400" : "text-slate-200 group-hover:text-white"}`}>
+                  <h4 className={`text-base font-semibold truncate ${isActive ? "text-[var(--accent-gold)]" : "text-slate-200 group-hover:text-white"}`}>
                     {song.name}
                   </h4>
                   <p className="text-sm text-slate-500 truncate">{song.author || "Unknown Artist"}</p>
@@ -260,11 +262,11 @@ const MusicPlayer = () => {
                   }}
                   className="p-3 text-slate-500 hover:text-pink-500 transition-colors"
                 >
-                  {likedSongIds.has(song.id) ? <FaHeart className="text-pink-500" /> : <FaRegHeart />}
+                  {likedSongIds.has(song.id) ? <FaHeart className="text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" /> : <FaRegHeart />}
                 </button>
 
                 <button
-                  className={`p-3 transition-all ${isActive ? "text-cyan-400" : "text-slate-500 opacity-0 group-hover:opacity-100 hover:text-white"}`}
+                  className={`p-3 transition-all ${isActive ? "text-[var(--accent-gold)]" : "text-slate-500 opacity-0 group-hover:opacity-100 hover:text-white"}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedSongId(song.id);

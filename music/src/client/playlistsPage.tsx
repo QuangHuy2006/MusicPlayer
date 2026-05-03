@@ -167,7 +167,7 @@ const PlaylistsPage = () => {
       <div className="p-6 md:p-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between mb-10">
-             <div className="h-10 bg-slate-800/50 rounded w-1/3 animate-pulse"></div>
+             <div className="h-10 bg-[#111] shadow-[var(--shadow-3d-in)] rounded w-1/3 animate-pulse"></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
              {[1,2,3,4].map(i => <SkeletonPlaylistCard key={i} />)}
@@ -182,29 +182,31 @@ const PlaylistsPage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-white flex items-center gap-3">
-            <FaMusic className="text-cyan-400" /> Playlists của tôi
+          <h1 className="text-3xl md:text-4xl font-bold text-white flex items-center gap-3 drop-shadow-md">
+            <FaMusic className="text-[var(--accent-gold)]" /> Playlists của tôi
           </h1>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 px-5 py-2.5 rounded-full flex items-center gap-2 transition-all hover:scale-105 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+            className="premium-btn text-[var(--accent-gold)] px-6 py-3 rounded-full flex items-center gap-2 text-sm"
           >
-            <FaPlus /> Tạo playlist
+            <span className="relative z-10 flex items-center gap-2">
+              <FaPlus /> Tạo playlist
+            </span>
           </button>
         </div>
 
         {/* Danh sách playlist */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {playlists.map(pl => (
-            <div key={pl.id} className="group relative bg-slate-900/40 backdrop-blur-xl rounded-3xl overflow-hidden border border-slate-800 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-900/20 hover:border-cyan-500/30 cursor-pointer" onClick={() => handlePlaylistClick(pl.id)}>
-              <div className="aspect-video bg-gradient-to-br from-cyan-900/40 to-purple-900/40 relative">
+            <div key={pl.id} className="group premium-card overflow-hidden cursor-pointer" onClick={() => handlePlaylistClick(pl.id)}>
+              <div className="aspect-video bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] relative">
                 <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:opacity-100 transition-opacity">
-                  <FaMusic className="text-4xl text-cyan-400" />
+                  <FaMusic className="text-4xl text-[var(--accent-gold)]" />
                 </div>
               </div>
               <div className="p-5">
                 <div className="flex justify-between items-start">
-                  <h3 className="text-lg font-bold text-slate-100 group-hover:text-cyan-400 transition-colors truncate pr-2">{pl.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-100 group-hover:text-[var(--accent-gold)] transition-colors truncate pr-2">{pl.name}</h3>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeletePlaylist(pl.id); }}
                     className="text-slate-500 hover:text-red-400 transition-colors p-1"
@@ -212,23 +214,23 @@ const PlaylistsPage = () => {
                     <FaTrash size={14} />
                   </button>
                 </div>
-                <p className="text-slate-500 text-xs mt-1 font-medium">Tạo: {new Date(pl.created_at).toLocaleDateString()}</p>
+                <p className="text-[var(--accent-blue)] text-xs mt-1 font-medium">Tạo: {new Date(pl.created_at).toLocaleDateString()}</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); viewPlaylistDetail(pl); }}
-                  className="mt-5 w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-colors"
+                  className="mt-5 w-full premium-btn text-[var(--accent-gold)] text-sm font-semibold py-2.5 rounded-xl flex justify-center"
                 >
-                  Xem chi tiết
+                  <span className="relative z-10">Xem chi tiết</span>
                 </button>
               </div>
             </div>
           ))}
           {playlists.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center text-slate-500 py-20 bg-slate-900/20 border border-dashed border-slate-800 rounded-3xl">
-              <FaList size={48} className="mb-4 opacity-20" />
+            <div className="col-span-full flex flex-col items-center justify-center text-slate-500 py-20 glass-panel-3d border-dashed">
+              <FaList size={48} className="mb-4 opacity-20 text-[var(--accent-gold)]" />
               <p className="text-lg">Bạn chưa có playlist nào.</p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="mt-4 text-cyan-400 hover:underline"
+                className="mt-4 text-[var(--accent-blue)] hover:underline font-bold"
               >
                 Tạo playlist đầu tiên!
               </button>
@@ -238,11 +240,11 @@ const PlaylistsPage = () => {
 
         {/* Modal tạo playlist */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-[fade-in_0.2s_ease-out]">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl scale-100 animate-[zoom-in_0.2s_ease-out]">
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[150] p-4 animate-[fade-in_0.2s_ease-out]">
+            <div className="glass-panel-3d p-6 md:p-8 w-full max-w-md scale-100 animate-[zoom-in_0.2s_ease-out]">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Tạo playlist mới</h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-slate-500 hover:text-white transition-colors bg-slate-800 rounded-full p-2">
+                <h2 className="text-2xl font-bold text-white drop-shadow-md">Tạo playlist mới</h2>
+                <button onClick={() => setShowCreateModal(false)} className="text-slate-500 hover:text-white transition-colors bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] rounded-full p-2">
                   <MdClose size={20} />
                 </button>
               </div>
@@ -251,12 +253,14 @@ const PlaylistsPage = () => {
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
                 placeholder="Nhập tên playlist..."
-                className="w-full px-5 py-3 rounded-xl bg-slate-950 text-white border border-slate-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all placeholder-slate-600"
+                className="w-full px-5 py-3.5 premium-input"
                 autoFocus
               />
               <div className="flex justify-end gap-3 mt-8">
                 <button onClick={() => setShowCreateModal(false)} className="px-5 py-2.5 text-sm font-semibold text-slate-400 hover:text-white transition-colors">Hủy</button>
-                <button onClick={handleCreatePlaylist} className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-cyan-500/25 transition-all active:scale-95">Tạo ngay</button>
+                <button onClick={handleCreatePlaylist} className="px-6 py-2.5 premium-btn text-[var(--accent-gold)] text-sm font-bold flex justify-center">
+                  <span className="relative z-10">Tạo ngay</span>
+                </button>
               </div>
             </div>
           </div>
@@ -264,11 +268,11 @@ const PlaylistsPage = () => {
 
         {/* Modal chi tiết playlist */}
         {selectedPlaylist && (
-          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-[fade-in_0.2s_ease-out]">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-              <div className="bg-slate-900/80 backdrop-blur-md p-6 border-b border-slate-800 flex justify-between items-center z-10 shrink-0">
-                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 truncate pr-4">{selectedPlaylist.name}</h2>
-                <button onClick={() => setSelectedPlaylist(null)} className="text-slate-500 hover:text-white transition-colors bg-slate-800 rounded-full p-2 shrink-0">
+          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[150] p-4 animate-[fade-in_0.2s_ease-out]">
+            <div className="glass-panel-3d w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+              <div className="bg-transparent p-6 border-b border-white/10 flex justify-between items-center z-10 shrink-0">
+                <h2 className="text-2xl font-bold text-gradient-premium truncate pr-4">{selectedPlaylist.name}</h2>
+                <button onClick={() => setSelectedPlaylist(null)} className="text-slate-500 hover:text-white transition-colors bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] rounded-full p-2 shrink-0">
                   <MdClose size={20} />
                 </button>
               </div>
@@ -278,25 +282,25 @@ const PlaylistsPage = () => {
                   {/* Cột trái: Bài hát trong playlist */}
                   <div>
                     <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Trong playlist
+                      <span className="w-2 h-2 rounded-full bg-[var(--accent-gold)]"></span> Trong playlist
                     </h3>
                     {loadingSongs ? (
-                      <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div></div>
+                      <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[var(--accent-gold)] border-t-transparent rounded-full animate-spin"></div></div>
                     ) : selectedPlaylist.songs?.length === 0 ? (
-                      <div className="text-center py-10 text-slate-500 bg-slate-950/50 rounded-2xl border border-dashed border-slate-800">
+                      <div className="text-center py-10 text-[var(--accent-blue)] bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] rounded-[16px]">
                         Chưa có bài hát nào.
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {selectedPlaylist.songs.map(song => (
-                          <div key={song.id} className="group bg-slate-950/50 hover:bg-slate-800 rounded-xl p-3 flex justify-between items-center transition-colors border border-slate-800/50">
+                          <div key={song.id} className="group premium-card p-3 flex justify-between items-center hover:scale-[1.02]">
                             <div className="min-w-0 pr-4">
-                              <p className="text-slate-200 font-medium truncate">{song.name}</p>
-                              <p className="text-slate-500 text-xs truncate">{song.author || 'Không rõ'}</p>
+                              <p className="text-[var(--accent-gold)] font-medium truncate drop-shadow-sm">{song.name}</p>
+                              <p className="text-slate-400 text-xs truncate">{song.author || 'Không rõ'}</p>
                             </div>
                             <button
                               onClick={() => removeSongFromPlaylist(song.id)}
-                              className="text-slate-600 hover:text-red-400 transition-colors p-2 shrink-0"
+                              className="text-slate-500 hover:text-red-400 transition-colors p-2 shrink-0"
                               title="Xóa khỏi playlist"
                             >
                               <FaTrash size={14} />
@@ -310,23 +314,23 @@ const PlaylistsPage = () => {
                   {/* Cột phải: Thư viện bài hát */}
                   <div>
                     <h3 className="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-purple-400"></span> Thêm từ thư viện
+                      <span className="w-2 h-2 rounded-full bg-[var(--accent-blue)]"></span> Thêm từ thư viện
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {songsNotInPlaylist.length === 0 ? (
-                        <p className="text-slate-500 text-center py-10 bg-slate-950/50 rounded-2xl border border-dashed border-slate-800">
+                        <p className="text-slate-500 text-center py-10 bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] rounded-[16px]">
                           Tất cả bài hát đã được thêm
                         </p>
                       ) : (
                         songsNotInPlaylist.map(song => (
-                          <div key={song.id} className="group bg-slate-950/50 hover:bg-slate-800 rounded-xl p-3 flex justify-between items-center transition-colors border border-slate-800/50">
+                          <div key={song.id} className="group premium-card p-3 flex justify-between items-center hover:scale-[1.02]">
                             <div className="min-w-0 pr-4">
-                              <p className="text-slate-200 font-medium truncate">{song.name}</p>
-                              <p className="text-slate-500 text-xs truncate">{song.author || 'Không rõ'}</p>
+                              <p className="text-[var(--accent-blue)] font-medium truncate drop-shadow-sm">{song.name}</p>
+                              <p className="text-slate-400 text-xs truncate">{song.author || 'Không rõ'}</p>
                             </div>
                             <button
                               onClick={() => addSongToPlaylist(song.id)}
-                              className="text-cyan-600 hover:text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-full p-2 shrink-0 transition-all"
+                              className="text-[var(--accent-gold)] bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] hover:text-white rounded-full p-3 shrink-0 transition-all"
                               title="Thêm vào playlist"
                             >
                               <FaPlus size={14} />

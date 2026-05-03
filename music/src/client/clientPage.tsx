@@ -52,10 +52,10 @@ const MySongs = () => {
 
   const getStatusBadge = (status: Song['status']) => {
     switch (status) {
-      case 'approved': return <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Đã duyệt</span>;
-      case 'pending': return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Chờ duyệt</span>;
-      case 'rejected': return <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">Bị từ chối</span>;
-      default: return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">{status}</span>;
+      case 'approved': return <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-[8px] text-xs font-semibold shadow-[var(--shadow-3d-in)] border border-emerald-500/20">Đã duyệt</span>;
+      case 'pending': return <span className="bg-[var(--accent-gold)]/20 text-[var(--accent-gold)] px-3 py-1 rounded-[8px] text-xs font-semibold shadow-[var(--shadow-3d-in)] border border-[var(--accent-gold)]/20">Chờ duyệt</span>;
+      case 'rejected': return <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded-[8px] text-xs font-semibold shadow-[var(--shadow-3d-in)] border border-red-500/20">Bị từ chối</span>;
+      default: return <span className="bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] text-slate-400 px-3 py-1 rounded-[8px] text-xs font-semibold">{status}</span>;
     }
   };
 
@@ -64,7 +64,7 @@ const MySongs = () => {
       <div className="p-6 md:p-10">
         <div className="max-w-5xl mx-auto">
           <div className="flex justify-between mb-10">
-             <div className="h-10 bg-slate-800/50 rounded w-1/3 animate-pulse"></div>
+             <div className="h-10 bg-[#111] shadow-[var(--shadow-3d-in)] rounded w-1/3 animate-pulse"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              {[1,2,3,4].map(i => <SkeletonSongCard key={i} />)}
@@ -78,14 +78,16 @@ const MySongs = () => {
     <div className="p-6 md:p-10 animate-[fade-in_0.5s_ease-out]">
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-white flex items-center gap-3">
-            <FaMusic className="text-purple-400" /> Bài hát của tôi
+          <h1 className="text-3xl md:text-4xl font-bold text-white flex items-center gap-3 drop-shadow-md">
+            <FaMusic className="text-[var(--accent-gold)]" /> Bài hát của tôi
           </h1>
           <button
             onClick={() => setIsPopupOpen(true)}
-            className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/50 px-5 py-2.5 rounded-full flex items-center gap-2 transition-all hover:scale-105 shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+            className="premium-btn text-[var(--accent-gold)] px-6 py-3 rounded-full flex items-center gap-2 text-sm"
           >
-            <FaPlus /> Thêm Nhạc
+            <span className="relative z-10 flex items-center gap-2">
+              <FaPlus /> Thêm Nhạc
+            </span>
           </button>
         </div>
 
@@ -96,12 +98,12 @@ const MySongs = () => {
         )}
 
         {songs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-slate-500 py-20 bg-slate-900/20 border border-dashed border-slate-800 rounded-3xl">
-            <FaMusic size={48} className="mb-4 opacity-20" />
+          <div className="flex flex-col items-center justify-center text-slate-500 py-20 glass-panel-3d border-dashed">
+            <FaMusic size={48} className="mb-4 opacity-20 text-[var(--accent-gold)]" />
             <p className="text-lg">Bạn chưa tải lên bài hát nào.</p>
             <button
               onClick={() => setIsPopupOpen(true)}
-              className="mt-4 text-purple-400 hover:underline"
+              className="mt-4 text-[var(--accent-blue)] font-bold hover:underline"
             >
               Tải lên ngay!
             </button>
@@ -109,22 +111,22 @@ const MySongs = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {songs.map(song => (
-              <div key={song.id} className="group bg-slate-900/40 backdrop-blur-xl border border-slate-800 rounded-3xl p-5 hover:bg-slate-800/60 transition-all duration-300 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-900/10 flex flex-col justify-between">
+              <div key={song.id} className="group premium-card p-5 flex flex-col justify-between hover:scale-[1.02]">
                 <div className="flex justify-between items-start gap-4 mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-lg text-slate-100 truncate group-hover:text-purple-400 transition-colors">{song.name}</h3>
+                    <h3 className="font-bold text-lg text-slate-100 truncate group-hover:text-[var(--accent-gold)] transition-colors drop-shadow-sm">{song.name}</h3>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       {getStatusBadge(song.status)}
                     </div>
                     {song.status === 'rejected' && song.rejection_reason && (
-                      <p className="text-xs text-red-400 mt-2 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">Lý do: {song.rejection_reason}</p>
+                      <p className="text-xs text-red-400 mt-2 bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] px-3 py-2 rounded-lg border border-red-500/20">Lý do: {song.rejection_reason}</p>
                     )}
                   </div>
 
                   {(song.status === 'pending' || song.status === 'rejected') && (
                     <button
                       onClick={() => handleDelete(song.id)}
-                      className="text-slate-500 hover:text-red-400 bg-slate-800/50 hover:bg-red-500/10 p-2.5 rounded-xl transition-colors shrink-0"
+                      className="text-slate-500 hover:text-red-400 bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] hover:bg-red-500/10 p-2.5 rounded-xl transition-colors shrink-0"
                       title="Xóa bài hát"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
@@ -132,7 +134,7 @@ const MySongs = () => {
                   )}
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-slate-800/50">
+                <div className="mt-auto pt-4 border-t border-white/5">
                   <button
                     onClick={() => {
                       if (currentSong?.id === song.id) {
@@ -141,17 +143,19 @@ const MySongs = () => {
                         playSong(song, songs);
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 px-4 py-2.5 rounded-xl transition-all font-medium hover:scale-[1.02]"
+                    className="w-full premium-btn text-[var(--accent-gold)] px-4 py-3 rounded-xl flex justify-center text-sm font-medium"
                   >
-                    {currentSong?.id === song.id && isPlaying ? (
-                      <>
-                        <FaPause size={14} /> Tạm dừng
-                      </>
-                    ) : (
-                      <>
-                        <FaPlay size={14} /> Nghe thử
-                      </>
-                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      {currentSong?.id === song.id && isPlaying ? (
+                        <>
+                          <FaPause size={14} /> Tạm dừng
+                        </>
+                      ) : (
+                        <>
+                          <FaPlay size={14} /> Nghe thử
+                        </>
+                      )}
+                    </span>
                   </button>
                 </div>
               </div>
