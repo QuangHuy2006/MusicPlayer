@@ -11,6 +11,7 @@ import { API_BASE } from '../config';
 import Playlist from "../client/playlistsPage";
 import LikedSongs from "../client/likedSongs";
 import HistoryPage from "../client/historyPage";
+import YoutubeConverter from "../client/youtubeConverter";
 
 // eslint-disable-next-line react-refresh/only-export-components
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -136,6 +137,10 @@ const router = createBrowserRouter([
       {
         path: "history",
         element: <HistoryPage />,
+      },
+      {
+        path: "youtube-converter",
+        element: <YoutubeConverter />,
       },
       {
         path: "admin",

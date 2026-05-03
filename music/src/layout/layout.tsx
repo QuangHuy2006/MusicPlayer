@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { FaHeadphones, FaHome, FaList, FaMusic, FaUserShield, FaSignOutAlt, FaSearch, FaHeart, FaHistory } from "react-icons/fa";
+import { FaHeadphones, FaHome, FaList, FaMusic, FaUserShield, FaSignOutAlt, FaSearch, FaHeart, FaHistory, FaYoutube } from "react-icons/fa";
 import GlobalPlayer from "../components/GlobalPlayer";
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
@@ -66,6 +66,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     { path: "/history", icon: <FaHistory size={20} />, label: "Gần Đây" },
     { path: "/liked-songs", icon: <FaHeart size={20} />, label: "Yêu Thích" },
     { path: "/playlist", icon: <FaList size={20} />, label: "Playlist" },
+    { path: "/youtube-converter", icon: <FaYoutube size={20} />, label: "Tải YouTube" },
     { path: "/my-songs", icon: <FaMusic size={20} />, label: "Của Tôi" },
   ];
 

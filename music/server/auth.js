@@ -7,6 +7,8 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const crypto = require('crypto');
+const ytDlpExec = require('yt-dlp-exec');
+const contentDisposition = require('content-disposition');
 
 dotenv.config();
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -844,6 +846,45 @@ app.post('/api/admin/users/:id/ban', auth, adminOnly, async (req, res) => {
     res.status(500).json({ success: false, msg: 'Lỗi server' });
   }
 });
+
+// ---------- Youtube Converter ----------
+// app.get('/api/youtube/download', auth, async (req, res) => {
+//   try {
+//     const url = req.query.url;
+//     if (!url || (!url.includes('youtube.com/') && !url.includes('youtu.be/'))) {
+//       return res.status(400).json({ success: false, msg: 'URL không hợp lệ hoặc không được hỗ trợ' });
+//     }
+
+//     // Get video info to get the title
+//     const info = await ytDlpExec(url, { dumpJson: true });
+//     const title = info.title.replace(/[^\w\s\u00C0-\u1EF9]/gi, ''); // sanitize filename
+//     const filename = `${title}.m4a`;
+
+//     // Set headers
+//     res.setHeader('Content-Disposition', contentDisposition(filename));
+//     res.setHeader('Content-Type', 'audio/mp4');
+
+//     // Stream the audio
+//     const ytDlpProcess = ytDlpExec.exec(url, {
+//       output: '-', // stdout
+//       format: 'bestaudio',
+//       limitRate: '5M',
+//       rmCacheDir: true
+//     });
+
+//     ytDlpProcess.stdout.pipe(res);
+
+//     ytDlpProcess.on('error', (err) => {
+//       console.error('Youtube download stream error:', err);
+//     });
+
+//   } catch (err) {
+//     console.error('Youtube download error:', err);
+//     if (!res.headersSent) {
+//       res.status(500).json({ success: false, msg: 'Đã xảy ra lỗi khi tải nhạc. Vui lòng thử lại sau.' });
+//     }
+//   }
+// });
 
 // ---------- Start Server ----------
 const PORT = process.env.PORT || 3001;
