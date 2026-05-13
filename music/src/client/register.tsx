@@ -84,7 +84,6 @@ export default function Register() {
               placeholder="nguyenvana"
               value={name}
               onChange={(e) => setname(e.target.value)}
-              required
               className="w-full px-5 py-3.5 premium-input"
             />
           </div>
@@ -98,7 +97,6 @@ export default function Register() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
               className="w-full px-5 py-3.5 premium-input"
             />
           </div>

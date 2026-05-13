@@ -108,7 +108,6 @@ export default function Login() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
                     className="w-full frosted-input py-3.5 pl-11 pr-4"
                   />
                 </div>

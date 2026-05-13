@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import type Song from "../interface/song";
 import { API_BASE } from '../config';
 import { FaCheckCircle, FaCheck, FaTimes, FaUser, FaIdBadge, FaExclamationTriangle, FaChartBar, FaMusic, FaUsers, FaBan, FaUnlock } from "react-icons/fa";
@@ -11,14 +12,7 @@ interface Stats {
   totalPlaylists: number;
 }
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  is_banned: boolean;
-  created_at: string;
-}
+import type User from "../interface/user";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'songs' | 'users'>('overview');
@@ -144,25 +138,25 @@ const AdminDashboard = () => {
     <div className="p-6 md:p-10 animate-[fade-in_0.5s_ease-out]">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">Admin Dashboard</h1>
-        
+
         {/* Tabs */}
         <div className="flex gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-          <button 
+          <button
             onClick={() => setActiveTab('overview')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold whitespace-nowrap transition-all ${activeTab === 'overview' ? 'premium-btn text-[var(--accent-blue)]' : 'premium-card text-slate-400 hover:text-[var(--accent-blue)] hover:scale-105'}`}
           >
             <FaChartBar /> Tổng quan
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('songs')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold whitespace-nowrap transition-all ${activeTab === 'songs' ? 'premium-btn text-[var(--accent-gold)]' : 'premium-card text-slate-400 hover:text-[var(--accent-gold)] hover:scale-105'}`}
           >
-            <FaMusic /> Duyệt bài hát 
+            <FaMusic /> Duyệt bài hát
             {stats && stats.pendingSongs > 0 && (
               <span className="bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] text-[var(--accent-gold)] text-xs px-2 py-0.5 rounded-full ml-1">{stats.pendingSongs}</span>
             )}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('users')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold whitespace-nowrap transition-all ${activeTab === 'users' ? 'premium-btn text-emerald-400' : 'premium-card text-slate-400 hover:text-emerald-400 hover:scale-105'}`}
           >
@@ -305,8 +299,8 @@ const AdminDashboard = () => {
         )}
 
         {/* Modal nhập lý do từ chối */}
-        {showRejectModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-[fade-in_0.2s_ease-out]">
+        {showRejectModal && createPortal(
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 animate-[fade-in_0.2s_ease-out]">
             <div className="glass-panel-3d p-6 md:p-8 w-full max-w-md scale-100 animate-[zoom-in_0.2s_ease-out]">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2 drop-shadow-md">
@@ -336,7 +330,8 @@ const AdminDashboard = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.getElementById('portal')!
         )}
       </div>
     </div>

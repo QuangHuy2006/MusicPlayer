@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FaPlus, FaTrash, FaMusic, FaList } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 import { API_BASE } from '../config';
@@ -239,36 +240,63 @@ const PlaylistsPage = () => {
         </div>
 
         {/* Modal tạo playlist */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[150] p-4 animate-[fade-in_0.2s_ease-out]">
-            <div className="glass-panel-3d p-6 md:p-8 w-full max-w-md scale-100 animate-[zoom-in_0.2s_ease-out]">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white drop-shadow-md">Tạo playlist mới</h2>
-                <button onClick={() => setShowCreateModal(false)} className="text-slate-500 hover:text-white transition-colors bg-[#0a0a0a] shadow-[var(--shadow-3d-in)] rounded-full p-2">
+        {showCreateModal && createPortal(
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 animate-[fade-in_0.2s_ease-out]">
+            <div className="glass-panel-3d p-8 w-full max-w-md rounded-[32px] border border-white/10 shadow-2xl scale-100 animate-[zoom-in_0.3s_ease-out]">
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-blue)] to-cyan-500 flex items-center justify-center text-white shadow-lg">
+                    <FaPlus size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white drop-shadow-md">Tạo Playlist</h2>
+                    <p className="text-xs text-slate-400 font-medium">Đặt tên cho bộ sưu tập của anh</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowCreateModal(false)} 
+                  className="text-slate-500 hover:text-white transition-colors bg-black/40 hover:bg-black/60 rounded-full p-2 border border-white/5"
+                >
                   <MdClose size={20} />
                 </button>
               </div>
-              <input
-                type="text"
-                value={newPlaylistName}
-                onChange={(e) => setNewPlaylistName(e.target.value)}
-                placeholder="Nhập tên playlist..."
-                className="w-full px-5 py-3.5 premium-input"
-                autoFocus
-              />
-              <div className="flex justify-end gap-3 mt-8">
-                <button onClick={() => setShowCreateModal(false)} className="px-5 py-2.5 text-sm font-semibold text-slate-400 hover:text-white transition-colors">Hủy</button>
-                <button onClick={handleCreatePlaylist} className="px-6 py-2.5 premium-btn text-[var(--accent-gold)] text-sm font-bold flex justify-center">
-                  <span className="relative z-10">Tạo ngay</span>
-                </button>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-2">Tên playlist mới</label>
+                  <input
+                    type="text"
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                    placeholder="Ví dụ: Nhạc chill cuối tuần..."
+                    className="w-full px-6 py-4 premium-input"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    onClick={() => setShowCreateModal(false)} 
+                    className="flex-1 px-6 py-4 text-sm font-bold text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-2xl"
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button 
+                    onClick={handleCreatePlaylist} 
+                    className="flex-[2] py-4 bg-gradient-to-r from-[var(--accent-blue)] to-cyan-600 hover:from-cyan-600 hover:to-[var(--accent-blue)] text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/10 transition-all transform hover:-translate-y-1 active:translate-y-0"
+                  >
+                    Tạo Ngay
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.getElementById('portal')!
         )}
 
         {/* Modal chi tiết playlist */}
-        {selectedPlaylist && (
-          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[150] p-4 animate-[fade-in_0.2s_ease-out]">
+        {selectedPlaylist && createPortal(
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 animate-[fade-in_0.2s_ease-out]">
             <div className="glass-panel-3d w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
               <div className="bg-transparent p-6 border-b border-white/10 flex justify-between items-center z-10 shrink-0">
                 <h2 className="text-2xl font-bold text-gradient-premium truncate pr-4">{selectedPlaylist.name}</h2>
@@ -343,7 +371,8 @@ const PlaylistsPage = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.getElementById('portal')!
         )}
       </div>
     </div>
