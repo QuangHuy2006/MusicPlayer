@@ -6,7 +6,7 @@ import Login from "../client/login";
 import NotFound from "../client/notFound";
 import AdminDashboard from "../admin/adminPage";
 import MySongs from "../client/clientPage";
-import type User from "../interface/user";
+import type { User } from "../interface/user";
 import { API_BASE } from '../config';
 import Playlist from "../client/playlistsPage";
 import LikedSongs from "../client/likedSongs";

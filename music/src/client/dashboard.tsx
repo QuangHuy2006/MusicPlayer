@@ -41,6 +41,7 @@ const MusicPlayer = () => {
     queue
   } = usePlayer();
   const { likedSongIds, toggleLike } = useLike();
+  console.log(error);
 
   const loadSongs = useCallback(async () => {
     setLoading(true);
