@@ -12,6 +12,7 @@ import Playlist from "../client/playlistsPage";
 import LikedSongs from "../client/likedSongs";
 import HistoryPage from "../client/historyPage";
 import YoutubeConverter from "../client/youtubeConverter";
+import Register from "../client/register";
 
 // eslint-disable-next-line react-refresh/only-export-components
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -113,6 +114,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
   },
   {
     path: "/",
