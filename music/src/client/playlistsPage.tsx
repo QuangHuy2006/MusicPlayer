@@ -4,7 +4,7 @@ import { FaPlus, FaTrash, FaMusic, FaList } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 import { API_BASE } from '../config';
 import type { Playlist, PlaylistDetail } from '../interface/playlist';
-import type Song from '../interface/song';
+import type { Song } from '../interface/song';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { SkeletonPlaylistCard } from '../components/Skeleton';
@@ -168,10 +168,10 @@ const PlaylistsPage = () => {
       <div className="p-6 md:p-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between mb-10">
-             <div className="h-10 bg-[#111] shadow-[var(--shadow-3d-in)] rounded w-1/3 animate-pulse"></div>
+            <div className="h-10 bg-[#111] shadow-[var(--shadow-3d-in)] rounded w-1/3 animate-pulse"></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-             {[1,2,3,4].map(i => <SkeletonPlaylistCard key={i} />)}
+            {[1, 2, 3, 4].map(i => <SkeletonPlaylistCard key={i} />)}
           </div>
         </div>
       </div>
@@ -215,7 +215,7 @@ const PlaylistsPage = () => {
                     <FaTrash size={14} />
                   </button>
                 </div>
-                <p className="text-[var(--accent-blue)] text-xs mt-1 font-medium">Tạo: {new Date(pl.created_at).toLocaleDateString()}</p>
+                <p className="text-[var(--accent-blue)] text-xs mt-1 font-medium">Tạo: {pl.created_at ? new Date(pl.created_at).toLocaleDateString() : 'N/A'}</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); viewPlaylistDetail(pl); }}
                   className="mt-5 w-full premium-btn text-[var(--accent-gold)] text-sm font-semibold py-2.5 rounded-xl flex justify-center"
@@ -253,8 +253,8 @@ const PlaylistsPage = () => {
                     <p className="text-xs text-slate-400 font-medium">Đặt tên cho bộ sưu tập của anh</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setShowCreateModal(false)} 
+                <button
+                  onClick={() => setShowCreateModal(false)}
                   className="text-slate-500 hover:text-white transition-colors bg-black/40 hover:bg-black/60 rounded-full p-2 border border-white/5"
                 >
                   <MdClose size={20} />
@@ -275,14 +275,14 @@ const PlaylistsPage = () => {
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <button 
-                    onClick={() => setShowCreateModal(false)} 
+                  <button
+                    onClick={() => setShowCreateModal(false)}
                     className="flex-1 px-6 py-4 text-sm font-bold text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-2xl"
                   >
                     Hủy bỏ
                   </button>
-                  <button 
-                    onClick={handleCreatePlaylist} 
+                  <button
+                    onClick={handleCreatePlaylist}
                     className="flex-[2] py-4 bg-gradient-to-r from-[var(--accent-blue)] to-cyan-600 hover:from-cyan-600 hover:to-[var(--accent-blue)] text-white font-bold rounded-2xl shadow-xl shadow-cyan-500/10 transition-all transform hover:-translate-y-1 active:translate-y-0"
                   >
                     Tạo Ngay

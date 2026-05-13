@@ -22,7 +22,7 @@ export interface Album {
 /**
  * Interface đại diện cho thông tin bài hát trong hệ thống.
  */
-export default interface Song {
+export interface Song {
   id: number;
   name: string;
   url: string;

@@ -1,4 +1,4 @@
-import type Song from "./song";
+import type { Song } from "./song";
 
 /**
  * Interface cơ bản cho Playlist.
@@ -32,5 +32,3 @@ export interface PlaylistSong extends Song {
   addedAt?: string;
   added_at?: string;
 }
-
-export default Playlist;

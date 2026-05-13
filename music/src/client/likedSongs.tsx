@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import type Song from '../interface/song';
+import type { Song } from '../interface/song';
 import { API_BASE } from '../config';
-import { FaHeart, FaPlay, FaPause } from 'react-icons/fa';
+import { FaHeart, FaPlay, FaPause, FaMusic, FaEllipsisH } from 'react-icons/fa';
+import { MdFavorite } from 'react-icons/md';
 import { usePlayer } from '../context/PlayerContext';
 import { useLike } from '../context/LikeContext';
-import { SkeletonSongCard } from '../components/Skeleton';
+import { SkeletonSongItem } from '../components/Skeleton';
+import AddToPlaylistModal from './addToPlaylistModal';
 
 const LikedSongs = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const { currentSong, isPlaying, playSong, togglePlay } = usePlayer();
   const { toggleLike } = useLike();
   const token = localStorage.getItem('token');
@@ -24,7 +27,7 @@ const LikedSongs = () => {
           setSongs(data.songs);
         }
       } catch (err) {
-        console.error("Failed to fetch liked songs", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -40,89 +43,125 @@ const LikedSongs = () => {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="h-10 bg-[#111] shadow-[var(--shadow-3d-in)] rounded w-1/3 animate-pulse mb-10"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map(i => <SkeletonSongCard key={i} />)}
-          </div>
+      <div className="p-6 md:p-10 space-y-10 animate-fade-in">
+        <div className="h-40 w-full bg-white/5 rounded-[40px] animate-pulse" />
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5, 6].map(i => <SkeletonSongItem key={i} />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-10 animate-[fade-in_0.5s_ease-out]">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-4 mb-10">
-          <div className="w-16 h-16 rounded-2xl premium-card flex items-center justify-center shadow-[var(--shadow-3d-out)]">
-            <FaHeart className="text-pink-500 text-3xl drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">Bài hát yêu thích</h2>
-            <p className="text-pink-400 font-medium mt-1">{songs.length} bài hát</p>
-          </div>
+    <div className="p-6 md:p-10 space-y-12 animate-fade-in custom-scrollbar">
+      {/* Header Section */}
+      <section className="relative overflow-hidden rounded-[40px] group">
+        <div className="absolute inset-0 bg-gradient-to-r from-pink-600/20 to-rose-600/20 group-hover:scale-110 transition-transform duration-1000"></div>
+        <div className="glass-panel-3d border-0 p-8 md:p-12 relative z-10 flex items-center gap-8">
+           <div className="w-20 h-20 md:w-28 md:h-28 rounded-3xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white shadow-2xl shadow-pink-500/20">
+              <MdFavorite size={48} />
+           </div>
+           <div className="space-y-2">
+              <h1 className="text-4xl md:text-5xl font-black text-white">Yêu <span className="text-pink-500">Thích</span></h1>
+              <p className="text-slate-400 font-medium">{songs.length} giai điệu bạn đang sở hữu</p>
+           </div>
         </div>
+      </section>
 
-        {songs.length === 0 ? (
-          <div className="text-center py-20 glass-panel-3d">
-            <FaHeart className="text-6xl text-pink-500 opacity-50 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]" />
-            <h3 className="text-xl font-bold text-white">Chưa có bài hát yêu thích</h3>
-            <p className="text-slate-400 mt-2 max-w-md mx-auto">
-              Hãy thả tim những bài hát bạn yêu thích để dễ dàng nghe lại nhé.
-            </p>
+      {/* List Section */}
+      {songs.length === 0 ? (
+        <div className="text-center py-32 glass-panel-3d rounded-[40px] border-0">
+          <FaHeart className="text-8xl text-pink-500 opacity-10 mx-auto mb-6" />
+          <h3 className="text-2xl font-black text-white">Trống trải quá...</h3>
+          <p className="text-slate-500 mt-2 max-w-md mx-auto font-medium">
+            Hãy thả tim những bài hát bạn yêu thích để chúng xuất hiện ở đây nhé.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3 max-w-5xl mx-auto">
+          <div className="flex items-center px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+             <div className="w-12">#</div>
+             <div className="flex-1">Bài hát</div>
+             <div className="hidden md:block w-48">Nghệ sĩ</div>
+             <div className="w-20 text-right">Thao tác</div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {songs.map((song) => {
-              const isActive = currentSong?.id === song.id;
 
-              return (
-                <div
-                  key={song.id}
-                  onClick={() => playSong(song, songs)}
-                  className={`group relative flex items-center gap-4 p-4 rounded-[16px] transition-all duration-300 cursor-pointer ${isActive
-                    ? 'premium-card border-pink-500/30'
-                    : 'premium-card hover:scale-[1.02]'
-                    }`}
-                >
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 shadow-lg group-hover:shadow-[var(--shadow-3d-out)] transition-shadow">
-                    <img
-                      src={song.imageUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80'}
-                      alt={song.name}
-                      className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isActive && isPlaying ? 'animate-[spin_10s_linear_infinite]' : ''}`}
-                    />
-                    <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                      {isActive && isPlaying ? (
-                        <FaPause className="text-pink-400 text-lg drop-shadow-md" onClick={(e) => { e.stopPropagation(); togglePlay(); }} />
-                      ) : (
-                        <FaPlay className="text-pink-400 text-lg drop-shadow-md ml-1" />
-                      )}
+          {songs.map((song, index) => {
+            const isActive = currentSong?.id === song.id;
+            return (
+              <div
+                key={song.id}
+                onClick={() => playSong(song, songs)}
+                className={`group flex items-center p-4 rounded-[24px] transition-all duration-300 cursor-pointer border ${
+                  isActive 
+                    ? 'bg-pink-500/10 border-pink-500/20' 
+                    : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/5'
+                }`}
+              >
+                <div className="w-12 text-xs font-black text-slate-600 group-hover:text-pink-500 transition-colors">
+                  {isActive && isPlaying ? (
+                    <div className="flex items-end gap-0.5 h-3 justify-center">
+                      <div className="w-1 bg-pink-500 animate-[bounce_0.8s_infinite] rounded-full" style={{height:'60%'}}></div>
+                      <div className="w-1 bg-pink-500 animate-[bounce_1.2s_infinite] rounded-full" style={{height:'100%'}}></div>
+                      <div className="w-1 bg-pink-500 animate-[bounce_1s_infinite] rounded-full" style={{height:'40%'}}></div>
                     </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0 pr-4">
-                    <h3 className={`text-base font-bold truncate transition-colors drop-shadow-sm ${isActive ? 'text-pink-400 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]' : 'text-slate-200 group-hover:text-pink-300'}`}>
-                      {song.name}
-                    </h3>
-                    <p className="text-sm text-slate-500 truncate mt-0.5 group-hover:text-slate-400 transition-colors">
-                      {song.author || 'Unknown Artist'}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={(e) => handleUnlike(e, song.id)}
-                    className="p-3 text-pink-500 hover:scale-110 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)] transition-transform flex-shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                    title="Bỏ thích"
-                  >
-                    <FaHeart size={20} />
-                  </button>
+                  ) : (
+                    String(index + 1).padStart(2, '0')
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+
+                <div className="relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg mx-4 shrink-0">
+                  <img
+                    src={song.imageUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80'}
+                    alt={song.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    {isActive && isPlaying ? (
+                      <FaPause className="text-pink-400 text-xl" />
+                    ) : (
+                      <FaPlay className="text-pink-400 text-xl ml-1" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h4 className={`font-black truncate transition-colors ${isActive ? 'text-pink-400' : 'text-slate-100 group-hover:text-pink-300'}`}>
+                    {song.name}
+                  </h4>
+                  <p className="md:hidden text-xs text-slate-500 font-bold uppercase tracking-wider mt-1 truncate">{song.author || 'Unknown'}</p>
+                </div>
+
+                <div className="hidden md:block w-48 text-sm font-bold text-slate-400 truncate">
+                  {song.author || 'Unknown Artist'}
+                </div>
+
+                <div className="flex items-center gap-2 w-20 justify-end">
+                   <button
+                    onClick={(e) => handleUnlike(e, song.id)}
+                    className="p-3 text-pink-500 hover:scale-120 transition-transform"
+                    title="Bỏ thích"
+                   >
+                    <FaHeart size={20} />
+                   </button>
+                   <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedSongId(song.id); }}
+                    className="p-3 text-slate-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                   >
+                    <FaEllipsisH />
+                   </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <AddToPlaylistModal
+        isOpen={selectedSongId !== null}
+        onClose={() => setSelectedSongId(null)}
+        songId={selectedSongId!}
+      />
     </div>
   );
 };

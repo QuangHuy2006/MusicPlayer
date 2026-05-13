@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type Song from '../interface/song';
+import type { Song } from '../interface/song';
 import { API_BASE } from '../config';
 
 interface PlayerContextType {

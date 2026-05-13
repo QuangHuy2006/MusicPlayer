@@ -1,7 +1,7 @@
 /**
  * Interface đại diện cho người dùng trong hệ thống.
  */
-export default interface User {
+export interface User {
   id: number;
   username: string;
   name: string;

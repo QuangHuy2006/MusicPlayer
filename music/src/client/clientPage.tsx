@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type Song from '../interface/song';
+import type { Song } from '../interface/song';
 import { API_BASE } from '../config';
 import AddSongPopup from './addSong';
 import { FaPlus, FaMusic, FaPlay, FaPause } from "react-icons/fa";

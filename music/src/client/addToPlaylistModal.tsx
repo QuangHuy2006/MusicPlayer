@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MdClose } from "react-icons/md";
-import { FaListUl, FaPlus, FaMusic, FaCheckCircle } from "react-icons/fa";
+import { FaListUl, FaPlus, FaMusic } from "react-icons/fa";
 import { API_BASE } from "../config";
 import { useToast } from "../context/ToastContext";
 import type { Playlist } from "../interface/playlist";
