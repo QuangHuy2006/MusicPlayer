@@ -21,6 +21,7 @@ interface PlayerContextType {
   volume: number;
   sleepTimer: number | null;
   setSleepTimer: (minutes: number | null) => void;
+  sleepTimeRemaining: number | null; // seconds remaining
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -34,23 +35,31 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const [volume, setVolumeState] = useState(1); // 0 to 1
   const [sleepTimer, setSleepTimerState] = useState<number | null>(null);
   const [sleepTimerEnd, setSleepTimerEnd] = useState<number | null>(null);
+  const [sleepTimeRemaining, setSleepTimeRemaining] = useState<number | null>(null);
+  console.log(sleepTimerEnd);
+
 
   // Sleep Timer logic
   useEffect(() => {
     if (sleepTimer !== null) {
       const targetTime = Date.now() + sleepTimer * 60000;
       setSleepTimerEnd(targetTime);
-      
+
       const interval = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((targetTime - Date.now()) / 1000));
+        setSleepTimeRemaining(remaining);
+
         if (Date.now() >= targetTime) {
           setIsPlaying(false);
           setSleepTimerState(null);
           setSleepTimerEnd(null);
+          setSleepTimeRemaining(null);
         }
       }, 1000);
       return () => clearInterval(interval);
     } else {
       setSleepTimerEnd(null);
+      setSleepTimeRemaining(null);
     }
   }, [sleepTimer]);
 
@@ -84,7 +93,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
 
   const playNext = () => {
     if (queue.length === 0 || !currentSong) return;
-    
+
     if (isRepeat) {
       // Repeat is handled by audio element looping or just re-playing current song
       // But if user clicks "next", we should still go to next song even if repeat is on
@@ -113,7 +122,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
 
   const playPrevious = () => {
     if (queue.length === 0 || !currentSong) return;
-    
+
     if (isRandom) {
       let prevIndex;
       do {
@@ -157,7 +166,8 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         volume,
         setVolume,
         sleepTimer,
-        setSleepTimer
+        setSleepTimer,
+        sleepTimeRemaining
       }}
     >
       {children}
