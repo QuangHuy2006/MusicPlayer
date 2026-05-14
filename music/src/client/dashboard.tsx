@@ -638,9 +638,14 @@ const MusicPlayer = () => {
             <p className="text-xl text-[var(--accent-gold)]">{currentSong.author}</p>
             <div className="mt-12 h-[40vh] overflow-y-auto custom-scrollbar px-4 text-left md:text-center text-lg md:text-2xl font-bold leading-loose text-slate-300">
               {currentSong.lyrics ? (
-                currentSong.lyrics.split('\n').map((line, i) => (
-                  <p key={i} className="mb-4 hover:text-white hover:scale-105 transition-all cursor-default">{line || '\u00A0'}</p>
-                ))
+                currentSong.lyrics.split('\n').map((line, i) => {
+                  const cleanLine = line.replace(/\[\d{2}:\d{2}(?:\.\d{1,3})?\]/g, '').trim();
+                  return (
+                    <p key={i} className="mb-4 hover:text-white hover:scale-105 transition-all cursor-default">
+                      {cleanLine || '\u00A0'}
+                    </p>
+                  );
+                })
               ) : (
                 <p className="text-slate-500 italic mt-20">Bài hát này chưa có lời.</p>
               )}

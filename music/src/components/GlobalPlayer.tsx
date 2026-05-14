@@ -350,17 +350,47 @@ function KaraokeOverlay({ song, progress, duration, isPlaying, onClose, onToggle
   onPrev: () => void;
   karaokeRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const lines = useMemo(() => {
-    if (!song.lyrics) return [];
-    return song.lyrics.split('\n').filter((l: string) => l.trim() !== '');
+  const { lines, isLrc } = useMemo(() => {
+    if (!song.lyrics) return { lines: [], isLrc: false };
+    const rawLines = song.lyrics.split('\n').filter((l: string) => l.trim() !== '');
+
+    const lrcRegex = /\[(\d{2}):(\d{2}(?:\.\d{1,3})?)\](.*)/;
+    let isLrc = false;
+
+    const parsedLines = rawLines.map((line: string) => {
+      const match = lrcRegex.exec(line);
+      if (match) {
+        isLrc = true;
+        const minutes = parseInt(match[1], 10);
+        const seconds = parseFloat(match[2]);
+        const text = match[3].trim();
+        return { time: minutes * 60 + seconds, text };
+      }
+      return { time: -1, text: line };
+    });
+
+    return { lines: parsedLines, isLrc };
   }, [song.lyrics]);
 
   const totalLines = lines.length;
   const currentLineIndex = useMemo(() => {
     if (totalLines === 0 || duration === 0) return 0;
-    const ratio = progress / duration;
-    return Math.min(Math.floor(ratio * totalLines), totalLines - 1);
-  }, [progress, duration, totalLines]);
+
+    if (isLrc) {
+      let activeIndex = 0;
+      for (let i = 0; i < totalLines; i++) {
+        if (progress >= lines[i].time) {
+          activeIndex = i;
+        } else {
+          break;
+        }
+      }
+      return activeIndex;
+    } else {
+      const ratio = progress / duration;
+      return Math.min(Math.floor(ratio * totalLines), totalLines - 1);
+    }
+  }, [progress, duration, totalLines, lines, isLrc]);
 
   // Auto-scroll to current line
   useEffect(() => {
@@ -421,7 +451,7 @@ function KaraokeOverlay({ song, progress, duration, isPlaying, onClose, onToggle
           >
             {/* Spacer */}
             <div className="h-[25vh]"></div>
-            {lines.map((line: string, i: number) => {
+            {lines.map((lineObj: any, i: number) => {
               const isActive = i === currentLineIndex;
               const isPast = i < currentLineIndex;
               return (
@@ -437,7 +467,7 @@ function KaraokeOverlay({ song, progress, duration, isPlaying, onClose, onToggle
                   }`}
                 >
                   {isActive && <span className="text-[var(--accent-gold)]">♪ </span>}
-                  {line}
+                  {lineObj.text}
                   {isActive && <span className="text-[var(--accent-gold)]"> ♪</span>}
                 </p>
               );
