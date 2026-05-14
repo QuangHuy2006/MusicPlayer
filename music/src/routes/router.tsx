@@ -13,6 +13,8 @@ import LikedSongs from "../client/likedSongs";
 import HistoryPage from "../client/historyPage";
 import YoutubeConverter from "../client/youtubeConverter";
 import Register from "../client/register";
+import ProfilePage from "../client/profilePage";
+import LeaderboardPage from "../client/leaderboardPage";
 
 // eslint-disable-next-line react-refresh/only-export-components
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -146,6 +148,14 @@ const router = createBrowserRouter([
       {
         path: "youtube-converter",
         element: <YoutubeConverter />,
+      },
+      {
+        path: "profile",
+        element: <ProfilePage />,
+      },
+      {
+        path: "leaderboard",
+        element: <LeaderboardPage />,
       },
       {
         path: "admin",

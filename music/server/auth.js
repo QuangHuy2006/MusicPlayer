@@ -278,7 +278,7 @@ app.post('/api/songs', auth, upload.fields([
   { name: 'image', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    const { name, author } = req.body;
+    const { name, author, lyrics } = req.body;
     const musicFile = req.files?.['file']?.[0];
     const imageFile = req.files?.['image']?.[0];
 
@@ -341,13 +341,22 @@ app.post('/api/songs', auth, upload.fields([
       status,
       author: author || null,           // lưu author (có thể rỗng)
       image_url: imageUrl,              // lưu URL ảnh (có thể null)
+      lyrics: lyrics || null            // lưu lời bài hát
     };
 
-    const { data: song, error: dbError } = await supabase
+    let { data: song, error: dbError } = await supabase
       .from('songs')
       .insert([songData])
       .select()
       .single();
+
+    if (dbError && dbError.message && dbError.message.includes('lyrics')) {
+      console.warn("Column 'lyrics' might be missing. Retrying without lyrics...");
+      delete songData.lyrics;
+      const retryResult = await supabase.from('songs').insert([songData]).select().single();
+      song = retryResult.data;
+      dbError = retryResult.error;
+    }
 
     if (dbError) {
       console.error('DB insert error:', dbError);
@@ -357,7 +366,7 @@ app.post('/api/songs', auth, upload.fields([
         const imagePath = imageUrl.split('/Image/')[1];
         if (imagePath) await supabase.storage.from('Image').remove([imagePath]);
       }
-      return res.status(500).json({ success: false, msg: 'Lỗi lưu thông tin bài hát' });
+      return res.status(500).json({ success: false, msg: 'Lỗi lưu thông tin bài hát: ' + dbError.message });
     }
 
     const msg = status === 'approved'
@@ -372,12 +381,54 @@ app.post('/api/songs', auth, upload.fields([
   }
 });
 
+app.get('/api/youtube/download', auth, async (req, res) => {
+  const { url } = req.query;
+  if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
+    return res.status(400).json({ success: false, msg: 'Link YouTube không hợp lệ' });
+  }
+
+  try {
+    // 1. Dùng yt-dlp để lấy thông tin (không cần ffmpeg)
+    const info = await ytDlpExec(url, {
+      dumpJson: true,
+      noWarnings: true,
+      noCallHome: true,
+      youtubeSkipDashManifest: true,
+    });
+    
+    const title = info.title ? info.title.replace(/[^\w\s-]/gi, '') : 'audio';
+    const ext = info.ext || 'm4a';
+    
+    res.header('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.${ext}"`);
+    res.header('Content-Type', ext === 'webm' ? 'audio/webm' : 'audio/mp4');
+
+    // 2. Tải trực tiếp luồng audio gốc tốt nhất (m4a hoặc webm) mà KHÔNG cần convert sang mp3 (Tránh lỗi thiếu FFmpeg)
+    const process = ytDlpExec.exec(url, {
+      format: 'bestaudio',
+      output: '-', // stream ra stdout
+      noWarnings: true,
+      noCallHome: true,
+      youtubeSkipDashManifest: true,
+    });
+
+    process.stdout.pipe(res);
+
+    process.on('error', (err) => {
+      console.error('yt-dlp stream error:', err);
+      if (!res.headersSent) res.status(500).json({ success: false, msg: 'Lỗi stream video' });
+    });
+  } catch (err) {
+    console.error('Youtube download error:', err);
+    if (!res.headersSent) res.status(500).json({ success: false, msg: 'Lỗi khi tải hoặc link bị chặn bởi YouTube' });
+  }
+});
+
 app.get('/api/songs', auth, async (req, res) => {
   try {
-    // Lấy tất cả bài hát đã duyệt, kèm author và image_url
+    // Lấy tất cả bài hát đã duyệt, kèm author, image_url, lyrics
     const { data: songs, error } = await supabase
       .from('songs')
-      .select('id, name, url, status, author, image_url')
+      .select('id, name, url, status, author, image_url, lyrics')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -393,7 +444,8 @@ app.get('/api/songs', auth, async (req, res) => {
         url: song.url,
         status: song.status,
         author: song.author,
-        imageUrl: song.image_url,  // đổi tên thành imageUrl cho dễ hiểu
+        imageUrl: song.image_url,
+        lyrics: song.lyrics,
       }))
     });
   } catch (err) {
@@ -412,6 +464,10 @@ app.put('/api/songs/:id/approve', auth, adminOnly, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+    // Send notification to song owner
+    if (song && song.user_id) {
+      createNotification(song.user_id, 'song_approved', 'Bài hát đã được duyệt! 🎉', `Bài hát "${song.name}" đã được admin duyệt và hiện có thể phát trên hệ thống.`, song.id);
+    }
     res.json({ success: true, msg: 'Bài hát đã được duyệt', song });
   } catch (err) {
     console.error(err);
@@ -434,6 +490,11 @@ app.put('/api/songs/:id/reject', auth, adminOnly, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+    // Send notification to song owner
+    if (song && song.user_id) {
+      const reasonText = reason ? ` Lý do: ${reason}` : '';
+      createNotification(song.user_id, 'song_rejected', 'Bài hát bị từ chối ❌', `Bài hát "${song.name}" đã bị từ chối.${reasonText}`, song.id);
+    }
     res.json({ success: true, msg: 'Bài hát đã bị từ chối', song });
   } catch (err) {
     console.error(err);
@@ -791,6 +852,179 @@ app.post('/api/history/:songId', auth, async (req, res) => {
   }
 });
 
+// ========== RECOMMENDATIONS ==========
+app.get('/api/recommendations', auth, async (req, res) => {
+  try {
+    const { data: history, error: historyError } = await supabase
+      .from('play_history')
+      .select('song_id, songs (id, author)')
+      .eq('user_id', req.user.id);
+
+    if (historyError) throw historyError;
+
+    const authorCounts = {};
+    const playedSongIds = new Set();
+
+    if (history && history.length > 0) {
+      history.forEach(item => {
+        if (item.songs) {
+          playedSongIds.add(item.song_id);
+          const author = item.songs.author || 'Unknown';
+          authorCounts[author] = (authorCounts[author] || 0) + 1;
+        }
+      });
+    }
+
+    const topAuthors = Object.entries(authorCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(entry => entry[0]);
+
+    let recommendedSongs = [];
+    if (topAuthors.length > 0) {
+      const { data: relatedSongs, error: relatedError } = await supabase
+        .from('songs')
+        .select('id, name, url, image_url, author, status')
+        .eq('status', 'approved')
+        .in('author', topAuthors);
+
+      if (!relatedError && relatedSongs) {
+        recommendedSongs = relatedSongs
+          .filter(song => !playedSongIds.has(song.id))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 10);
+          
+        if (recommendedSongs.length < 5) {
+            const moreSongs = relatedSongs
+                .filter(song => playedSongIds.has(song.id))
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 10 - recommendedSongs.length);
+            recommendedSongs = [...recommendedSongs, ...moreSongs];
+        }
+      }
+    }
+
+    if (recommendedSongs.length === 0) {
+      const { data: randomSongs, error: randomError } = await supabase
+        .from('songs')
+        .select('id, name, url, image_url, author, status')
+        .eq('status', 'approved')
+        .limit(20);
+        
+      if (!randomError && randomSongs) {
+        recommendedSongs = randomSongs.sort(() => 0.5 - Math.random()).slice(0, 10);
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      songs: recommendedSongs.map(s => ({...s, imageUrl: s.image_url})),
+      basedOn: topAuthors 
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải gợi ý' });
+  }
+});
+
+// ========== TRENDING ==========
+app.get('/api/trending', auth, async (req, res) => {
+  try {
+    // Lấy 500 lượt nghe gần nhất
+    const { data: history, error: historyError } = await supabase
+      .from('play_history')
+      .select('song_id, songs (id, name, url, image_url, author, status, lyrics)')
+      .order('played_at', { ascending: false })
+      .limit(500);
+
+    if (historyError) throw historyError;
+
+    const playCounts = {};
+    const songData = {};
+
+    history.forEach(item => {
+      if (item.songs && item.songs.status === 'approved') {
+        const sid = item.song_id;
+        playCounts[sid] = (playCounts[sid] || 0) + 1;
+        if (!songData[sid]) songData[sid] = item.songs;
+      }
+    });
+
+    // Sắp xếp theo số lượt nghe giảm dần
+    const sortedSongs = Object.entries(playCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(entry => ({
+        ...songData[entry[0]],
+        imageUrl: songData[entry[0]].image_url,
+        playCount: entry[1]
+      }));
+
+    res.json({ success: true, songs: sortedSongs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải bảng xếp hạng' });
+  }
+});
+
+// ========== COMMENTS ==========
+app.get('/api/songs/:id/comments', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data: comments, error } = await supabase
+      .from('comments')
+      .select('id, content, created_at, users(id, name)')
+      .eq('song_id', id)
+      .order('created_at', { ascending: true });
+
+    // Ignore error if table doesn't exist yet
+    if (error && error.code === '42P01') {
+      return res.json({ success: true, comments: [] });
+    } else if (error) {
+      throw error;
+    }
+
+    res.json({ success: true, comments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải bình luận' });
+  }
+});
+
+app.post('/api/songs/:id/comments', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ success: false, msg: 'Nội dung không được rỗng' });
+    }
+
+    const { data: comment, error } = await supabase
+      .from('comments')
+      .insert([{ user_id: req.user.id, song_id: id, content: content.trim() }])
+      .select('id, content, created_at, users(id, name)')
+      .single();
+
+    if (error) {
+      if (error.code === '42P01') {
+        return res.status(500).json({ success: false, msg: 'Bảng comments chưa được tạo trên Supabase' });
+      }
+      throw error;
+    }
+
+    // Notify song owner about new comment
+    const { data: song } = await supabase.from('songs').select('user_id, name').eq('id', id).single();
+    if (song && song.user_id && song.user_id !== req.user.id) {
+      createNotification(song.user_id, 'new_comment', 'Bình luận mới 💬', `${req.user.name} đã bình luận về bài hát "${song.name}": "${content.trim().substring(0, 50)}..."`, parseInt(id));
+    }
+
+    res.json({ success: true, msg: 'Đã gửi bình luận', comment });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi gửi bình luận' });
+  }
+});
+
 // ========== PHASE 4: ADMIN ANALYTICS ==========
 app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
   try {
@@ -885,6 +1119,321 @@ app.post('/api/admin/users/:id/ban', auth, adminOnly, async (req, res) => {
 //     }
 //   }
 // });
+
+// ========== PROFILE ==========
+
+// GET profile
+app.get('/api/profile', auth, async (req, res) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, name, email, role, avatar, bio, created_at')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải profile' });
+  }
+});
+
+// PUT profile (update bio, name)
+app.put('/api/profile', auth, async (req, res) => {
+  try {
+    const { name, bio } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (bio !== undefined) updateData.bio = bio.trim();
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', req.user.id)
+      .select('id, name, email, role, avatar, bio, created_at')
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, msg: 'Cập nhật profile thành công', user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi cập nhật profile' });
+  }
+});
+
+// Upload avatar
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only JPEG, PNG, GIF, WebP images are allowed'));
+  }
+});
+
+app.post('/api/profile/avatar', auth, avatarUpload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, msg: 'Thiếu file ảnh' });
+
+    const ext = path.extname(req.file.originalname) || '.jpg';
+    const fileName = `avatars/${req.user.id}_${uuidv4()}${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('Image')
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage.from('Image').getPublicUrl(fileName);
+    const avatarUrl = urlData.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ avatar: avatarUrl })
+      .eq('id', req.user.id);
+
+    if (updateError) throw updateError;
+
+    res.json({ success: true, msg: 'Cập nhật avatar thành công', avatar: avatarUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi upload avatar' });
+  }
+});
+
+// ========== PERSONAL STATS ==========
+app.get('/api/stats/me', auth, async (req, res) => {
+  try {
+    // Total play count
+    const { count: totalPlays } = await supabase
+      .from('play_history')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', req.user.id);
+
+    // Liked count
+    const { count: totalLikes } = await supabase
+      .from('liked_songs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', req.user.id);
+
+    // Playlists count
+    const { count: totalPlaylists } = await supabase
+      .from('playlists')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', req.user.id);
+
+    // Uploaded songs count
+    const { count: totalUploaded } = await supabase
+      .from('songs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', req.user.id);
+
+    // Top 5 most played songs by this user
+    const { data: historyData } = await supabase
+      .from('play_history')
+      .select('song_id, songs (id, name, url, image_url, author)')
+      .eq('user_id', req.user.id);
+
+    const songPlayCounts = {};
+    const songMap = {};
+    if (historyData) {
+      historyData.forEach(item => {
+        if (item.songs) {
+          const sid = item.song_id;
+          songPlayCounts[sid] = (songPlayCounts[sid] || 0) + 1;
+          if (!songMap[sid]) songMap[sid] = item.songs;
+        }
+      });
+    }
+
+    const topSongs = Object.entries(songPlayCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, count]) => ({
+        ...songMap[id],
+        imageUrl: songMap[id]?.image_url,
+        playCount: count
+      }));
+
+    // Top genres/authors
+    const authorCounts = {};
+    if (historyData) {
+      historyData.forEach(item => {
+        if (item.songs?.author) {
+          authorCounts[item.songs.author] = (authorCounts[item.songs.author] || 0) + 1;
+        }
+      });
+    }
+    const topAuthors = Object.entries(authorCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    // Estimated listening time (avg 3.5 min per song)
+    const estimatedMinutes = (totalPlays || 0) * 3.5;
+
+    res.json({
+      success: true,
+      stats: {
+        totalPlays: totalPlays || 0,
+        totalLikes: totalLikes || 0,
+        totalPlaylists: totalPlaylists || 0,
+        totalUploaded: totalUploaded || 0,
+        estimatedMinutes: Math.round(estimatedMinutes),
+        topSongs,
+        topAuthors
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải thống kê' });
+  }
+});
+
+// ========== LEADERBOARD ==========
+app.get('/api/leaderboard', auth, async (req, res) => {
+  try {
+    // Top 20 songs by play count (all users)
+    const { data: allHistory } = await supabase
+      .from('play_history')
+      .select('song_id, user_id, songs (id, name, url, image_url, author, status)');
+
+    // -- Top Songs --
+    const songCounts = {};
+    const songData = {};
+    const userCounts = {};
+
+    if (allHistory) {
+      allHistory.forEach(item => {
+        if (item.songs && item.songs.status === 'approved') {
+          const sid = item.song_id;
+          songCounts[sid] = (songCounts[sid] || 0) + 1;
+          if (!songData[sid]) songData[sid] = item.songs;
+        }
+        // User counts
+        userCounts[item.user_id] = (userCounts[item.user_id] || 0) + 1;
+      });
+    }
+
+    const topSongs = Object.entries(songCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([id, count], index) => ({
+        rank: index + 1,
+        ...songData[id],
+        imageUrl: songData[id]?.image_url,
+        playCount: count
+      }));
+
+    // -- Top Users --
+    const userIds = Object.keys(userCounts).map(Number);
+    let topUsers = [];
+    if (userIds.length > 0) {
+      const { data: usersInfo } = await supabase
+        .from('users')
+        .select('id, name, avatar')
+        .in('id', userIds);
+
+      const usersMap = {};
+      if (usersInfo) usersInfo.forEach(u => usersMap[u.id] = u);
+
+      topUsers = Object.entries(userCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([userId, count], index) => ({
+          rank: index + 1,
+          ...usersMap[Number(userId)],
+          playCount: count
+        }));
+    }
+
+    res.json({ success: true, topSongs, topUsers });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải bảng xếp hạng' });
+  }
+});
+
+// ========== NOTIFICATIONS ==========
+
+// GET notifications
+app.get('/api/notifications', auth, async (req, res) => {
+  try {
+    const { data: notifications, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error && error.code === '42P01') {
+      return res.json({ success: true, notifications: [], unreadCount: 0 });
+    }
+    if (error) throw error;
+
+    const unreadCount = notifications.filter(n => !n.is_read).length;
+
+    res.json({ success: true, notifications, unreadCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi tải thông báo' });
+  }
+});
+
+// Mark single notification as read
+app.put('/api/notifications/:id/read', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi đánh dấu đã đọc' });
+  }
+});
+
+// Mark all as read
+app.put('/api/notifications/read-all', auth, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', req.user.id)
+      .eq('is_read', false);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi đánh dấu tất cả đã đọc' });
+  }
+});
+
+// Helper: create notification
+async function createNotification(userId, type, title, message, songId = null) {
+  try {
+    await supabase.from('notifications').insert([{
+      user_id: userId,
+      type,
+      title,
+      message,
+      song_id: songId
+    }]);
+  } catch (err) {
+    console.error('Notification create error:', err);
+  }
+}
 
 // ---------- Start Server ----------
 const PORT = process.env.PORT || 3001;

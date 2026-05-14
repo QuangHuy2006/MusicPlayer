@@ -32,6 +32,7 @@ export interface Song {
   album?: Album | string; // Thông tin album
   duration?: number; // Thời lượng bài hát (giây)
   genre?: string; // Thể loại nhạc
+  lyrics?: string; // Lời bài hát
   status?: 'pending' | 'approved' | 'rejected';
   userId?: number;
   createdAt?: string;

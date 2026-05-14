@@ -4,14 +4,17 @@ import router from './routes/router'
 import { PlayerProvider } from './context/PlayerContext'
 import { ToastProvider } from './context/ToastContext'
 import { LikeProvider } from './context/LikeContext'
+import { NotificationProvider } from './context/NotificationContext'
 import './App.css'
 
 createRoot(document.getElementById('root')!).render(
   <ToastProvider>
-    <LikeProvider>
-      <PlayerProvider>
-        <RouterProvider router={router}></RouterProvider>
-      </PlayerProvider>
-    </LikeProvider>
+    <NotificationProvider>
+      <LikeProvider>
+        <PlayerProvider>
+          <RouterProvider router={router}></RouterProvider>
+        </PlayerProvider>
+      </LikeProvider>
+    </NotificationProvider>
   </ToastProvider>
 )

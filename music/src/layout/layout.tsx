@@ -3,10 +3,12 @@ import { useState, useEffect } from "react";
 import {
   FaHeadphones, FaList, FaMusic, FaUserShield,
   FaSignOutAlt, FaSearch, FaHeart, FaHistory, FaYoutube,
-  FaChevronLeft, FaChevronRight, FaUserCircle
+  FaChevronLeft, FaChevronRight, FaUserCircle, FaBell, FaTrophy
 } from "react-icons/fa";
 import { MdExplore } from "react-icons/md";
 import GlobalPlayer from "../components/GlobalPlayer";
+import NotificationPanel from "../components/NotificationPanel";
+import { useNotification } from "../context/NotificationContext";
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
   const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -15,6 +17,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { unreadCount } = useNotification();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -54,11 +58,13 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
   const navItems = [
     { path: "/dashboard", icon: <MdExplore size={24} />, label: "Khám Phá", color: "from-blue-500 to-cyan-400" },
+    { path: "/leaderboard", icon: <FaTrophy size={20} />, label: "Xếp Hạng", color: "from-amber-500 to-yellow-400" },
     { path: "/history", icon: <FaHistory size={20} />, label: "Gần Đây", color: "from-amber-500 to-orange-400" },
     { path: "/liked-songs", icon: <FaHeart size={20} />, label: "Yêu Thích", color: "from-rose-500 to-pink-400" },
     { path: "/playlist", icon: <FaList size={20} />, label: "Playlist", color: "from-emerald-500 to-teal-400" },
     { path: "/youtube-converter", icon: <FaYoutube size={20} />, label: "Tải YouTube", color: "from-red-600 to-rose-500" },
     { path: "/my-songs", icon: <FaMusic size={20} />, label: "Của Tôi", color: "from-indigo-500 to-violet-400" },
+    { path: "/profile", icon: <FaUserCircle size={20} />, label: "Profile", color: "from-cyan-500 to-blue-400" },
   ];
 
   if (isAdmin) {
@@ -174,13 +180,31 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
             </form>
           </div>
 
-          {/* Mobile Menu Toggle (Simplified) */}
-          <div className="lg:hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
-              <FaHeadphones className="text-white" />
+          {/* Notification Bell */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2.5 text-slate-400 hover:text-[var(--accent-gold)] transition-colors"
+            >
+              <FaBell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Mobile Menu Toggle (Simplified) */}
+            <div className="lg:hidden">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
+                <FaHeadphones className="text-white" />
+              </div>
             </div>
           </div>
         </header>
+
+        {/* Notification Panel */}
+        <NotificationPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
 
         {/* Dynamic Content */}
         <main className="flex-1 overflow-y-auto custom-scrollbar pb-32">

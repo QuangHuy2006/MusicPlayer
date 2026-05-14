@@ -1,3 +1,4 @@
+// @refresh reset
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Song } from '../interface/song';
@@ -18,6 +19,8 @@ interface PlayerContextType {
   toggleRepeat: () => void;
   setVolume: (vol: number) => void;
   volume: number;
+  sleepTimer: number | null;
+  setSleepTimer: (minutes: number | null) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -29,6 +32,31 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   const [isRandom, setIsRandom] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
   const [volume, setVolumeState] = useState(1); // 0 to 1
+  const [sleepTimer, setSleepTimerState] = useState<number | null>(null);
+  const [sleepTimerEnd, setSleepTimerEnd] = useState<number | null>(null);
+
+  // Sleep Timer logic
+  useEffect(() => {
+    if (sleepTimer !== null) {
+      const targetTime = Date.now() + sleepTimer * 60000;
+      setSleepTimerEnd(targetTime);
+      
+      const interval = setInterval(() => {
+        if (Date.now() >= targetTime) {
+          setIsPlaying(false);
+          setSleepTimerState(null);
+          setSleepTimerEnd(null);
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setSleepTimerEnd(null);
+    }
+  }, [sleepTimer]);
+
+  const setSleepTimer = (minutes: number | null) => {
+    setSleepTimerState(minutes);
+  };
 
   useEffect(() => {
     if (currentSong) {
@@ -127,7 +155,9 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
         toggleRandom,
         toggleRepeat,
         volume,
-        setVolume
+        setVolume,
+        sleepTimer,
+        setSleepTimer
       }}
     >
       {children}

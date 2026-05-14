@@ -7,6 +7,7 @@ import { MdClose } from 'react-icons/md';
 const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [name, setName] = useState('');
   const [author, setAuthor] = useState('');
+  const [lyrics, setLyrics] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -40,6 +41,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const resetForm = () => {
     setName('');
     setAuthor('');
+    setLyrics('');
     setFile(null);
     setImage(null);
     setImagePreview(null);
@@ -62,6 +64,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       formData.append('image', image);
     }
     formData.append('author', author);
+    formData.append('lyrics', lyrics);
 
     try {
       const res = await fetch(`${API_BASE}/api/songs`, {
@@ -177,6 +180,19 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 onChange={(e) => setAuthor(e.target.value)}
                 placeholder="Nhập tên nghệ sĩ..."
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--accent-gold)]/50 focus:ring-4 focus:ring-[var(--accent-gold)]/5 transition-all"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                Lời bài hát (Tùy chọn)
+              </label>
+              <textarea
+                value={lyrics}
+                onChange={(e) => setLyrics(e.target.value)}
+                placeholder="Nhập lời bài hát (nếu có)..."
+                rows={3}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--accent-gold)]/50 focus:ring-4 focus:ring-[var(--accent-gold)]/5 transition-all resize-none custom-scrollbar"
               />
             </div>
 
