@@ -49,9 +49,17 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
+      await fetch(`${API_BASE}/api/auth/logout`, { 
+        method: "POST", 
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ refreshToken: localStorage.getItem("refresh_token") }) 
+      });
     } catch (e) { }
     localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     window.location.href = "/login";
   };
@@ -129,27 +137,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
           })}
         </nav>
 
-        {/* User Profile Area */}
-        <div className={`border-t border-white/5 bg-white/5 transition-all duration-500 ${isCollapsed ? 'p-4' : 'p-6'}`}>
-          <div className={`flex items-center gap-4 group cursor-pointer ${isCollapsed ? 'flex-col justify-center' : ''}`}>
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
-              {userData?.avatar ? <img src={userData.avatar} className="w-full h-full object-cover" alt="" /> : <FaUserCircle size={24} className="text-slate-500" />}
-            </div>
-            {!isCollapsed && (
-              <div className="min-w-0 flex-1 animate-[fade-in_0.3s_ease-out]">
-                <p className="text-sm font-bold text-white truncate">{userData?.name || "Người dùng"}</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{userData?.role || "Member"}</p>
-              </div>
-            )}
-            <button
-              onClick={handleLogout}
-              className={`text-slate-500 hover:text-rose-500 transition-colors p-2 ${isCollapsed ? 'mt-2' : ''}`}
-              title="Đăng xuất"
-            >
-              <FaSignOutAlt size={18} />
-            </button>
-          </div>
-        </div>
+
       </aside>
 
       {/* ===== MAIN CONTENT AREA ===== */}
@@ -180,8 +168,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
             </form>
           </div>
 
-          {/* Notification Bell */}
-          <div className="flex items-center gap-3">
+          {/* Notification Bell & Profile */}
+          <div className="flex items-center gap-4 md:gap-6">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2.5 text-slate-400 hover:text-[var(--accent-gold)] transition-colors"
@@ -194,8 +182,31 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
               )}
             </button>
 
+            <div className="h-8 w-[1px] bg-white/10 hidden md:block"></div>
+
+            {/* User Profile Area (Header) */}
+            <div className="hidden md:flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
+                {userData?.avatar ? <img src={userData.avatar} className="w-full h-full object-cover" alt="" /> : <FaUserCircle size={24} className="text-slate-500" />}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white truncate max-w-[120px]">{userData?.name || "Người dùng"}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${userData?.role === 'PREMIUM' ? 'text-[var(--accent-gold)]' : 'text-slate-500'}`}>{userData?.role || "Member"}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="text-slate-500 hover:text-rose-500 transition-colors p-2 ml-2 bg-white/5 rounded-full hover:bg-white/10"
+                title="Đăng xuất"
+              >
+                <FaSignOutAlt size={16} />
+              </button>
+            </div>
+
             {/* Mobile Menu Toggle (Simplified) */}
-            <div className="lg:hidden">
+            <div className="lg:hidden flex items-center gap-3">
+              <button onClick={handleLogout} className="text-slate-500 hover:text-rose-500 p-2" title="Đăng xuất">
+                 <FaSignOutAlt size={18} />
+              </button>
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
                 <FaHeadphones className="text-white" />
               </div>

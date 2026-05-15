@@ -7,6 +7,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const ytDlpExec = require('yt-dlp-exec');
 const contentDisposition = require('content-disposition');
 
@@ -43,35 +44,26 @@ async function auth(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
   if (!token) return res.status(401).json({ msg: "No token" });
 
-  const { data: session, error } = await supabase
-    .from('user_tokens')
-    .select('user_id, expires_at')
-    .eq('token', token)
-    .maybeSingle();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+    
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', decoded.id)
+      .single();
 
-  if (error || !session) {
+    if (userError || !user) return res.status(401).json({ msg: "User not found" });
+    if (user.is_banned) return res.status(403).json({ msg: "Tài khoản của bạn đã bị khóa" });
+
+    req.user = user;
+    next();
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ msg: "Token expired" });
+    }
     return res.status(401).json({ msg: "Invalid token" });
   }
-
-  if (new Date(session.expires_at) < new Date()) {
-    await supabase.from('user_tokens').delete().eq('token', token);
-    return res.status(401).json({ msg: "Token expired" });
-  }
-
-  const { data: user, error: userError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', session.user_id)
-    .single();
-
-  if (userError) {
-    console.error("Supabase user fetch error:", userError);
-  }
-
-  if (!user) return res.status(401).json({ msg: "User not found" });
-  if (user.is_banned) return res.status(403).json({ msg: "Tài khoản của bạn đã bị khóa" });
-  req.user = user;
-  next();
 }
 
 function adminOnly(req, res, next) {
@@ -108,13 +100,18 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ success: false, msg: "Email hoặc mật khẩu không đúng" });
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
+    const accessToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: '15m' }
+    );
+    const refreshToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 8);
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
     const { error: insertError } = await supabase
       .from('user_tokens')
-      .insert([{ user_id: user.id, token, expires_at: expiresAt }])
+      .insert([{ user_id: user.id, token: refreshToken, expires_at: expiresAt }])
 
     if (insertError) {
       console.error('Insert token error:', insertError);
@@ -124,12 +121,46 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(200).json({
       success: true,
       msg: "Đăng nhập thành công",
-      token: token,   // ← gửi token về client
+      token: accessToken,
+      refreshToken: refreshToken,
       user: { id: user.id, name: user.name, role: user.role, email: user.email },
     });
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ success: false, msg: "Lỗi máy chủ" });
+  }
+});
+
+app.post("/api/auth/refresh", async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(401).json({ success: false, msg: "No refresh token" });
+
+    const { data: session, error } = await supabase
+      .from('user_tokens')
+      .select('user_id, expires_at')
+      .eq('token', refreshToken)
+      .maybeSingle();
+
+    if (error || !session) return res.status(401).json({ success: false, msg: "Invalid refresh token" });
+    if (new Date(session.expires_at) < new Date()) {
+      await supabase.from('user_tokens').delete().eq('token', refreshToken);
+      return res.status(401).json({ success: false, msg: "Refresh token expired" });
+    }
+
+    const { data: user } = await supabase.from('users').select('*').eq('id', session.user_id).single();
+    if (!user || user.is_banned) return res.status(403).json({ success: false, msg: "User unavailable" });
+
+    const accessToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: '15m' }
+    );
+
+    res.json({ success: true, token: accessToken });
+  } catch (err) {
+    console.error("Refresh error:", err);
+    res.status(500).json({ success: false, msg: "Server error" });
   }
 });
 
@@ -198,6 +229,36 @@ app.get('/api/user/my-songs', auth, async (req, res) => {
   }
 });
 
+// Nâng cấp tài khoản Premium
+app.post('/api/user/upgrade', auth, async (req, res) => {
+  try {
+    if (req.user.role === 'ADMIN') {
+      return res.status(400).json({ success: false, msg: 'Admin đã có toàn quyền!' });
+    }
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .update({ role: 'PREMIUM' })
+      .eq('id', req.user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Sinh lại token với role mới
+    const accessToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: '15m' }
+    );
+
+    res.json({ success: true, msg: 'Nâng cấp Premium thành công!', user, token: accessToken });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi nâng cấp tài khoản' });
+  }
+});
+
 // Xóa bài hát của user (chỉ xóa nếu status pending hoặc rejected)
 app.delete('/api/user/my-songs/:id', auth, async (req, res) => {
   try {
@@ -239,10 +300,9 @@ app.delete('/api/user/my-songs/:id', auth, async (req, res) => {
 
 app.post("/api/auth/logout", auth, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-    if (token) {
-      await supabase.from('user_tokens').delete().eq('token', token);
+    const { refreshToken } = req.body;
+    if (refreshToken) {
+      await supabase.from('user_tokens').delete().eq('token', refreshToken);
     }
     res.json({ success: true, msg: "Đăng xuất thành công" });
   } catch (err) {

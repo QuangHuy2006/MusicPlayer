@@ -52,6 +52,9 @@ export default function Login() {
         setIsLoading(false);
         if (data.success) {
           localStorage.setItem("token", data.token);
+          if (data.refreshToken) {
+            localStorage.setItem("refresh_token", data.refreshToken);
+          }
           localStorage.setItem("user", JSON.stringify(data.user));
           toast.success("Đăng nhập thành công! Chào mừng trở lại!");
           navigate("/dashboard");
