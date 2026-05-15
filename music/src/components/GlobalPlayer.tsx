@@ -29,6 +29,7 @@ export default function GlobalPlayer() {
 
   const [user, setUser] = useState<any>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeStep, setUpgradeStep] = useState<'intro' | 'payment' | 'processing'>('intro');
 
   const isPremium = user?.role === 'PREMIUM' || user?.role === 'ADMIN';
 
@@ -41,7 +42,11 @@ export default function GlobalPlayer() {
   }, []);
 
   const handleUpgrade = async () => {
+    setUpgradeStep('processing');
     try {
+      // Giả lập độ trễ thanh toán
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/api/user/upgrade`, {
         method: 'POST',
@@ -53,23 +58,47 @@ export default function GlobalPlayer() {
         if (data.token) localStorage.setItem('token', data.token);
         setUser(data.user);
         setShowUpgrade(false);
+        setUpgradeStep('intro');
       } else {
         alert(data.msg);
+        setUpgradeStep('payment');
       }
     } catch (e) {
       console.error(e);
+      setUpgradeStep('payment');
     }
   };
 
   const requirePremium = (fn: () => void) => {
     if (!isPremium) {
+      setUpgradeStep('intro');
       setShowUpgrade(true);
     } else {
       fn();
     }
   };
 
-  // ====================== AUDIO CONTEXT SETUP ======================
+  // ====================== AUDIO ENGINE PRO (ULTIMATE UPGRADE) ======================
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const reverbGainRef = useRef<GainNode | null>(null);
+  const masterFadeRef = useRef<GainNode | null>(null);
+
+  // Tạo Reverb (Hiệu ứng vang không gian 3D - Concert Hall)
+  const createConcertHallReverb = (ctx: AudioContext) => {
+    const length = ctx.sampleRate * 2.5; // Vang 2.5 giây
+    const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+    const left = impulse.getChannelData(0);
+    const right = impulse.getChannelData(1);
+    for (let i = 0; i < length; i++) {
+      const decay = Math.exp(-i / (ctx.sampleRate * 0.5));
+      left[i] = (Math.random() * 2 - 1) * decay;
+      right[i] = (Math.random() * 2 - 1) * decay;
+    }
+    const convolver = ctx.createConvolver();
+    convolver.buffer = impulse;
+    return convolver;
+  };
+
   useEffect(() => {
     if (!audioRef.current) return;
     if ((audioRef.current as any)._isConnectedToWebAudio) return;
@@ -87,14 +116,24 @@ export default function GlobalPlayer() {
       const source = ctx.createMediaElementSource(audioRef.current);
       sourceRef.current = source;
 
+      // 1. Phân tích phổ âm thanh (Spectrum Analyzer)
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyserRef.current = analyser;
+
+      // 2. Preamp (Chống vỡ âm dải tần số)
+      const preamp = ctx.createGain();
+      preamp.gain.value = 0.75;
+
+      // 3. EQ đa băng tần
       const bass = ctx.createBiquadFilter();
       bass.type = 'lowshelf';
-      bass.frequency.value = 200;
+      bass.frequency.value = 150;
       bassFilterRef.current = bass;
 
       const treble = ctx.createBiquadFilter();
       treble.type = 'highshelf';
-      treble.frequency.value = 3000;
+      treble.frequency.value = 4000;
       trebleFilterRef.current = treble;
 
       const qual = ctx.createBiquadFilter();
@@ -102,30 +141,64 @@ export default function GlobalPlayer() {
       qual.frequency.value = 22000;
       qualityFilterRef.current = qual;
 
+      // 4. 8D Spatial Panner
       const panner = ctx.createStereoPanner();
       pannerRef.current = panner;
 
       const lfo = ctx.createOscillator();
       lfo.type = 'sine';
-      lfo.frequency.value = 0.125;
+      lfo.frequency.value = 0.1; // Tốc độ xoay não
       const lfoGain = ctx.createGain();
       lfoGain.gain.value = 0;
-
       lfo.connect(lfoGain);
       lfoGain.connect(panner.pan);
       lfo.start();
-
       lfoGainRef.current = lfoGain;
 
-      source.connect(bass);
+      // 5. 3D Reverb / Không gian 3 chiều
+      const convolver = createConcertHallReverb(ctx);
+      const reverbGain = ctx.createGain();
+      reverbGain.gain.value = 0; // Tắt mặc định
+      reverbGainRef.current = reverbGain;
+
+      // 6. Master Fade (Tạo hiệu ứng Fade in/out mượt mà khi Play/Pause)
+      const masterFade = ctx.createGain();
+      masterFade.gain.value = 1;
+      masterFadeRef.current = masterFade;
+
+      // 7. Auto Mastering Compressor
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -3;
+      compressor.knee.value = 15;
+      compressor.ratio.value = 20;
+      compressor.attack.value = 0.002;
+      compressor.release.value = 0.1;
+
+      // Định tuyến âm thanh (Routing Graph):
+      source.connect(analyser);
+      analyser.connect(preamp);
+      preamp.connect(bass);
       bass.connect(treble);
       treble.connect(qual);
+      
+      // Tách nhánh: Một luồng trực tiếp (Dry), Một luồng qua Reverb (Wet)
       qual.connect(panner);
-      panner.connect(ctx.destination);
+      
+      // Nhánh Wet
+      panner.connect(convolver);
+      convolver.connect(reverbGain);
+      reverbGain.connect(masterFade);
+
+      // Nhánh Dry
+      panner.connect(masterFade);
+
+      // Xuất âm thanh
+      masterFade.connect(compressor);
+      compressor.connect(ctx.destination);
 
       (audioRef.current as any)._isConnectedToWebAudio = true;
     } catch (e) {
-      console.error("Audio Context Init Error:", e);
+      console.error("Audio Engine Init Error:", e);
     }
   }, [currentSong]);
 
@@ -161,8 +234,19 @@ export default function GlobalPlayer() {
 
     qual.frequency.value = quality === 'normal' ? 2000 : 22000;
 
-    if (lfoGainRef.current) lfoGainRef.current.gain.value = is8D ? 1 : 0;
-    if (pannerRef.current && !is8D) pannerRef.current.pan.value = 0;
+    if (lfoGainRef.current && audioCtxRef.current && reverbGainRef.current) {
+      const t = audioCtxRef.current.currentTime;
+      if (is8D) {
+        lfoGainRef.current.gain.setTargetAtTime(0.7, t, 0.5); // Xoay 70%
+        reverbGainRef.current.gain.setTargetAtTime(0.3, t, 0.5); // Bật tiếng vang Concert Hall 30%
+      } else {
+        lfoGainRef.current.gain.setTargetAtTime(0, t, 0.5);
+        reverbGainRef.current.gain.setTargetAtTime(0, t, 0.5);
+      }
+    }
+    if (pannerRef.current && !is8D && audioCtxRef.current) {
+      pannerRef.current.pan.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.5);
+    }
 
     if (audioCtxRef.current.state === 'suspended' && isPlaying) {
       audioCtxRef.current.resume();
@@ -174,13 +258,24 @@ export default function GlobalPlayer() {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  // Play/Pause
+  // Play/Pause Smooth Fade (Chống giật/nổ bụp khi Stop)
   useEffect(() => {
     if (!audioRef.current) return;
+    
     if (isPlaying) {
       audioRef.current.play().catch(() => setIsPlaying(false));
+      if (masterFadeRef.current && audioCtxRef.current) {
+        masterFadeRef.current.gain.setTargetAtTime(1, audioCtxRef.current.currentTime, 0.1);
+      }
     } else {
-      audioRef.current.pause();
+      if (masterFadeRef.current && audioCtxRef.current) {
+        masterFadeRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.1);
+        setTimeout(() => {
+          if (audioRef.current) audioRef.current.pause();
+        }, 150); // Đợi mờ dần rồi mới pause hẳn
+      } else {
+        audioRef.current.pause();
+      }
     }
   }, [isPlaying, currentSong, setIsPlaying]);
 
@@ -363,24 +458,59 @@ export default function GlobalPlayer() {
 
             {/* UPGRADE OVERLAY */}
             {!isPremium && showUpgrade && (
-              <div className="absolute inset-0 z-[210] bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center animate-[fade-in_0.2s_ease-out] rounded-3xl">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-[var(--accent-gold)] flex items-center justify-center shadow-[0_0_30px_rgba(212,175,55,0.6)] mb-4 animate-bounce-slow">
-                  <FaCrown className="text-black text-3xl" />
-                </div>
-                <h3 className="text-2xl font-black text-white mb-2">Nâng cấp Studio Pro</h3>
-                <p className="text-sm text-slate-300 mb-6">Mở khóa âm thanh 8D, Lossless và các bộ chỉnh âm chuyên nghiệp.</p>
-                <button
-                  onClick={handleUpgrade}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 to-[var(--accent-gold)] text-black font-black text-lg shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:scale-105 transition-transform"
-                >
-                  Nâng cấp ngay (Miễn phí)
-                </button>
-                <button
-                  onClick={() => setShowUpgrade(false)}
-                  className="mt-4 text-sm text-slate-400 hover:text-white"
-                >
-                  Để sau
-                </button>
+              <div className="absolute inset-0 z-[210] bg-black/90 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center animate-[fade-in_0.2s_ease-out] rounded-3xl">
+                {upgradeStep === 'intro' && (
+                  <div className="animate-[fade-in-up_0.3s_ease-out] w-full">
+                    <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-[var(--accent-gold)] flex items-center justify-center shadow-[0_0_40px_rgba(212,175,55,0.6)] mb-6 animate-bounce-slow">
+                      <FaCrown className="text-black text-4xl" />
+                    </div>
+                    <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-[var(--accent-gold)] mb-3">Nâng cấp Studio Pro</h3>
+                    <div className="space-y-3 text-sm text-slate-300 mb-8 bg-white/5 p-4 rounded-2xl border border-white/10 text-left">
+                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Mở khóa âm thanh xoay 8D Surround</p>
+                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Nghe nhạc Lossless / 320kbps sắc nét</p>
+                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Tùy chỉnh Preset EQ chuyên nghiệp</p>
+                    </div>
+                    <button
+                      onClick={() => setUpgradeStep('payment')}
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-[var(--accent-gold)] to-amber-600 text-black font-black text-lg shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:scale-105 transition-all mb-4 relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
+                      Chỉ 29.000đ / tháng
+                    </button>
+                    <button onClick={() => setShowUpgrade(false)} className="text-sm text-slate-500 hover:text-white transition-colors">Để sau</button>
+                  </div>
+                )}
+
+                {upgradeStep === 'payment' && (
+                  <div className="animate-[scale-in_0.3s_ease-out] w-full flex flex-col items-center">
+                    <h3 className="text-xl font-bold text-white mb-2">Thanh toán VN-PAY / MoMo</h3>
+                    <p className="text-xs text-slate-400 mb-6">Mở ứng dụng ngân hàng để quét mã QR</p>
+                    
+                    <div className="p-4 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.2)] mb-6 relative">
+                      <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">Giảm 50%</div>
+                      {/* Fake QR Code using a generic placeholder or CSS pattern */}
+                      <div className="w-48 h-48 border-4 border-slate-100 rounded-xl bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MoMo-Payment-Simulation')] bg-contain bg-center bg-no-repeat"></div>
+                    </div>
+                    
+                    <p className="text-xl font-black text-[var(--accent-gold)] mb-6">29.000 VNĐ</p>
+
+                    <button
+                      onClick={handleUpgrade}
+                      className="w-full py-3 rounded-xl bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/50 hover:bg-cyan-500 hover:text-black transition-colors"
+                    >
+                      Mô phỏng Thanh toán Thành công
+                    </button>
+                    <button onClick={() => setUpgradeStep('intro')} className="mt-4 text-sm text-slate-500 hover:text-white transition-colors">Quay lại</button>
+                  </div>
+                )}
+
+                {upgradeStep === 'processing' && (
+                  <div className="animate-[fade-in_0.3s_ease-out] flex flex-col items-center">
+                    <div className="w-16 h-16 border-4 border-white/10 border-t-[var(--accent-gold)] rounded-full animate-spin mb-6"></div>
+                    <h3 className="text-lg font-bold text-white">Đang xác thực giao dịch...</h3>
+                    <p className="text-sm text-slate-400">Vui lòng không đóng cửa sổ này</p>
+                  </div>
+                )}
               </div>
             )}
 

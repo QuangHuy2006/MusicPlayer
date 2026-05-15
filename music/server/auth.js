@@ -46,7 +46,7 @@ async function auth(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-    
+
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
@@ -235,7 +235,7 @@ app.post('/api/user/upgrade', auth, async (req, res) => {
     if (req.user.role === 'ADMIN') {
       return res.status(400).json({ success: false, msg: 'Admin đã có toàn quyền!' });
     }
-    
+
     const { data: user, error } = await supabase
       .from('users')
       .update({ role: 'PREMIUM' })
@@ -455,10 +455,10 @@ app.get('/api/youtube/download', auth, async (req, res) => {
       noCallHome: true,
       youtubeSkipDashManifest: true,
     });
-    
+
     const title = info.title ? info.title.replace(/[^\w\s-]/gi, '') : 'audio';
     const ext = info.ext || 'm4a';
-    
+
     res.header('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.${ext}"`);
     res.header('Content-Type', ext === 'webm' ? 'audio/webm' : 'audio/mp4');
 
@@ -953,13 +953,13 @@ app.get('/api/recommendations', auth, async (req, res) => {
           .filter(song => !playedSongIds.has(song.id))
           .sort(() => 0.5 - Math.random())
           .slice(0, 10);
-          
+
         if (recommendedSongs.length < 5) {
-            const moreSongs = relatedSongs
-                .filter(song => playedSongIds.has(song.id))
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 10 - recommendedSongs.length);
-            recommendedSongs = [...recommendedSongs, ...moreSongs];
+          const moreSongs = relatedSongs
+            .filter(song => playedSongIds.has(song.id))
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 10 - recommendedSongs.length);
+          recommendedSongs = [...recommendedSongs, ...moreSongs];
         }
       }
     }
@@ -970,16 +970,16 @@ app.get('/api/recommendations', auth, async (req, res) => {
         .select('id, name, url, image_url, author, status')
         .eq('status', 'approved')
         .limit(20);
-        
+
       if (!randomError && randomSongs) {
         recommendedSongs = randomSongs.sort(() => 0.5 - Math.random()).slice(0, 10);
       }
     }
 
-    res.json({ 
-      success: true, 
-      songs: recommendedSongs.map(s => ({...s, imageUrl: s.image_url})),
-      basedOn: topAuthors 
+    res.json({
+      success: true,
+      songs: recommendedSongs.map(s => ({ ...s, imageUrl: s.image_url })),
+      basedOn: topAuthors
     });
   } catch (err) {
     console.error(err);
