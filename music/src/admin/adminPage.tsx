@@ -104,7 +104,7 @@ const AdminDashboard = () => {
 
   const handleBanUser = async (id: number, isBanned: boolean) => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/users/${id}/${isBanned ? 'unban' : 'ban'}`, {
+      const res = await fetch(`${API_BASE}/api/admin/users/${id}/ban`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -154,8 +154,8 @@ const AdminDashboard = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id
-                  ? 'bg-white/10 text-white shadow-lg border border-white/10'
-                  : 'text-slate-500 hover:text-slate-300'
+                ? 'bg-white/10 text-white shadow-lg border border-white/10'
+                : 'text-slate-500 hover:text-slate-300'
                 }`}
             >
               {tab.icon} {tab.label}
@@ -306,13 +306,13 @@ const AdminDashboard = () => {
                 <div className="mt-6">
                   {user.role !== 'ADMIN' && (
                     <button
-                      onClick={() => handleBanUser(user.id, user.isBanned)}
+                      onClick={() => handleBanUser(user.id, user.is_banned)}
                       className={`w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${user.isBanned
-                          ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white'
-                          : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white'
+                        ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white'
+                        : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white'
                         }`}
                     >
-                      {user.isBanned ? <><FaUnlock /> Gỡ Chặn</> : <><FaBan /> Chặn User</>}
+                      {user.is_banned ? <><FaUnlock /> Gỡ Chặn</> : <><FaBan /> Chặn User</>}
                     </button>
                   )}
                   {user.role === 'ADMIN' && (
