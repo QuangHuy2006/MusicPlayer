@@ -306,13 +306,13 @@ const AdminDashboard = () => {
                 <div className="mt-6">
                   {user.role !== 'ADMIN' && (
                     <button
-                      onClick={() => handleBanUser(user.id, user.is_banned)}
-                      className={`w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${user.isBanned
+                      onClick={() => handleBanUser(user.id, user.isBanned ?? user.is_banned ?? false)}
+                      className={`w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${user.isBanned || user.is_banned
                         ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white'
                         : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white'
                         }`}
                     >
-                      {user.is_banned ? <><FaUnlock /> Gỡ Chặn</> : <><FaBan /> Chặn User</>}
+                      {user.isBanned || user.is_banned ? <><FaUnlock /> Gỡ Chặn</> : <><FaBan /> Chặn User</>}
                     </button>
                   )}
                   {user.role === 'ADMIN' && (
