@@ -33,39 +33,54 @@ export default function GlobalPlayer() {
 
   const isPremium = user?.role === 'PREMIUM' || user?.role === 'ADMIN';
 
-  // Load user
+  // Load user & Poll for Premium status if pending
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
-      setUser(JSON.parse(userStr));
+      const u = JSON.parse(userStr);
+      setUser(u);
+      
+      // If pending, check status every 10s
+      if (u.role === 'PREMIUM_PENDING') {
+        const interval = setInterval(async () => {
+          try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE}/api/auth/verify`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.valid && data.user.role === 'PREMIUM') {
+              localStorage.setItem('user', JSON.stringify(data.user));
+              setUser(data.user);
+              clearInterval(interval);
+            }
+          } catch (e) {}
+        }, 10000);
+        return () => clearInterval(interval);
+      }
     }
   }, []);
 
   const handleUpgrade = async () => {
     setUpgradeStep('processing');
     try {
-      // Giả lập độ trễ thanh toán
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/api/user/upgrade`, {
+      const res = await fetch(`${API_BASE}/api/user/request-premium`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('user', JSON.stringify(data.user));
-        if (data.token) localStorage.setItem('token', data.token);
         setUser(data.user);
-        setShowUpgrade(false);
-        setUpgradeStep('intro');
+        setUpgradeStep('payment');
       } else {
         alert(data.msg);
-        setUpgradeStep('payment');
+        setUpgradeStep('intro');
       }
     } catch (e) {
       console.error(e);
-      setUpgradeStep('payment');
+      setUpgradeStep('intro');
     }
   };
 
@@ -310,7 +325,7 @@ export default function GlobalPlayer() {
   return (
     <>
       {/* ==================== GLOBAL PLAYER BAR ==================== */}
-      <div className="fixed bottom-[60px] md:bottom-0 left-0 right-0 z-[100] glass-panel-3d rounded-none md:rounded-t-[24px] rounded-b-none border-x-0 border-b-0 animate-[fade-in-up_0.3s_ease-out]">
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[100] glass-panel-3d rounded-none md:rounded-t-[24px] rounded-b-none border-x-0 border-b-0 animate-[fade-in-up_0.3s_ease-out]">
         <audio
           ref={audioRef}
           src={currentSong.url}
@@ -483,23 +498,51 @@ export default function GlobalPlayer() {
 
                 {upgradeStep === 'payment' && (
                   <div className="animate-[scale-in_0.3s_ease-out] w-full flex flex-col items-center">
-                    <h3 className="text-xl font-bold text-white mb-2">Thanh toán VN-PAY / MoMo</h3>
-                    <p className="text-xs text-slate-400 mb-6">Mở ứng dụng ngân hàng để quét mã QR</p>
+                    <h3 className="text-xl font-bold text-white mb-2">Thanh toán Chuyển khoản</h3>
+                    <p className="text-xs text-slate-400 mb-6 text-center">Quét mã QR bên dưới để nâng cấp Premium</p>
                     
                     <div className="p-4 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.2)] mb-6 relative">
-                      <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">Giảm 50%</div>
-                      {/* Fake QR Code using a generic placeholder or CSS pattern */}
-                      <div className="w-48 h-48 border-4 border-slate-100 rounded-xl bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MoMo-Payment-Simulation')] bg-contain bg-center bg-no-repeat"></div>
+                      <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">Auto Active</div>
+                      <img 
+                        src={`https://img.vietqr.io/image/MB-0789088909-compact2.png?amount=29000&addInfo=MP${user?.id}`}
+                        alt="QR Code"
+                        className="w-48 h-48 rounded-xl object-contain"
+                      />
                     </div>
                     
-                    <p className="text-xl font-black text-[var(--accent-gold)] mb-6">29.000 VNĐ</p>
+                    <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-6 space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Ngân hàng:</span>
+                        <span className="text-white font-bold">MB Bank</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Số tài khoản:</span>
+                        <span className="text-[var(--accent-gold)] font-bold">0789088909</span>
+                      </div>
+                      <div className="flex justify-between text-xs pt-2 border-t border-white/5">
+                        <span className="text-slate-400">Nội dung CK:</span>
+                        <span className="text-[var(--accent-gold)] font-black text-lg">MP{user?.id}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Số tiền:</span>
+                        <span className="text-white font-bold">29.000 VNĐ</span>
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={handleUpgrade}
-                      className="w-full py-3 rounded-xl bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/50 hover:bg-cyan-500 hover:text-black transition-colors"
-                    >
-                      Mô phỏng Thanh toán Thành công
-                    </button>
+                    {user?.role === 'PREMIUM_PENDING' ? (
+                      <div className="w-full py-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex flex-col items-center gap-2 animate-pulse">
+                        <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="font-bold text-sm uppercase tracking-widest">Đang chờ Admin duyệt...</span>
+                        <p className="text-[10px] text-amber-500/70">Vui lòng đợi trong giây lát, Admin đang xác nhận giao dịch của bạn</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleUpgrade}
+                        className="w-full py-3 rounded-xl bg-[var(--accent-gold)] text-black font-black hover:scale-105 transition-all shadow-[0_0_20px_rgba(212,175,55,0.3)]"
+                      >
+                        Xác nhận đã chuyển khoản
+                      </button>
+                    )}
                     <button onClick={() => setUpgradeStep('intro')} className="mt-4 text-sm text-slate-500 hover:text-white transition-colors">Quay lại</button>
                   </div>
                 )}

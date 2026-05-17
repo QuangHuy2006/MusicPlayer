@@ -90,60 +90,56 @@ const MusicPlayer = () => {
   const loadSongs = useCallback(async () => {
     setLoading(true);
     try {
-      let songsData: Song[] = [];
+      const token = localStorage.getItem("token");
       if (playlistId) {
         const res = await fetch(`${API_BASE}/api/playlists/${playlistId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         if (data.success) {
-          songsData = data.playlist.songs.map((s: Song) => ({ ...s, status: "approved" }));
+          const songsData = data.playlist.songs.map((s: Song) => ({ ...s, status: "approved" }));
+          setSongs(songsData || []);
+          
+          const songIdFromUrl = searchParams.get("song");
+          if (songIdFromUrl && songsData.length > 0) {
+            const targetSong = songsData.find((s: any) => s.id.toString() === songIdFromUrl);
+            if (targetSong) playSong(targetSong, songsData);
+          }
         }
       } else {
-        const res = await fetch(`${API_BASE}/api/songs`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        const data = await res.json();
-        songsData = data.songs.filter((song: Song) => song.status === "approved");
+        // Fetch all in parallel
+        const [songsRes, recRes, trendRes] = await Promise.all([
+          fetch(`${API_BASE}/api/songs`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/api/recommendations`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+          fetch(`${API_BASE}/api/trending`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
+        ]);
 
-        // Fetch recommendations
-        try {
-          const resRec = await fetch(`${API_BASE}/api/recommendations`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          });
-          const recData = await resRec.json();
+        const songsDataRaw = await songsRes.json();
+        const songsData = (songsDataRaw.songs || []).filter((song: Song) => song.status === "approved");
+        setSongs(songsData);
+
+        if (recRes) {
+          const recData = await recRes.json();
           if (recData.success) {
             setRecommendedSongs(recData.songs || []);
             setBasedOn(recData.basedOn || []);
           }
-        } catch (e) {
-          console.error("Error fetching recommendations:", e);
         }
 
-        // Fetch trending
-        try {
-          const resTrend = await fetch(`${API_BASE}/api/trending`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          });
-          const trendData = await resTrend.json();
+        if (trendRes) {
+          const trendData = await trendRes.json();
           if (trendData.success) {
             setTrendingSongs(trendData.songs || []);
           }
-        } catch (e) {
-          console.error("Error fetching trending:", e);
         }
 
+        const songIdFromUrl = searchParams.get("song");
+        if (songIdFromUrl && songsData.length > 0) {
+          const targetSong = songsData.find((s: any) => s.id.toString() === songIdFromUrl);
+          if (targetSong) playSong(targetSong, songsData);
+        }
       }
-      setSongs(songsData || []);
       setError(null);
-
-      const songIdFromUrl = searchParams.get("song");
-      if (songIdFromUrl && songsData.length > 0) {
-        const targetSong = songsData.find(s => s.id.toString() === songIdFromUrl);
-        if (targetSong) {
-          playSong(targetSong, songsData);
-        }
-      }
     } catch (err) {
       console.error(err);
       setError("Không thể tải danh sách bài hát");
@@ -267,7 +263,7 @@ const MusicPlayer = () => {
       {/* 1. Immersive Hero / Greeting */}
       <section className="relative overflow-hidden rounded-[40px] group">
         <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 to-cyan-600/20 group-hover:scale-110 transition-transform duration-1000"></div>
-        <div className="glass-panel-3d border-0 p-8 md:p-12 relative z-10 flex flex-col md:flex-row items-center gap-10">
+        <div className="glass-panel-3d border-0 p-6 md:p-12 relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
           <div className="flex-1 space-y-6 text-center md:text-left">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-[var(--accent-gold)] uppercase tracking-widest">
               <FaFire className="animate-bounce" /> Trending Now
@@ -297,7 +293,7 @@ const MusicPlayer = () => {
 
           {/* Featured Song Visual */}
           {trendingToDisplay[0] && (
-            <div className="w-64 h-64 md:w-80 md:h-80 relative shrink-0">
+            <div className="w-48 h-48 md:w-80 md:h-80 relative shrink-0">
               <div className="absolute inset-0 bg-[var(--accent-gold)]/20 blur-[100px] rounded-full animate-pulse"></div>
               <div className="relative w-full h-full rounded-[48px] overflow-hidden border-4 border-white/10 shadow-2xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
                 <img
@@ -322,7 +318,7 @@ const MusicPlayer = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
         {/* 2. Main Exploration Section (8 Cols) */}
-        <div className="lg:col-span-8 space-y-12">
+        <div className="lg:col-span-8 space-y-8 md:space-y-12">
 
           {/* Horizontal Section: New Releases */}
           <section className="space-y-6">

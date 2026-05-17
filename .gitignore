@@ -6,3 +6,11 @@ build/
 .env.*.local
 *.log
 .DS_Store
+
+# Electron & Android builds
+release/
+dist-electron/
+android/
+**/release/
+**/dist-electron/
+**/android/

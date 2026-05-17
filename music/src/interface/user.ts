@@ -7,7 +7,7 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  role: 'USER' | 'ADMIN' | 'PREMIUM';
+  role: 'USER' | 'ADMIN' | 'PREMIUM' | 'PREMIUM_PENDING';
   isBanned: boolean;
   bio?: string;
   website?: string;

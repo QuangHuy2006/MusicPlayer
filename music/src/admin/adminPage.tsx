@@ -5,9 +5,9 @@ import { API_BASE } from '../config';
 import {
   FaCheckCircle, FaCheck, FaTimes, FaUser,
   FaExclamationTriangle, FaChartBar, FaMusic, FaUsers,
-  FaBan, FaUnlock, FaArrowUp, FaArrowDown,
+  FaArrowUp, FaArrowDown,
 } from "react-icons/fa";
-import { MdDashboard, MdLibraryMusic, MdPeopleAlt } from "react-icons/md";
+import { MdDashboard, MdLibraryMusic, MdPeopleAlt, MdEdit, MdDelete, MdPersonAdd } from "react-icons/md";
 import { useToast } from "../context/ToastContext";
 import type { User } from "../interface/user";
 
@@ -16,15 +16,20 @@ interface Stats {
   totalSongs: number;
   pendingSongs: number;
   totalPlaylists: number;
+  pendingPayments: number;
 }
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'songs' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'songs' | 'users' | 'payments'>('overview');
   const [stats, setStats] = useState<Stats | null>(null);
   const [pendingSongs, setPendingSongs] = useState<Song[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userFormData, setUserFormData] = useState({ name: "", email: "", password: "", role: "USER" });
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const { toast } = useToast();
@@ -33,19 +38,21 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, songsRes, usersRes] = await Promise.all([
+      const [statsRes, songsRes, usersRes, paymentsRes] = await Promise.all([
         fetch(`${API_BASE}/api/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_BASE}/api/songs`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${API_BASE}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/admin/payments`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
-
       const statsData = await statsRes.json();
       const songsData = await songsRes.json();
       const usersData = await usersRes.json();
+      const paymentsData = await paymentsRes.json();
 
       if (statsData.success) setStats(statsData.stats);
       if (songsData.songs) setPendingSongs(songsData.songs.filter((s: Song) => s.status === 'pending'));
       if (usersData.success) setUsers(usersData.users);
+      if (paymentsData.success) setPendingPayments(paymentsData.users);
     } catch (err) {
       console.error(err);
       toast.error("Lỗi khi tải dữ liệu admin");
@@ -118,6 +125,86 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleApprovePayment = async (userId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/verify-payment/${userId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Đã nâng cấp Premium cho người dùng!");
+        fetchData();
+      }
+    } catch (err) {
+      toast.error("Lỗi khi xác nhận thanh toán");
+    }
+  };
+
+  const handleSaveUser = async () => {
+    if (!userFormData.name || !userFormData.email || (!selectedUser && !userFormData.password)) {
+      return toast.error("Vui lòng điền đủ thông tin");
+    }
+
+    try {
+      const url = selectedUser 
+        ? `${API_BASE}/api/admin/users/${selectedUser.id}`
+        : `${API_BASE}/api/admin/users`;
+      
+      const res = await fetch(url, {
+        method: selectedUser ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(userFormData)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(selectedUser ? "Đã cập nhật người dùng" : "Đã tạo người dùng mới");
+        setShowUserModal(false);
+        setSelectedUser(null);
+        setUserFormData({ name: "", email: "", password: "", role: "USER" });
+        fetchData();
+      } else {
+        toast.error(data.msg);
+      }
+    } catch (err) {
+      toast.error("Lỗi khi lưu thông tin người dùng");
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (id === 1) return toast.error("Không thể xóa Admin gốc");
+    if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Đã xóa người dùng");
+        fetchData();
+      }
+    } catch (err) {
+      toast.error("Lỗi khi xóa người dùng");
+    }
+  };
+
+  const openEditUser = (user: User) => {
+    setSelectedUser(user);
+    setUserFormData({
+      name: user.name,
+      email: user.email,
+      password: "", // Đừng bao giờ load mật khẩu cũ
+      role: user.role
+    });
+    setShowUserModal(true);
+  };
+
   if (loading && !stats) {
     return (
       <div className="p-8 space-y-8 animate-fade-in">
@@ -148,7 +235,8 @@ const AdminDashboard = () => {
           {[
             { id: 'overview', icon: <MdDashboard />, label: 'Tổng quan' },
             { id: 'songs', icon: <MdLibraryMusic />, label: 'Duyệt nhạc' },
-            { id: 'users', icon: <MdPeopleAlt />, label: 'Người dùng' }
+            { id: 'users', icon: <MdPeopleAlt />, label: 'Người dùng' },
+            { id: 'payments', icon: <FaCheckCircle />, label: 'Thanh toán' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -173,6 +261,7 @@ const AdminDashboard = () => {
               { label: 'Người dùng', val: stats?.totalUsers || 0, icon: <FaUsers />, color: 'from-blue-500 to-indigo-600', sub: '+12% tháng này', up: true },
               { label: 'Bài hát', val: stats?.totalSongs || 0, icon: <FaMusic />, color: 'from-[var(--accent-gold)] to-orange-500', sub: '+5 bài mới', up: true },
               { label: 'Chờ duyệt', val: stats?.pendingSongs || 0, icon: <FaExclamationTriangle />, color: 'from-rose-500 to-red-600', sub: 'Cần xử lý gấp', up: false },
+              { label: 'Thanh toán', val: stats?.pendingPayments || 0, icon: <FaCheckCircle />, color: 'from-amber-500 to-yellow-600', sub: 'Chờ nâng cấp', up: false },
               { label: 'Playlist', val: stats?.totalPlaylists || 0, icon: <FaChartBar />, color: 'from-emerald-500 to-teal-600', sub: 'Tăng trưởng đều', up: true }
             ].map((item, i) => (
               <div key={i} className="immersive-card p-6 rounded-[32px] group relative overflow-hidden">
@@ -273,9 +362,21 @@ const AdminDashboard = () => {
         <div className="glass-panel-3d border-0 p-8 rounded-[40px] animate-[fade-in_0.3s_ease-out]">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-black text-white">Quản lý người dùng</h2>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
-              <FaUsers className="text-slate-500" />
-              <span className="text-sm font-bold text-white">{users.length} thành viên</span>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => {
+                  setSelectedUser(null);
+                  setUserFormData({ name: "", email: "", password: "", role: "USER" });
+                  setShowUserModal(true);
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-[var(--accent-gold)] text-black font-black rounded-xl hover:scale-105 transition-all shadow-lg"
+              >
+                <MdPersonAdd size={20} /> THÊM NGƯỜI DÙNG
+              </button>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
+                <FaUsers className="text-slate-500" />
+                <span className="text-sm font-bold text-white">{users.length} thành viên</span>
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -299,30 +400,86 @@ const AdminDashboard = () => {
                     <p className="text-sm font-bold text-slate-200">#{user.id}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Username</p>
-                    <p className="text-sm font-bold text-slate-200 truncate">{user.username}</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Quyền</p>
+                    <p className="text-sm font-bold text-slate-200 truncate">{user.role}</p>
                   </div>
                 </div>
-                <div className="mt-6">
+                <div className="mt-6 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => openEditUser(user)}
+                      className="flex-1 py-3 bg-blue-500/10 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2 font-bold text-xs"
+                    >
+                      <MdEdit /> SỬA
+                    </button>
+                    {user.id !== 1 && (
+                      <button 
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="flex-1 py-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 font-bold text-xs"
+                      >
+                        <MdDelete /> XÓA
+                      </button>
+                    )}
+                  </div>
+                  
                   {user.role !== 'ADMIN' && (
                     <button
                       onClick={() => handleBanUser(user.id, user.isBanned ?? user.is_banned ?? false)}
-                      className={`w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${user.isBanned || user.is_banned
+                      className={`w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${user.isBanned || user.is_banned
                         ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white'
                         : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white'
                         }`}
                     >
-                      {user.isBanned || user.is_banned ? <><FaUnlock /> Gỡ Chặn</> : <><FaBan /> Chặn User</>}
+                      {user.isBanned || user.is_banned ? "Gỡ Chặn" : "Chặn User"}
                     </button>
                   )}
                   {user.role === 'ADMIN' && (
-                    <div className="w-full py-3 bg-white/5 rounded-2xl text-[10px] text-slate-500 font-black text-center uppercase tracking-widest">
+                    <div className="w-full py-3 bg-white/5 rounded-xl text-[10px] text-slate-500 font-black text-center uppercase tracking-widest">
                       Quản Trị Viên Hệ Thống
                     </div>
                   )}
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Payments Tab */}
+      {activeTab === 'payments' && (
+        <div className="glass-panel-3d border-0 p-8 rounded-[40px] animate-[fade-in_0.3s_ease-out] space-y-8">
+           <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-black text-white">Xác nhận thanh toán Premium</h2>
+            <span className="px-4 py-1 bg-amber-500/10 text-amber-400 rounded-full text-xs font-bold border border-amber-500/20">{pendingPayments.length} yêu cầu mới</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {pendingPayments.map(user => (
+              <div key={user.id} className="premium-card p-6 flex items-center justify-between group">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-black">
+                    <FaUser size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white truncate">{user.name}</h4>
+                    <p className="text-xs text-slate-500">{user.email}</p>
+                    <p className="text-[10px] text-amber-500 font-black mt-1 uppercase tracking-widest">Đang chờ Premium</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleApprovePayment(user.id)}
+                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                >
+                  <FaCheck /> XÁC NHẬN
+                </button>
+              </div>
+            ))}
+            {pendingPayments.length === 0 && (
+              <div className="col-span-full py-20 text-center space-y-4">
+                <FaCheckCircle size={64} className="text-emerald-500 opacity-20 mx-auto" />
+                <p className="text-slate-500 font-bold text-xl uppercase tracking-widest">Không có yêu cầu thanh toán nào</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -352,6 +509,70 @@ const AdminDashboard = () => {
             <div className="flex gap-4 mt-8">
               <button onClick={() => setShowRejectModal(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-white transition-colors">Hủy</button>
               <button onClick={confirmReject} className="flex-[2] py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl shadow-xl shadow-rose-500/20 transition-all">Xác Nhận Từ Chối</button>
+            </div>
+          </div>
+        </div>,
+        document.getElementById('portal')!
+      )}
+
+      {/* User Create/Edit Modal */}
+      {showUserModal && createPortal(
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 animate-[fade-in_0.2s_ease-out]">
+          <div className="glass-panel-3d p-8 w-full max-w-md rounded-[40px] scale-100 animate-[zoom-in_0.3s_ease-out]">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-black text-white">{selectedUser ? "Sửa Người Dùng" : "Thêm Người Dùng"}</h2>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase">Tên hiển thị</label>
+                <input 
+                  type="text" 
+                  className="w-full p-4 premium-input"
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData({...userFormData, name: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase">Email</label>
+                <input 
+                  type="email" 
+                  className="w-full p-4 premium-input"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData({...userFormData, email: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase">
+                  {selectedUser ? "Mật khẩu mới (để trống nếu không đổi)" : "Mật khẩu"}
+                </label>
+                <input 
+                  type="password" 
+                  className="w-full p-4 premium-input"
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData({...userFormData, password: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase">Vai trò</label>
+                <select 
+                  className="w-full p-4 premium-input bg-black"
+                  value={userFormData.role}
+                  onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
+                >
+                  <option value="USER">Người dùng thường</option>
+                  <option value="PREMIUM">Premium Member</option>
+                  <option value="ADMIN">Quản trị viên</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <button onClick={() => setShowUserModal(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-white transition-colors">Hủy</button>
+              <button onClick={handleSaveUser} className="flex-[2] py-4 bg-[var(--accent-gold)] text-black font-black rounded-2xl shadow-xl transition-all">Lưu Thay Đổi</button>
             </div>
           </div>
         </div>,

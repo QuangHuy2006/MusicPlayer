@@ -25,6 +25,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://musicplayer-frontend-865e.onrender.com",
   "https://music.werchat.io.vn"
+
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -229,33 +230,115 @@ app.get('/api/user/my-songs', auth, async (req, res) => {
   }
 });
 
-// Nâng cấp tài khoản Premium
-app.post('/api/user/upgrade', auth, async (req, res) => {
+// Gửi yêu cầu nâng cấp Premium (Chờ xác nhận thanh toán)
+app.post('/api/user/request-premium', auth, async (req, res) => {
   try {
-    if (req.user.role === 'ADMIN') {
-      return res.status(400).json({ success: false, msg: 'Admin đã có toàn quyền!' });
+    if (req.user.role === 'ADMIN' || req.user.role === 'PREMIUM') {
+      return res.status(400).json({ success: false, msg: 'Tài khoản đã có quyền Premium!' });
     }
 
     const { data: user, error } = await supabase
       .from('users')
-      .update({ role: 'PREMIUM' })
+      .update({ role: 'PREMIUM_PENDING' })
       .eq('id', req.user.id)
       .select()
       .single();
 
     if (error) throw error;
 
-    // Sinh lại token với role mới
-    const accessToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'fallback_secret_key',
-      { expiresIn: '15m' }
-    );
-
-    res.json({ success: true, msg: 'Nâng cấp Premium thành công!', user, token: accessToken });
+    res.json({ success: true, msg: 'Yêu cầu nâng cấp đã được gửi. Vui lòng thanh toán và chờ xác nhận!', user });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, msg: 'Lỗi nâng cấp tài khoản' });
+    res.status(500).json({ success: false, msg: 'Lỗi gửi yêu cầu nâng cấp' });
+  }
+});
+
+// Admin xác nhận thanh toán và nâng cấp Premium
+app.post('/api/admin/verify-payment/:userId', auth, adminOnly, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .update({ role: 'PREMIUM' })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Send notification
+    createNotification(userId, 'premium_activated', 'Kích hoạt Premium thành công! 💎', 'Tài khoản của bạn đã được nâng cấp lên Premium. Tận hưởng các tính năng cao cấp ngay!', null);
+
+    res.json({ success: true, msg: 'Đã xác nhận thanh toán và nâng cấp Premium!', user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi xác nhận thanh toán' });
+  }
+});
+
+// Webhook nhận thông báo thanh toán tự động (Dành cho SePay, Casso, v.v.)
+app.post('/api/payment/webhook', async (req, res) => {
+  try {
+    // 1. Kiểm tra API Key/Secret nếu có (Để bảo mật)
+    // const apiKey = req.headers['x-api-key'];
+    // if (apiKey !== process.env.PAYMENT_WEBHOOK_SECRET) return res.status(401).send('Unauthorized');
+
+    const data = req.body;
+    console.log('Payment Webhook received:', data);
+
+    // Dữ liệu mẫu từ SePay/Casso thường có trường 'content' (Nội dung chuyển khoản)
+    // Và 'amount' (Số tiền)
+    const content = data.content || data.description || '';
+    const amount = data.amount || 0;
+
+    // Tìm mã MP + ID trong nội dung (Ví dụ: "MP123 nâng cấp premium")
+    const match = content.match(/MP(\d+)/i);
+    if (match && match[1]) {
+      const userId = match[1];
+
+      // Chỉ nâng cấp nếu số tiền đủ (Ví dụ 29.000đ)
+      if (amount >= 29000) {
+        const { data: user, error } = await supabase
+          .from('users')
+          .update({ role: 'PREMIUM' })
+          .eq('id', userId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Webhook Upgrade Error:', error);
+          return res.status(500).json({ success: false });
+        }
+
+        // Thông báo cho người dùng
+        createNotification(userId, 'premium_activated', 'Premium đã được kích hoạt tự động! 💎', `Hệ thống đã nhận được ${amount.toLocaleString()}đ. Tài khoản của bạn đã được nâng cấp.`, null);
+        
+        console.log(`User ${userId} upgraded to PREMIUM via Webhook`);
+        return res.json({ success: true, msg: 'Upgrade successful' });
+      }
+    }
+
+    res.json({ success: false, msg: 'Invalid payment data' });
+  } catch (err) {
+    console.error('Webhook Error:', err);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Lấy danh sách các yêu cầu thanh toán đang chờ
+app.get('/api/admin/payments', auth, adminOnly, async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, name, email, role, created_at')
+      .eq('role', 'PREMIUM_PENDING');
+
+    if (error) throw error;
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: 'Lỗi lấy danh sách thanh toán' });
   }
 });
 
@@ -1092,6 +1175,7 @@ app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
     const { count: totalSongs } = await supabase.from('songs').select('*', { count: 'exact', head: true });
     const { count: pendingSongs } = await supabase.from('songs').select('*', { count: 'exact', head: true }).eq('status', 'pending');
     const { count: totalPlaylists } = await supabase.from('playlists').select('*', { count: 'exact', head: true });
+    const { count: pendingPayments } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'PREMIUM_PENDING');
 
     res.json({
       success: true,
@@ -1099,7 +1183,8 @@ app.get('/api/admin/stats', auth, adminOnly, async (req, res) => {
         totalUsers: totalUsers || 0,
         totalSongs: totalSongs || 0,
         pendingSongs: pendingSongs || 0,
-        totalPlaylists: totalPlaylists || 0
+        totalPlaylists: totalPlaylists || 0,
+        pendingPayments: pendingPayments || 0
       }
     });
   } catch (err) {
@@ -1120,6 +1205,73 @@ app.get('/api/admin/users', auth, adminOnly, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, msg: 'Lỗi tải danh sách người dùng' });
+  }
+});
+
+// Tạo người dùng mới (Admin)
+app.post('/api/admin/users', auth, adminOnly, async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, msg: "Vui lòng nhập đầy đủ thông tin" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const { data, error } = await supabase
+      .from("users")
+      .insert([{ name, email, password: hashedPassword, role: role || 'USER' }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, msg: "Tạo người dùng thành công", user: data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: "Lỗi tạo người dùng" });
+  }
+});
+
+// Cập nhật người dùng (Admin - Bao gồm đổi mật khẩu)
+app.put('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, password, role } = req.body;
+    
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (role) updateData.role = role;
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, msg: "Cập nhật người dùng thành công", user: data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: "Lỗi cập nhật người dùng" });
+  }
+});
+
+// Xóa người dùng (Admin)
+app.delete('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id == 1) return res.status(403).json({ success: false, msg: "Không thể xóa Admin gốc" });
+
+    const { error } = await supabase.from("users").delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, msg: "Xóa người dùng thành công" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, msg: "Lỗi xóa người dùng" });
   }
 });
 

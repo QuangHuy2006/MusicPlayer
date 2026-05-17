@@ -8,10 +8,13 @@ import {
 import { MdExplore } from "react-icons/md";
 import GlobalPlayer from "../components/GlobalPlayer";
 import NotificationPanel from "../components/NotificationPanel";
+import TitleBar from "../components/TitleBar";
 import { useNotification } from "../context/NotificationContext";
 
+import { API_BASE } from "../config";
+
 export default function Layout({ children }: { children?: React.ReactNode }) {
-  const API_BASE = import.meta.env.VITE_API_URL || '';
+
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,7 +64,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     localStorage.removeItem("token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    navigate("/login");
   };
 
   const navItems = [
@@ -82,7 +85,9 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen bg-ambient text-slate-200 overflow-hidden font-sans selection:bg-cyan-500/30">
+    <div className="flex flex-col h-screen bg-ambient text-slate-200 overflow-hidden font-sans selection:bg-cyan-500/30">
+      <TitleBar />
+      <div className="flex flex-1 overflow-hidden relative">
 
       {/* ===== SIDEBAR (Desktop) ===== */}
       <aside className={`hidden lg:flex flex-col h-full bg-black/20 border-r border-white/5 backdrop-blur-3xl z-50 transition-all duration-500 ease-in-out relative ${isCollapsed ? 'w-24' : 'w-72'}`}>
@@ -144,7 +149,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
       <div className="flex-1 flex flex-col h-full relative">
 
         {/* Top Header */}
-        <header className="h-20 flex items-center justify-between px-6 md:px-10 z-40 backdrop-blur-md bg-black/10">
+        <header className="h-20 flex items-center justify-between px-6 md:px-10 z-40 backdrop-blur-md bg-black/10 safe-top">
           {/* Navigation Arrows & Search */}
           <div className="flex items-center gap-6 flex-1">
             <div className="hidden md:flex items-center gap-2">
@@ -225,14 +230,15 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         <GlobalPlayer />
       </div>
 
+      </div>
       {/* ===== MOBILE NAV ===== */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-xl border-t border-white/5 z-50 px-2 flex items-center justify-around">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom))] bg-black/80 backdrop-blur-xl border-t border-white/5 z-50 px-2 flex items-start pt-2 justify-around safe-bottom">
         {navItems.slice(0, 5).map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           return (
             <Link key={item.path} to={item.path} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${isActive ? 'text-cyan-400' : 'text-slate-500'}`}>
               <span className={isActive ? 'scale-110' : ''}>{item.icon}</span>
-              <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
             </Link>
           );
         })}

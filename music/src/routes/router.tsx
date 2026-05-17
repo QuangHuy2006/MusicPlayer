@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createHashRouter, Navigate } from "react-router-dom";
 import { useEffect, useState, type ReactNode } from "react";
 import Layout from "../layout/layout";
 import Dashboard from "../client/dashboard";
@@ -37,7 +37,10 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
           localStorage.removeItem("user");
         }
       })
-      .catch(() => setUser(null))
+      .catch((err) => {
+        console.error("Auth verify error:", err);
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -77,7 +80,10 @@ const AdminRoute = ({ children }: { children: ReactNode }) => {
           localStorage.removeItem("user");
         }
       })
-      .catch(() => setAuthStatus("NOT_LOGGED_IN"))
+      .catch((err) => {
+        console.error("Admin verify error:", err);
+        setAuthStatus("NOT_LOGGED_IN");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -112,7 +118,7 @@ const AppLayout = () => {
   );
 };
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/login",
     element: <Login />,
