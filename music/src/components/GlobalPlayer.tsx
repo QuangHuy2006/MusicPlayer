@@ -134,26 +134,10 @@ export default function GlobalPlayer() {
             setAudioUrl(localAudioUrl);
             setCoverUrl(localCoverUrl);
           }
-          // Dynamic offline MP3 tag lyrics parsing
-          if (!currentSong.lyrics) {
-            const { extractLyricsFromAudio } = await import('../utils/lyricsParser');
-            const parsed = await extractLyricsFromAudio(dbSong.audioBlob);
-            if (parsed && active) {
-              setDynamicLyrics(parsed);
-            }
-          }
         } else {
           if (active) {
             setAudioUrl(currentSong.url);
             setCoverUrl(currentSong.imageUrl || '');
-          }
-          // Dynamic online MP3 tag lyrics parsing (optimized 512KB range fetch)
-          if (!currentSong.lyrics) {
-            const { extractLyricsFromAudio } = await import('../utils/lyricsParser');
-            const parsed = await extractLyricsFromAudio(currentSong.url);
-            if (parsed && active) {
-              setDynamicLyrics(parsed);
-            }
           }
         }
       } catch (e) {
@@ -161,16 +145,6 @@ export default function GlobalPlayer() {
         if (active) {
           setAudioUrl(currentSong.url);
           setCoverUrl(currentSong.imageUrl || '');
-        }
-        // Fallback dynamic online parsing
-        if (!currentSong.lyrics) {
-          try {
-            const { extractLyricsFromAudio } = await import('../utils/lyricsParser');
-            const parsed = await extractLyricsFromAudio(currentSong.url);
-            if (parsed && active) {
-              setDynamicLyrics(parsed);
-            }
-          } catch (err) {}
         }
       }
     };
