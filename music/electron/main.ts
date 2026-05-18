@@ -1,6 +1,9 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import fs from 'node:fs'
+import https from 'node:https'
+import { exec } from 'node:child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -73,6 +76,87 @@ ipcMain.on('window-close', () => {
 ipcMain.on('open-external', (_, url) => {
   shell.openExternal(url)
 })
+
+// Helper to download files following HTTP 301/302 redirects
+function downloadFile(url: string, destPath: string, onProgress: (percent: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = (targetUrl: string) => {
+      https.get(targetUrl, (response) => {
+        if (response.statusCode === 301 || response.statusCode === 302) {
+          if (response.headers.location) {
+            request(response.headers.location);
+            return;
+          }
+        }
+
+        if (response.statusCode !== 200) {
+          reject(new Error(`Tải file thất bại: Status ${response.statusCode}`));
+          return;
+        }
+
+        const file = fs.createWriteStream(destPath);
+        const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+        let downloadedSize = 0;
+
+        response.pipe(file);
+
+        response.on('data', (chunk) => {
+          downloadedSize += chunk.length;
+          if (totalSize > 0) {
+            const percent = Math.round((downloadedSize / totalSize) * 100);
+            onProgress(percent);
+          }
+        });
+
+        file.on('finish', () => {
+          file.close();
+          resolve();
+        });
+
+        file.on('error', (err) => {
+          fs.unlink(destPath, () => {});
+          reject(err);
+        });
+      }).on('error', (err) => {
+        reject(err);
+      });
+    };
+
+    request(url);
+  });
+}
+
+// IPC listener to download and run the silent update setup
+ipcMain.on('download-update', async (_, downloadUrl) => {
+  try {
+    const tempDir = app.getPath('temp');
+    const destPath = path.join(tempDir, 'MusicPlayer-Setup-Update.exe');
+
+    // Remove old update setup if it exists to avoid locked files
+    if (fs.existsSync(destPath)) {
+      try { fs.unlinkSync(destPath); } catch (e) {}
+    }
+
+    await downloadFile(downloadUrl, destPath, (percent) => {
+      win?.webContents.send('download-progress', percent);
+    });
+
+    win?.webContents.send('download-complete');
+
+    // Run the downloaded installer in interactive mode so they see the extraction
+    exec(`"${destPath}"`, (err) => {
+      if (err) console.error("Failed to run installer:", err);
+    });
+
+    // Close Electron immediately so the installer can overwrite locked files
+    setTimeout(() => {
+      app.quit();
+    }, 1500);
+
+  } catch (err: any) {
+    win?.webContents.send('download-error', err.message || 'Lỗi kết nối tải file');
+  }
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

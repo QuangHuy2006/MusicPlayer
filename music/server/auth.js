@@ -294,13 +294,13 @@ app.post('/api/payment/webhook', async (req, res) => {
     const content = data.content || data.description || '';
     const amount = data.amount || 0;
 
-    // Tìm mã MP + ID trong nội dung (Ví dụ: "MP123 nâng cấp premium")
-    const match = content.match(/MP(\d+)/i);
+    // Tìm mã QHUY hoặc MP + ID trong nội dung (Ví dụ: "QHUY 123" hoặc "MP123")
+    const match = content.match(/(?:QHUY|MP)\s*(\d+)/i);
     if (match && match[1]) {
       const userId = match[1];
 
-      // Chỉ nâng cấp nếu số tiền đủ (Ví dụ 29.000đ)
-      if (amount >= 29000) {
+      // Chỉ nâng cấp nếu số tiền đủ (Ví dụ 19.000đ)
+      if (amount >= 19000) {
         const { data: user, error } = await supabase
           .from('users')
           .update({ role: 'PREMIUM' })

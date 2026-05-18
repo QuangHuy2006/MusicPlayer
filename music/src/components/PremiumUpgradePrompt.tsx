@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { FaCrown, FaLock, FaTimes, FaCopy, FaDownload, FaWaveSquare, FaMusic } from "react-icons/fa";
+import { API_BASE } from "../config";
 
 export default function PremiumUpgradePrompt() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -13,10 +15,43 @@ export default function PremiumUpgradePrompt() {
     }
   }, []);
 
+  // Automated upgrade detection loop (polls every 3 seconds while payment modal is open)
+  useEffect(() => {
+    if (!showPaymentModal || !user || paymentSuccess) return;
+
+    const checkUpgradeStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch(`${API_BASE}/api/auth/verify`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.valid && data.user && data.user.role === 'PREMIUM') {
+            // Upgrade successfully detected!
+            localStorage.setItem("user", JSON.stringify(data.user));
+            setUser(data.user);
+            setPaymentSuccess(true);
+          }
+        }
+      } catch (err) {
+        console.warn("Lỗi kiểm tra trạng thái thanh toán:", err);
+      }
+    };
+
+    const interval = setInterval(checkUpgradeStatus, 3000);
+    return () => clearInterval(interval);
+  }, [showPaymentModal, user, paymentSuccess]);
+
   const userId = user?.id || user?._id || "VIP";
   const transferContent = `QHUY ${userId}`;
   const bankName = "MBBank";
-  const accountNumber = "200619082006"; // User's customized bank info or template
+  const accountNumber = "0789088909"; // User's customized bank info or template
   const amount = "19000";
 
   // VietQR Quick Link generation
@@ -110,69 +145,102 @@ export default function PremiumUpgradePrompt() {
           <div className="w-full max-w-md bg-slate-900 border border-amber-500/25 rounded-3xl p-6 shadow-2xl relative">
 
             {/* Close Button */}
-            <button
-              onClick={() => setShowPaymentModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <FaTimes size={18} />
-            </button>
+            {!paymentSuccess && (
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <FaTimes size={18} />
+              </button>
+            )}
 
-            {/* Header */}
-            <div className="text-center mb-6">
-              <FaCrown className="text-amber-400 text-3xl mx-auto mb-2 animate-bounce" />
-              <h3 className="text-lg font-black text-white uppercase tracking-wider">Thanh Toán Premium</h3>
-              <p className="text-xs text-slate-400 mt-1">Hệ thống kích hoạt tự động qua ngân hàng 24/7</p>
-            </div>
-
-            {/* QR Code Container */}
-            <div className="bg-white p-3 rounded-2xl w-56 h-56 mx-auto mb-6 flex items-center justify-center shadow-lg border-2 border-amber-500/30">
-              <img
-                src={qrUrl}
-                alt="VietQR Payment Code"
-                className="w-full h-full object-contain"
-              />
-            </div>
-
-            {/* Bank details and dynamic content */}
-            <div className="space-y-3 bg-white/5 border border-white/5 rounded-2xl p-4 text-left mb-6 text-sm font-semibold">
-              <div className="flex justify-between items-center py-1 border-b border-white/5">
-                <span className="text-slate-400 text-xs">Ngân hàng</span>
-                <span className="text-white">{bankName}</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-white/5">
-                <span className="text-slate-400 text-xs">Số tài khoản</span>
-                <span className="text-white">{accountNumber}</span>
-              </div>
-              <div className="flex justify-between items-center py-1 border-b border-white/5">
-                <span className="text-slate-400 text-xs">Số tiền</span>
-                <span className="text-amber-400 font-bold">{parseInt(amount).toLocaleString()}đ</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-slate-400 text-xs">Nội dung chuyển khoản</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-amber-400 font-black tracking-wider bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{transferContent}</span>
-                  <button
-                    onClick={handleCopy}
-                    className="text-slate-400 hover:text-white transition-colors"
-                    title="Sao chép nội dung"
-                  >
-                    <FaCopy size={14} />
-                  </button>
+            {!paymentSuccess ? (
+              <>
+                {/* Header */}
+                <div className="text-center mb-6">
+                  <FaCrown className="text-amber-400 text-3xl mx-auto mb-2 animate-bounce" />
+                  <h3 className="text-lg font-black text-white uppercase tracking-wider">Thanh Toán Premium</h3>
+                  <p className="text-xs text-slate-400 mt-1">Hệ thống kích hoạt tự động qua ngân hàng 24/7</p>
                 </div>
-              </div>
-            </div>
 
-            {/* Alert / Notice */}
-            <div className="text-center">
-              <p className="text-[10px] text-slate-500 leading-relaxed max-w-xs mx-auto">
-                ⚠️ **Lưu ý:** Vui lòng chuyển khoản chính xác số tiền và **nội dung chuyển khoản** ở trên. Sau khi nhận được tiền, hệ thống Webhook sẽ tự động nâng cấp VIP cho bạn sau 5-10 giây!
-              </p>
-              {copied && (
-                <p className="text-xs text-emerald-400 mt-2 font-bold animate-[fade-in-up_0.2s_ease-out]">
-                  Đã sao chép nội dung chuyển khoản!
+                {/* QR Code Container */}
+                <div className="bg-white p-3 rounded-2xl w-56 h-56 mx-auto mb-6 flex items-center justify-center shadow-lg border-2 border-amber-500/30">
+                  <img
+                    src={qrUrl}
+                    alt="VietQR Payment Code"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                {/* Bank details and dynamic content */}
+                <div className="space-y-3 bg-white/5 border border-white/5 rounded-2xl p-4 text-left mb-6 text-sm font-semibold">
+                  <div className="flex justify-between items-center py-1 border-b border-white/5">
+                    <span className="text-slate-400 text-xs">Ngân hàng</span>
+                    <span className="text-white">{bankName}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-white/5">
+                    <span className="text-slate-400 text-xs">Số tài khoản</span>
+                    <span className="text-white">{accountNumber}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-white/5">
+                    <span className="text-slate-400 text-xs">Số tiền</span>
+                    <span className="text-amber-400 font-bold">{parseInt(amount).toLocaleString()}đ</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-slate-400 text-xs">Nội dung chuyển khoản</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-400 font-black tracking-wider bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{transferContent}</span>
+                      <button
+                        onClick={handleCopy}
+                        className="text-slate-400 hover:text-white transition-colors"
+                        title="Sao chép nội dung"
+                      >
+                        <FaCopy size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Alert / Notice */}
+                <div className="text-center">
+                  <p className="text-[10px] text-slate-500 leading-relaxed max-w-xs mx-auto">
+                    ⚠️ <strong>Lưu ý:</strong> Vui lòng chuyển khoản chính xác số tiền và <strong>nội dung chuyển khoản</strong> ở trên. Sau khi nhận được tiền, hệ thống Webhook sẽ tự động nâng cấp VIP cho bạn sau 5-10 giây!
+                  </p>
+                  {copied && (
+                    <p className="text-xs text-emerald-400 mt-2 font-bold animate-[fade-in-up_0.2s_ease-out]">
+                      Đã sao chép nội dung chuyển khoản!
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6 animate-[scale-up_0.4s_ease-out]">
+                {/* Glowing Crown Icon */}
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/40 animate-bounce">
+                  <FaCrown className="text-white text-4xl" />
+                </div>
+
+                <h3 className="text-2xl font-black text-amber-400 tracking-wide uppercase mb-3 drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]">
+                  Kích Hoạt Thành Công!
+                </h3>
+                <p className="text-white text-sm font-bold mb-2">
+                  Chào mừng bạn đến với PREMIUM VIP 💎
                 </p>
-              )}
-            </div>
+                <p className="text-slate-400 text-xs font-semibold px-4 mb-8 leading-relaxed">
+                  Giao dịch đã được hệ thống ngân hàng tự động xác nhận thành công. Hãy nhấn nút bên dưới để tận hưởng thế giới âm nhạc đẳng cấp Cosmic Gold ngay bây giờ!
+                </p>
+
+                <button
+                  onClick={() => {
+                    // Instantly reload to apply the premium layouts and assets
+                    window.location.reload();
+                  }}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.03] shadow-lg shadow-amber-500/30 cursor-pointer"
+                >
+                  Bắt Đầu Trải Nghiệm
+                </button>
+              </div>
+            )}
 
           </div>
         </div>

@@ -29,6 +29,52 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [onlineVersion, setOnlineVersion] = useState("");
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'completed' | 'error'>('idle');
+  const [downloadErrorMsg, setDownloadErrorMsg] = useState('');
+
+  // Listen to in-app downloader events
+  useEffect(() => {
+    const ipc = (window as any).ipcRenderer;
+    if (!ipc) return;
+
+    const handleProgress = (_: any, percent: number) => {
+      setDownloadProgress(percent);
+    };
+
+    const handleComplete = () => {
+      setDownloadStatus('completed');
+    };
+
+    const handleError = (_: any, msg: string) => {
+      setDownloadStatus('error');
+      setDownloadErrorMsg(msg);
+    };
+
+    ipc.on('download-progress', handleProgress);
+    ipc.on('download-complete', handleComplete);
+    ipc.on('download-error', handleError);
+
+    return () => {
+      ipc.off('download-progress', handleProgress);
+      ipc.off('download-complete', handleComplete);
+      ipc.off('download-error', handleError);
+    };
+  }, []);
+
+  const startInAppUpdate = () => {
+    const ipc = (window as any).ipcRenderer;
+    // Infers exact GitHub Release asset naming
+    const downloadUrl = `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
+    
+    if (ipc) {
+      setDownloadStatus('downloading');
+      setDownloadProgress(0);
+      ipc.send('download-update', downloadUrl);
+    } else {
+      window.open(downloadUrl, '_blank');
+    }
+  };
 
   // Automated System Update Checker
   useEffect(() => {
@@ -300,67 +346,151 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
             {/* Top golden laser line */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
 
-            {/* Glowing upgrade icon container */}
-            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 animate-[bounce-slow_4s_infinite_ease-in-out]">
-              <FaDownload className="text-white text-3xl" />
-            </div>
+            {downloadStatus === 'idle' ? (
+              <>
+                {/* Glowing upgrade icon container */}
+                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 animate-[bounce-slow_4s_infinite_ease-in-out]">
+                  <FaDownload className="text-white text-3xl" />
+                </div>
 
-            <h3 className="text-2xl font-black tracking-tight mb-2 uppercase text-white">
-              Cập Nhật Hệ Thống
-            </h3>
-            <p className="text-slate-400 text-sm font-semibold tracking-wide mb-6">
-              Đã phát hiện phiên bản ứng dụng mới!
-            </p>
+                <h3 className="text-2xl font-black tracking-tight mb-2 uppercase text-white">
+                  Cập Nhật Hệ Thống
+                </h3>
+                <p className="text-slate-400 text-sm font-semibold tracking-wide mb-6">
+                  Đã phát hiện phiên bản ứng dụng mới!
+                </p>
 
-            {/* Version comparison panel */}
-            <div className="flex items-center justify-center gap-6 bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 font-semibold">
-              <div className="text-center">
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-1">Phiên bản hiện tại</span>
-                <span className="text-sm font-bold text-slate-400">v{packageJson.version}</span>
+                {/* Version comparison panel */}
+                <div className="flex items-center justify-center gap-6 bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 font-semibold">
+                  <div className="text-center">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-1">Phiên bản hiện tại</span>
+                    <span className="text-sm font-bold text-slate-400">v{packageJson.version}</span>
+                  </div>
+                  <div className="h-8 w-[1px] bg-white/10"></div>
+                  <div className="text-center">
+                    <span className="text-[10px] text-amber-500 uppercase tracking-widest font-black block mb-1">Phiên bản mới nhất</span>
+                    <span className="text-sm font-black text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">v{onlineVersion}</span>
+                  </div>
+                </div>
+
+                {/* Release notes preview */}
+                <div className="text-left bg-white/5 border border-white/5 rounded-2xl p-4 text-xs font-semibold text-slate-400 leading-relaxed mb-8 max-h-32 overflow-y-auto custom-scrollbar">
+                  <p className="text-white font-bold mb-1 flex items-center gap-1.5">🚀 Nhật ký cập nhật:</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Bổ sung dải trình diễn sóng nhạc 3D Premium lung linh.</li>
+                    <li>Tự động giải mã tag lời nhạc (USLT) trực tiếp từ file MP3.</li>
+                    <li>Cải tiến giao diện Cosmic Gold VIP sang trọng, đẳng cấp.</li>
+                    <li>Tối ưu hóa tốc độ tải và hiệu suất bộ nhớ ứng dụng.</li>
+                  </ul>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={startInAppUpdate}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-amber-500/20 cursor-pointer"
+                  >
+                    Tải & Cập Nhật Ngay
+                  </button>
+                  <button
+                    onClick={() => setShowUpdateModal(false)}
+                    className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Để Sau
+                  </button>
+                </div>
+              </>
+            ) : downloadStatus === 'downloading' ? (
+              <div className="py-6">
+                {/* Spinning loader */}
+                <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-4 border-white/5"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+                  <div className="text-lg font-black text-amber-400">
+                    {downloadProgress}%
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
+                  Đang Tải Bản Cập Nhật
+                </h3>
+                <p className="text-slate-400 text-xs font-semibold mb-6 px-4">
+                  Đang tải file cài đặt trực tiếp từ hệ thống GitHub Releases...
+                </p>
+
+                {/* Progress bar */}
+                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-2 border border-white/5 max-w-xs mx-auto">
+                  <div 
+                    className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)] transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">
+                  Vui lòng không đóng ứng dụng
+                </p>
               </div>
-              <div className="h-8 w-[1px] bg-white/10"></div>
-              <div className="text-center">
-                <span className="text-[10px] text-amber-500 uppercase tracking-widest font-black block mb-1">Phiên bản mới nhất</span>
-                <span className="text-sm font-black text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">v{onlineVersion}</span>
+            ) : downloadStatus === 'completed' ? (
+              <div className="py-8">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-3xl animate-bounce">
+                  ✓
+                </div>
+                <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
+                  Tải Hoàn Tất!
+                </h3>
+                <p className="text-slate-400 text-sm font-semibold mb-6 px-4">
+                  Đang khởi chạy trình cài đặt mới và tự động khởi động lại MusicPlayer...
+                </p>
+                <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
               </div>
-            </div>
+            ) : (
+              <div className="py-6">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 text-3xl">
+                  ⚠
+                </div>
+                <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
+                  Tải Thất Bại
+                </h3>
+                <p className="text-rose-400/90 text-xs font-bold mb-6 px-4">
+                  Lỗi: {downloadErrorMsg}
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={startInAppUpdate}
+                    className="w-full py-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-white font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
+                  >
+                    Thử Tải Lại
+                  </button>
+                  <button
+                    onClick={() => {
+                      const downloadUrl = `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
+                      const ipc = (window as any).ipcRenderer;
+                      if (ipc) {
+                        ipc.send('open-external', downloadUrl);
+                      } else {
+                        window.open(downloadUrl, '_blank');
+                      }
+                      setShowUpdateModal(false);
+                      setDownloadStatus('idle');
+                    }}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
+                  >
+                    Tải Thủ Công (Trình Duyệt)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUpdateModal(false);
+                      setDownloadStatus('idle');
+                    }}
+                    className="w-full py-3 rounded-2xl text-slate-500 hover:text-slate-400 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            )}
 
-            {/* Release notes preview */}
-            <div className="text-left bg-white/5 border border-white/5 rounded-2xl p-4 text-xs font-semibold text-slate-400 leading-relaxed mb-8 max-h-32 overflow-y-auto custom-scrollbar">
-              <p className="text-white font-bold mb-1 flex items-center gap-1.5">🚀 Nhật ký cập nhật:</p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Bổ sung dải trình diễn sóng nhạc 3D Premium lung linh.</li>
-                <li>Tự động giải mã tag lời nhạc (USLT) trực tiếp từ file MP3.</li>
-                <li>Cải tiến giao diện Cosmic Gold VIP sang trọng, đẳng cấp.</li>
-                <li>Tối ưu hóa tốc độ tải và hiệu suất bộ nhớ ứng dụng.</li>
-              </ul>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  const ipc = (window as any).ipcRenderer;
-                  if (ipc) {
-                    ipc.send('open-external', 'https://github.com/QuangHuy2006/MusicPlayer/releases');
-                  } else {
-                    window.open('https://github.com/QuangHuy2006/MusicPlayer/releases', '_blank');
-                  }
-                  setShowUpdateModal(false);
-                }}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-amber-500/20 cursor-pointer"
-              >
-                Tải & Cập Nhật Ngay
-              </button>
-              <button
-                onClick={() => setShowUpdateModal(false)}
-                className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
-              >
-                Để Sau
-              </button>
           </div>
         </div>
-      </div>
       )}
       </div>
       {/* ===== MOBILE NAV ===== */}
