@@ -870,101 +870,71 @@ function KaraokeOverlay({
       const height = canvas.height;
       ctx.clearRect(0, 0, width, height);
 
-      const centerX = width / 2;
-      const centerY = height / 2;
-
-      // 1. Calculate bass average for pulsing effect
-      let bassSum = 0;
-      const bassBinCount = 10;
-      for (let i = 0; i < bassBinCount; i++) {
-        bassSum += dataArray[i];
-      }
-      const bassAvg = bassSum / bassBinCount;
-
-      // 2. Base radius reacts to bass!
-      const minDim = Math.min(width, height);
-      const baseRadius = minDim * 0.18 + (bassAvg * 0.15);
-
-      // 3. Draw radial frequency bars
-      const numBars = 180; // High density for smooth premium render
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = 'rgba(245, 158, 11, 0.4)'; // Golden neon glow!
+      // Define horizontal soundwave parameters
+      const numBars = 64; // Low density, extremely lightweight!
+      const barWidth = 5;
+      const gap = 5;
       
+      // Symmetrical Y center at 82% height of the screen (neatly below the lyrics)
+      const waveY = height * 0.82;
+      const totalWidth = numBars * (barWidth + gap) - gap;
+      const startX = (width - totalWidth) / 2;
+
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = 'rgba(245, 158, 11, 0.3)';
+
+      // Draw horizontal symmetrical frequency bars
       for (let i = 0; i < numBars; i++) {
-        const angle = (i / numBars) * Math.PI * 2 + (Date.now() * 0.0001); // Slowly rotate visualizer!
-        
         // Map to frequency data
-        const dataIndex = Math.floor((i / numBars) * (bufferLength * 0.5));
+        const dataIndex = Math.floor((i / numBars) * (bufferLength * 0.6));
         const val = dataArray[dataIndex] || 0;
-        const barLength = (val / 255) * (minDim * 0.38);
+        
+        // Short height: max 60px (very clean, doesn't block the screen)
+        const barHeight = Math.max(4, (val / 255) * 60);
 
-        const startX = centerX + Math.cos(angle) * baseRadius;
-        const startY = centerY + Math.sin(angle) * baseRadius;
-        const endX = centerX + Math.cos(angle) * (baseRadius + barLength);
-        const endY = centerY + Math.sin(angle) * (baseRadius + barLength);
+        const x = startX + i * (barWidth + gap);
+        const y1 = waveY - barHeight / 2;
+        const y2 = waveY + barHeight / 2;
 
-        // Gold to Violet gradient
-        const grad = ctx.createLinearGradient(startX, startY, endX, endY);
-        grad.addColorStop(0, 'rgba(139, 92, 246, 0.85)');  // Indigo base
-        grad.addColorStop(0.4, 'rgba(236, 72, 153, 0.9)'); // Pink mid
-        grad.addColorStop(0.8, 'rgba(245, 158, 11, 0.95)'); // Amber Gold tips
-        grad.addColorStop(1, 'rgba(245, 158, 11, 0)');     // Fade out
+        // Gold to Violet vertical neon gradient
+        const grad = ctx.createLinearGradient(x, y1, x, y2);
+        grad.addColorStop(0, 'rgba(139, 92, 246, 0.8)');  // Top Violet
+        grad.addColorStop(0.5, 'rgba(236, 72, 153, 0.9)'); // Middle Pink
+        grad.addColorStop(1, 'rgba(245, 158, 11, 0.8)');   // Bottom Gold
 
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 4.5;
+        ctx.lineWidth = barWidth;
         ctx.lineCap = 'round';
+        
         ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
         ctx.stroke();
       }
-      
-      ctx.shadowBlur = 0; // Reset shadow glow for performance
 
-      // 4. Draw outer orbital smooth wave ring
-      ctx.beginPath();
-      for (let i = 0; i <= 360; i += 2) {
-        const angle = (i * Math.PI) / 180 + (Date.now() * 0.0002);
-        const dataIndex = Math.floor((i / 360) * (bufferLength * 0.2));
-        const val = dataArray[dataIndex] || 0;
-        const orbitRadius = baseRadius + (val / 255) * 65 + Math.sin(i * 0.1 + Date.now() * 0.005) * 8;
-        const x = centerX + Math.cos(angle) * orbitRadius;
-        const y = centerY + Math.sin(angle) * orbitRadius;
-
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-
-      // 5. Draw inner pulsing glowing core
-      const gradientCore = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, baseRadius);
-      gradientCore.addColorStop(0, 'rgba(15, 10, 25, 0.6)');
-      gradientCore.addColorStop(0.8, 'rgba(245, 158, 11, 0.03)');
-      gradientCore.addColorStop(1, 'rgba(245, 158, 11, 0)');
-      ctx.fillStyle = gradientCore;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.shadowBlur = 0; // Reset shadow glow
     };
 
     if (isPlaying) {
       draw();
     } else {
-      // Draw static circular placeholder in pause
+      // Draw static thin line when paused
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const width = canvas.width;
       const height = canvas.height;
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const baseRadius = Math.min(width, height) * 0.18;
+      const waveY = height * 0.82;
+      const numBars = 64;
+      const barWidth = 5;
+      const gap = 5;
+      const totalWidth = numBars * (barWidth + gap) - gap;
+      const startX = (width - totalWidth) / 2;
 
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.1)';
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.15)';
       ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(startX, waveY);
+      ctx.lineTo(startX + totalWidth, waveY);
       ctx.stroke();
     }
 
