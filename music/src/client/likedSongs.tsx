@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { Song } from '../interface/song';
 import { API_BASE } from '../config';
-import { FaHeart, FaPlay, FaPause, FaEllipsisH } from 'react-icons/fa';
+import { FaHeart, FaPlay, FaPause, FaEllipsisH, FaDownload, FaCheckCircle, FaSpinner } from 'react-icons/fa';
 import { MdFavorite } from 'react-icons/md';
 import { usePlayer } from '../context/PlayerContext';
 import { useLike } from '../context/LikeContext';
+import { useOffline } from '../context/OfflineContext';
 import { SkeletonSongItem } from '../components/Skeleton';
 import AddToPlaylistModal from './addToPlaylistModal';
 
@@ -14,6 +15,7 @@ const LikedSongs = () => {
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
   const { currentSong, isPlaying, playSong } = usePlayer();
   const { toggleLike } = useLike();
+  const { downloadSong, deleteOfflineSong, isDownloaded, isDownloading } = useOffline();
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -135,17 +137,39 @@ const LikedSongs = () => {
                   {song.author || 'Unknown Artist'}
                 </div>
 
-                <div className="flex items-center gap-2 w-20 justify-end">
+                <div className="flex items-center gap-1 w-28 justify-end">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isDownloaded(song.id)) {
+                        if (confirm(`Xóa "${song.name}" khỏi danh sách offline?`)) {
+                          deleteOfflineSong(song.id);
+                        }
+                      } else if (!isDownloading(song.id)) {
+                        downloadSong(song);
+                      }
+                    }}
+                    className={`p-2 rounded-full transition-all ${
+                      isDownloaded(song.id)
+                        ? 'text-emerald-400 hover:text-red-400'
+                        : isDownloading(song.id)
+                        ? 'text-sky-400 animate-spin'
+                        : 'text-slate-600 hover:text-sky-400 opacity-0 group-hover:opacity-100'
+                    }`}
+                    title={isDownloaded(song.id) ? 'Đã tải offline (Click để xóa)' : isDownloading(song.id) ? 'Đang tải...' : 'Tải offline'}
+                  >
+                    {isDownloaded(song.id) ? <FaCheckCircle size={14} /> : isDownloading(song.id) ? <FaSpinner size={14} /> : <FaDownload size={14} />}
+                  </button>
                   <button
                     onClick={(e) => handleUnlike(e, song.id)}
-                    className="p-3 text-pink-500 hover:scale-120 transition-transform"
+                    className="p-2 text-pink-500 hover:scale-120 transition-transform"
                     title="Bỏ thích"
                   >
-                    <FaHeart size={20} />
+                    <FaHeart size={16} />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setSelectedSongId(song.id); }}
-                    className="p-3 text-slate-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-2 text-slate-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <FaEllipsisH />
                   </button>

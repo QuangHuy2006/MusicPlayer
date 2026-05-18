@@ -1,5 +1,5 @@
 // @refresh reset
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Song } from '../interface/song';
 import { API_BASE } from '../config';
@@ -27,16 +27,60 @@ interface PlayerContextType {
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export const PlayerProvider = ({ children }: { children: ReactNode }) => {
-  const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [queue, setQueue] = useState<Song[]>([]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isRandom, setIsRandom] = useState(false);
-  const [isRepeat, setIsRepeat] = useState(false);
-  const [volume, setVolumeState] = useState(1); // 0 to 1
+  // Khôi phục bài hát cuối cùng từ localStorage khi mở app (giống Spotify)
+  const [currentSong, setCurrentSong] = useState<Song | null>(() => {
+    try {
+      const saved = localStorage.getItem('lastPlayedSong');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+  const [queue, setQueue] = useState<Song[]>(() => {
+    try {
+      const saved = localStorage.getItem('lastQueue');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [isPlaying, setIsPlaying] = useState(false); // Không tự play khi mở lại app
+  const [isRandom, setIsRandom] = useState(() => {
+    return localStorage.getItem('playerRandom') === 'true';
+  });
+  const [isRepeat, setIsRepeat] = useState(() => {
+    return localStorage.getItem('playerRepeat') === 'true';
+  });
+  const [volume, setVolumeState] = useState(() => {
+    const saved = localStorage.getItem('playerVolume');
+    return saved ? parseFloat(saved) : 1;
+  });
   const [sleepTimer, setSleepTimerState] = useState<number | null>(null);
   const [sleepTimerEnd, setSleepTimerEnd] = useState<number | null>(null);
   const [sleepTimeRemaining, setSleepTimeRemaining] = useState<number | null>(null);
   console.log(sleepTimerEnd);
+
+  // Lưu bài hát hiện tại vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    if (currentSong) {
+      try {
+        // Lưu bài hát (bỏ blob URL vì không thể serialize)
+        const songToSave = { ...currentSong };
+        if (songToSave.url?.startsWith('blob:')) {
+          songToSave.url = '';
+        }
+        localStorage.setItem('lastPlayedSong', JSON.stringify(songToSave));
+      } catch (e) { console.error('Error saving last song:', e); }
+    }
+  }, [currentSong]);
+
+  // Lưu queue vào localStorage (giới hạn 50 bài để tránh tràn bộ nhớ)
+  useEffect(() => {
+    try {
+      const queueToSave = queue.slice(0, 50).map(s => {
+        const copy = { ...s };
+        if (copy.url?.startsWith('blob:')) copy.url = '';
+        return copy;
+      });
+      localStorage.setItem('lastQueue', JSON.stringify(queueToSave));
+    } catch (e) { console.error('Error saving queue:', e); }
+  }, [queue]);
 
 
   // Sleep Timer logic
@@ -67,8 +111,17 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
     setSleepTimerState(minutes);
   };
 
+  // Track xem bài hát hiện tại có phải đang được khôi phục từ localStorage không
+  // Nếu là restore thì KHÔNG gọi API history (tránh lỗi 401 redirect xóa data)
+  const isRestoredRef = useRef(true); // true = vừa khôi phục từ localStorage
+
   useEffect(() => {
     if (currentSong) {
+      // Bỏ qua nếu đang restore từ localStorage
+      if (isRestoredRef.current) {
+        isRestoredRef.current = false;
+        return;
+      }
       const token = localStorage.getItem('token');
       if (token) {
         fetch(`${API_BASE}/api/history/${currentSong.id}`, {
@@ -80,6 +133,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   }, [currentSong]);
 
   const playSong = (song: Song, newQueue?: Song[]) => {
+    isRestoredRef.current = false; // User chủ động play → không phải restore
     setCurrentSong(song);
     setIsPlaying(true);
     if (newQueue) {
@@ -88,8 +142,16 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const togglePlay = () => setIsPlaying(!isPlaying);
-  const toggleRandom = () => setIsRandom(!isRandom);
-  const toggleRepeat = () => setIsRepeat(!isRepeat);
+  const toggleRandom = () => {
+    const next = !isRandom;
+    setIsRandom(next);
+    localStorage.setItem('playerRandom', String(next));
+  };
+  const toggleRepeat = () => {
+    const next = !isRepeat;
+    setIsRepeat(next);
+    localStorage.setItem('playerRepeat', String(next));
+  };
 
   const playNext = () => {
     if (queue.length === 0 || !currentSong) return;
@@ -145,7 +207,9 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const setVolume = (vol: number) => {
-    setVolumeState(Math.max(0, Math.min(1, vol)));
+    const clamped = Math.max(0, Math.min(1, vol));
+    setVolumeState(clamped);
+    localStorage.setItem('playerVolume', String(clamped));
   };
 
   return (

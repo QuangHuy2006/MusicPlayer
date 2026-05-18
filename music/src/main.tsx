@@ -5,6 +5,7 @@ import { PlayerProvider } from './context/PlayerContext'
 import { ToastProvider } from './context/ToastContext'
 import { LikeProvider } from './context/LikeContext'
 import { NotificationProvider } from './context/NotificationContext'
+import { OfflineProvider } from './context/OfflineContext'
 import './App.css'
 import { API_BASE } from './config';
 
@@ -62,7 +63,9 @@ createRoot(document.getElementById('root')!).render(
     <NotificationProvider>
       <LikeProvider>
         <PlayerProvider>
-          <RouterProvider router={router}></RouterProvider>
+          <OfflineProvider>
+            <RouterProvider router={router}></RouterProvider>
+          </OfflineProvider>
         </PlayerProvider>
       </LikeProvider>
     </NotificationProvider>

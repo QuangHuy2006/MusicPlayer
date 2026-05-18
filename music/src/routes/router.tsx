@@ -11,10 +11,12 @@ import { API_BASE } from '../config';
 import Playlist from "../client/playlistsPage";
 import LikedSongs from "../client/likedSongs";
 import HistoryPage from "../client/historyPage";
-import YoutubeConverter from "../client/youtubeConverter";
 import Register from "../client/register";
 import ProfilePage from "../client/profilePage";
 import LeaderboardPage from "../client/leaderboardPage";
+import OfflinePage from "../client/offlinePage";
+import PremiumUpgradePrompt from "../components/PremiumUpgradePrompt";
+
 
 // eslint-disable-next-line react-refresh/only-export-components
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -51,6 +53,47 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
       </div>
     );
   if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
+const PremiumRoute = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/auth/verify`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.valid && data.user) {
+          setUser(data.user);
+          localStorage.setItem("user", JSON.stringify(data.user));
+        } else {
+          setUser(null);
+          localStorage.removeItem("user");
+        }
+      })
+      .catch((err) => {
+        console.error("Premium auth verify error:", err);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen bg-slate-950">
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== "PREMIUM" && user.role !== "ADMIN") {
+    return <PremiumUpgradePrompt />;
+  }
   return <>{children}</>;
 };
 
@@ -151,10 +194,7 @@ const router = createHashRouter([
         path: "history",
         element: <HistoryPage />,
       },
-      {
-        path: "youtube-converter",
-        element: <YoutubeConverter />,
-      },
+
       {
         path: "profile",
         element: <ProfilePage />,
@@ -162,6 +202,14 @@ const router = createHashRouter([
       {
         path: "leaderboard",
         element: <LeaderboardPage />,
+      },
+      {
+        path: "offline",
+        element: (
+          <PremiumRoute>
+            <OfflinePage />
+          </PremiumRoute>
+        ),
       },
       {
         path: "admin",

@@ -24,8 +24,10 @@ app.use(express.json());
 const allowedOrigins = [
   "http://localhost:5173",
   "https://musicplayer-frontend-865e.onrender.com",
-  "https://music.werchat.io.vn"
-
+  "https://music.werchat.io.vn",
+  "http://localhost",
+  "https://localhost",
+  "capacitor://localhost"
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -415,6 +417,45 @@ const upload = multer({
   }
 });
 
+// Helper to extract MP3 info (bitrate & sampleRate) from buffer
+function getMp3Info(buffer) {
+  let offset = 0;
+  // Skip ID3v2 tag if present
+  if (buffer.length >= 10 && buffer.toString('ascii', 0, 3) === 'ID3') {
+    // ID3v2 size is synchsafe: 4 bytes where MSB is 0 (7 bits of data per byte)
+    const sizeBytes = buffer.slice(6, 10);
+    const tagSize = (sizeBytes[0] << 21) | (sizeBytes[1] << 14) | (sizeBytes[2] << 7) | sizeBytes[3];
+    offset = tagSize + 10; // 10 bytes header + tag size
+  }
+
+  // Scan for the first MP3 frame sync (0xFF and 111xxxxx)
+  while (offset < buffer.length - 4) {
+    if (buffer[offset] === 0xFF && (buffer[offset + 1] & 0xE0) === 0xE0) {
+      const byte1 = buffer[offset + 1];
+      const byte2 = buffer[offset + 2];
+
+      const mpegVersion = (byte1 & 0x18) >> 3; // 3: MPEG-1
+      const layer = (byte1 & 0x06) >> 1; // 1: Layer III
+
+      const bitrateIndex = (byte2 & 0xF0) >> 4;
+      const sampleRateIndex = (byte2 & 0x0C) >> 2;
+
+      // Ensure it is standard MPEG-1 Layer III
+      if (mpegVersion === 3 && layer === 1) {
+        const bitrates = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];
+        const sampleRates = [44100, 48000, 32000, 0];
+
+        const bitrate = bitrates[bitrateIndex];
+        const sampleRate = sampleRates[sampleRateIndex];
+
+        return { bitrate, sampleRate };
+      }
+    }
+    offset++;
+  }
+  return null;
+}
+
 // ---------- Songs Routes ----------
 app.post('/api/songs', auth, upload.fields([
   { name: 'file', maxCount: 1 },
@@ -427,6 +468,31 @@ app.post('/api/songs', auth, upload.fields([
 
     if (!name || !musicFile) {
       return res.status(400).json({ success: false, msg: 'Thiếu tên bài hát hoặc file MP3' });
+    }
+
+    // --- Kiểm tra chất lượng nhạc (Bitrate và Sample Rate) ---
+    const mp3Info = getMp3Info(musicFile.buffer);
+    if (!mp3Info) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'File nhạc không hợp lệ hoặc cấu trúc file bị hỏng (Không nhận dạng được chuẩn MP3).' 
+      });
+    }
+
+    // Yêu cầu bitrate tối thiểu 192 kbps
+    if (mp3Info.bitrate < 192) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: `Chất lượng nhạc quá thấp (${mp3Info.bitrate} kbps). Vui lòng tải lên nhạc chất lượng tối thiểu 192 kbps (Khuyến khích 320 kbps) để tránh bị rè và đảm bảo chất lượng.` 
+      });
+    }
+
+    // Yêu cầu sample rate tối thiểu 44.1 kHz (44100 Hz)
+    if (mp3Info.sampleRate < 44100) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: `Tần số quét quá thấp (${mp3Info.sampleRate / 1000} kHz). Vui lòng tải lên nhạc đạt chuẩn tối thiểu 44.1 kHz.` 
+      });
     }
 
     // --- Upload file nhạc lên bucket 'Music' ---

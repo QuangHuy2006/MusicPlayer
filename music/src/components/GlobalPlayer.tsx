@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaVolumeUp, FaVolumeMute, FaHeart, FaRegHeart, FaSlidersH, FaTimes, FaMicrophoneAlt, FaCrown } from 'react-icons/fa';
+import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaVolumeUp, FaVolumeMute, FaHeart, FaRegHeart, FaSlidersH, FaTimes, FaMicrophoneAlt, FaCrown, FaRandom, FaSync } from 'react-icons/fa';
 import { useLike } from '../context/LikeContext';
 import { API_BASE } from '../config';
 
 export default function GlobalPlayer() {
-  const { currentSong, isPlaying, togglePlay, setIsPlaying, playNext, playPrevious, volume, setVolume } = usePlayer();
+  const { currentSong, isPlaying, togglePlay, setIsPlaying, playNext, playPrevious, volume, setVolume, isRandom, isRepeat, toggleRandom, toggleRepeat } = usePlayer();
   const { likedSongIds, toggleLike } = useLike();
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const karaokeRef = useRef<HTMLDivElement>(null);
 
   const [progress, setProgress] = useState(0);
+  const pendingPlayRef = useRef(false);
+  const lastSongIdRef = useRef<number | null>(null);
   const [duration, setDuration] = useState(0);
   const [showEQ, setShowEQ] = useState(false);
   const [showKaraoke, setShowKaraoke] = useState(false);
@@ -92,6 +94,95 @@ export default function GlobalPlayer() {
       fn();
     }
   };
+
+  // Resolve offline audio and cover image dynamically
+  const [audioUrl, setAudioUrl] = useState<string>('');
+  const [coverUrl, setCoverUrl] = useState<string>('');
+  const [dynamicLyrics, setDynamicLyrics] = useState<string>('');
+
+  useEffect(() => {
+    if (!currentSong) return;
+
+    setDynamicLyrics('');
+
+    if (currentSong.lyrics) {
+      setDynamicLyrics(currentSong.lyrics);
+    }
+
+    if (currentSong.url.startsWith('blob:') || currentSong.url.startsWith('data:')) {
+      setAudioUrl(currentSong.url);
+      setCoverUrl(currentSong.imageUrl || '');
+      return;
+    }
+
+    let active = true;
+    let localAudioUrl = '';
+    let localCoverUrl = '';
+
+    const checkOffline = async () => {
+      try {
+        const { getSong } = await import('../utils/offlineDb');
+        const dbSong = await getSong(currentSong.id);
+        if (dbSong && dbSong.audioBlob) {
+          localAudioUrl = URL.createObjectURL(dbSong.audioBlob);
+          if (dbSong.imageBlob) {
+            localCoverUrl = URL.createObjectURL(dbSong.imageBlob);
+          } else {
+            localCoverUrl = currentSong.imageUrl || '';
+          }
+          if (active) {
+            setAudioUrl(localAudioUrl);
+            setCoverUrl(localCoverUrl);
+          }
+          // Dynamic offline MP3 tag lyrics parsing
+          if (!currentSong.lyrics) {
+            const { extractLyricsFromAudio } = await import('../utils/lyricsParser');
+            const parsed = await extractLyricsFromAudio(dbSong.audioBlob);
+            if (parsed && active) {
+              setDynamicLyrics(parsed);
+            }
+          }
+        } else {
+          if (active) {
+            setAudioUrl(currentSong.url);
+            setCoverUrl(currentSong.imageUrl || '');
+          }
+          // Dynamic online MP3 tag lyrics parsing (optimized 512KB range fetch)
+          if (!currentSong.lyrics) {
+            const { extractLyricsFromAudio } = await import('../utils/lyricsParser');
+            const parsed = await extractLyricsFromAudio(currentSong.url);
+            if (parsed && active) {
+              setDynamicLyrics(parsed);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error loading offline source:', e);
+        if (active) {
+          setAudioUrl(currentSong.url);
+          setCoverUrl(currentSong.imageUrl || '');
+        }
+        // Fallback dynamic online parsing
+        if (!currentSong.lyrics) {
+          try {
+            const { extractLyricsFromAudio } = await import('../utils/lyricsParser');
+            const parsed = await extractLyricsFromAudio(currentSong.url);
+            if (parsed && active) {
+              setDynamicLyrics(parsed);
+            }
+          } catch (err) {}
+        }
+      }
+    };
+
+    checkOffline();
+
+    return () => {
+      active = false;
+      if (localAudioUrl) URL.revokeObjectURL(localAudioUrl);
+      if (localCoverUrl && localCoverUrl.startsWith('blob:')) URL.revokeObjectURL(localCoverUrl);
+    };
+  }, [currentSong]);
 
   // ====================== AUDIO ENGINE PRO (ULTIMATE UPGRADE) ======================
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -276,13 +367,26 @@ export default function GlobalPlayer() {
   // Play/Pause Smooth Fade (Chống giật/nổ bụp khi Stop)
   useEffect(() => {
     if (!audioRef.current) return;
-    
+
+    const songChanged = currentSong && lastSongIdRef.current !== currentSong.id;
+    if (currentSong) lastSongIdRef.current = currentSong.id;
+
     if (isPlaying) {
-      audioRef.current.play().catch(() => setIsPlaying(false));
+      if (songChanged) {
+        // Bài mới → chờ audio load xong rồi mới play (qua handleCanPlay)
+        pendingPlayRef.current = true;
+      } else {
+        // Cùng bài → play ngay
+        audioRef.current.play().catch(() => {
+          // Nếu fail thì đánh dấu pendingPlay để thử lại khi canplay
+          pendingPlayRef.current = true;
+        });
+      }
       if (masterFadeRef.current && audioCtxRef.current) {
         masterFadeRef.current.gain.setTargetAtTime(1, audioCtxRef.current.currentTime, 0.1);
       }
     } else {
+      pendingPlayRef.current = false;
       if (masterFadeRef.current && audioCtxRef.current) {
         masterFadeRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.1);
         setTimeout(() => {
@@ -313,6 +417,24 @@ export default function GlobalPlayer() {
     playNext();
   };
 
+  // Khi audio đã load xong source mới → auto play nếu đang chờ
+  const handleCanPlay = () => {
+    if (pendingPlayRef.current && isPlaying && audioRef.current) {
+      pendingPlayRef.current = false;
+      // Reset master fade gain để đảm bảo nghe được
+      if (masterFadeRef.current && audioCtxRef.current) {
+        masterFadeRef.current.gain.setTargetAtTime(1, audioCtxRef.current.currentTime, 0.05);
+      }
+      // Resume AudioContext nếu bị suspended
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+      audioRef.current.play().catch(err => {
+        console.error('Auto-play failed on canplay:', err);
+      });
+    }
+  };
+
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
@@ -328,20 +450,22 @@ export default function GlobalPlayer() {
       <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[100] glass-panel-3d rounded-none md:rounded-t-[24px] rounded-b-none border-x-0 border-b-0 animate-[fade-in-up_0.3s_ease-out]">
         <audio
           ref={audioRef}
-          src={currentSong.url}
+          src={audioUrl || currentSong.url}
           crossOrigin="anonymous"
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
+          onCanPlay={handleCanPlay}
           onLoadedMetadata={handleTimeUpdate}
+          loop={isRepeat}
         />
 
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-24 flex items-center justify-between gap-4">
           {/* Song Info */}
           <div className="flex items-center gap-3 w-1/3 min-w-0">
             <div className="w-10 h-10 md:w-14 md:h-14 flex-shrink-0 rounded-[12px] overflow-hidden relative group premium-card p-0 shadow-[var(--shadow-3d-out)] border-0">
-              {currentSong.imageUrl ? (
+              {coverUrl ? (
                 <img
-                  src={currentSong.imageUrl}
+                  src={coverUrl}
                   alt={currentSong.name}
                   className={`w-full h-full object-cover rounded-[12px] ${isPlaying ? 'animate-[spin_10s_linear_infinite]' : ''}`}
                 />
@@ -373,6 +497,17 @@ export default function GlobalPlayer() {
           {/* Controls */}
           <div className="flex flex-col items-center flex-1 max-w-2xl">
             <div className="flex items-center gap-4 md:gap-6 md:mb-1">
+              <button
+                onClick={toggleRandom}
+                className={`transition-colors p-2 ${
+                  isRandom
+                    ? 'text-[var(--accent-gold)] drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] font-bold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Play Random (Shuffle)"
+              >
+                <FaRandom size={14} className="md:w-4 md:h-4" />
+              </button>
               <button onClick={playPrevious} className="text-slate-400 hover:text-white transition-colors">
                 <FaStepBackward size={14} className="md:w-4 md:h-4" />
               </button>
@@ -384,6 +519,17 @@ export default function GlobalPlayer() {
               </button>
               <button onClick={playNext} className="text-slate-400 hover:text-white transition-colors">
                 <FaStepForward size={14} className="md:w-4 md:h-4" />
+              </button>
+              <button
+                onClick={toggleRepeat}
+                className={`transition-colors p-2 ${
+                  isRepeat
+                    ? 'text-[var(--accent-gold)] drop-shadow-[0_0_8px_rgba(212,175,55,0.6)] font-bold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Play Loop (Repeat)"
+              >
+                <FaSync size={14} className="md:w-4 md:h-4" />
               </button>
             </div>
 
@@ -641,7 +787,7 @@ export default function GlobalPlayer() {
       {/* ==================== KARAOKE OVERLAY ==================== */}
       {showKaraoke && currentSong && (
         <KaraokeOverlay
-          song={currentSong}
+          song={{ ...currentSong, imageUrl: coverUrl, lyrics: dynamicLyrics || currentSong.lyrics }}
           progress={progress}
           duration={duration}
           isPlaying={isPlaying}
@@ -650,6 +796,12 @@ export default function GlobalPlayer() {
           onNext={playNext}
           onPrev={playPrevious}
           karaokeRef={karaokeRef}
+          isRandom={isRandom}
+          isRepeat={isRepeat}
+          toggleRandom={toggleRandom}
+          toggleRepeat={toggleRepeat}
+          analyser={analyserRef.current}
+          isPremium={isPremium}
         />
       )}
     </>
@@ -667,6 +819,12 @@ function KaraokeOverlay({
   onNext,
   onPrev,
   karaokeRef,
+  isRandom,
+  isRepeat,
+  toggleRandom,
+  toggleRepeat,
+  analyser,
+  isPremium,
 }: {
   song: any;
   progress: number;
@@ -677,7 +835,144 @@ function KaraokeOverlay({
   onNext: () => void;
   onPrev: () => void;
   karaokeRef: React.RefObject<HTMLDivElement | null>;
+  isRandom: boolean;
+  isRepeat: boolean;
+  toggleRandom: () => void;
+  toggleRepeat: () => void;
+  analyser: AnalyserNode | null;
+  isPremium: boolean;
 }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!isPremium || !analyser || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+
+    const resizeCanvas = () => {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const draw = () => {
+      animationFrameId = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(dataArray);
+
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      // 1. Calculate bass average for pulsing effect
+      let bassSum = 0;
+      const bassBinCount = 10;
+      for (let i = 0; i < bassBinCount; i++) {
+        bassSum += dataArray[i];
+      }
+      const bassAvg = bassSum / bassBinCount;
+
+      // 2. Base radius reacts to bass!
+      const minDim = Math.min(width, height);
+      const baseRadius = minDim * 0.18 + (bassAvg * 0.15);
+
+      // 3. Draw radial frequency bars
+      const numBars = 180; // High density for smooth premium render
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(245, 158, 11, 0.4)'; // Golden neon glow!
+      
+      for (let i = 0; i < numBars; i++) {
+        const angle = (i / numBars) * Math.PI * 2 + (Date.now() * 0.0001); // Slowly rotate visualizer!
+        
+        // Map to frequency data
+        const dataIndex = Math.floor((i / numBars) * (bufferLength * 0.5));
+        const val = dataArray[dataIndex] || 0;
+        const barLength = (val / 255) * (minDim * 0.38);
+
+        const startX = centerX + Math.cos(angle) * baseRadius;
+        const startY = centerY + Math.sin(angle) * baseRadius;
+        const endX = centerX + Math.cos(angle) * (baseRadius + barLength);
+        const endY = centerY + Math.sin(angle) * (baseRadius + barLength);
+
+        // Gold to Violet gradient
+        const grad = ctx.createLinearGradient(startX, startY, endX, endY);
+        grad.addColorStop(0, 'rgba(139, 92, 246, 0.85)');  // Indigo base
+        grad.addColorStop(0.4, 'rgba(236, 72, 153, 0.9)'); // Pink mid
+        grad.addColorStop(0.8, 'rgba(245, 158, 11, 0.95)'); // Amber Gold tips
+        grad.addColorStop(1, 'rgba(245, 158, 11, 0)');     // Fade out
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      }
+      
+      ctx.shadowBlur = 0; // Reset shadow glow for performance
+
+      // 4. Draw outer orbital smooth wave ring
+      ctx.beginPath();
+      for (let i = 0; i <= 360; i += 2) {
+        const angle = (i * Math.PI) / 180 + (Date.now() * 0.0002);
+        const dataIndex = Math.floor((i / 360) * (bufferLength * 0.2));
+        const val = dataArray[dataIndex] || 0;
+        const orbitRadius = baseRadius + (val / 255) * 65 + Math.sin(i * 0.1 + Date.now() * 0.005) * 8;
+        const x = centerX + Math.cos(angle) * orbitRadius;
+        const y = centerY + Math.sin(angle) * orbitRadius;
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 5. Draw inner pulsing glowing core
+      const gradientCore = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, baseRadius);
+      gradientCore.addColorStop(0, 'rgba(15, 10, 25, 0.6)');
+      gradientCore.addColorStop(0.8, 'rgba(245, 158, 11, 0.03)');
+      gradientCore.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = gradientCore;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+      ctx.fill();
+    };
+
+    if (isPlaying) {
+      draw();
+    } else {
+      // Draw static circular placeholder in pause
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const baseRadius = Math.min(width, height) * 0.18;
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.1)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, [isPlaying, analyser, isPremium]);
   const { lines, isLrc } = useMemo(() => {
     if (!song.lyrics) return { lines: [], isLrc: false };
     const rawLines = song.lyrics.split('\n').filter((l: string) => l.trim() !== '');
@@ -736,6 +1031,14 @@ function KaraokeOverlay({
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[var(--accent-gold)]/10 blur-[150px] rounded-full animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-violet-500/10 blur-[120px] rounded-full" style={{ animationDelay: '1s' }}></div>
       </div>
+
+      {/* Dynamic 3D Circular Audio Visualizer (Premium Only) */}
+      {isPremium && analyser && (
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none opacity-65 z-0"
+        />
+      )}
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between px-6 md:px-10 py-6">
@@ -812,6 +1115,17 @@ function KaraokeOverlay({
         </div>
         {/* Playback Controls */}
         <div className="flex items-center justify-center gap-8">
+          <button
+            onClick={toggleRandom}
+            className={`transition-colors p-2 ${
+              isRandom
+                ? 'text-[var(--accent-gold)] drop-shadow-[0_0_12px_rgba(212,175,55,0.8)] font-bold'
+                : 'text-slate-400 hover:text-white'
+            }`}
+            title="Play Random (Shuffle)"
+          >
+            <FaRandom size={18} />
+          </button>
           <button onClick={onPrev} className="text-slate-400 hover:text-white transition-colors">
             <FaStepBackward size={18} />
           </button>
@@ -823,6 +1137,17 @@ function KaraokeOverlay({
           </button>
           <button onClick={onNext} className="text-slate-400 hover:text-white transition-colors">
             <FaStepForward size={18} />
+          </button>
+          <button
+            onClick={toggleRepeat}
+            className={`transition-colors p-2 ${
+              isRepeat
+                ? 'text-[var(--accent-gold)] drop-shadow-[0_0_12px_rgba(212,175,55,0.8)] font-bold'
+                : 'text-slate-400 hover:text-white'
+            }`}
+            title="Play Loop (Repeat)"
+          >
+            <FaSync size={18} />
           </button>
         </div>
       </div>

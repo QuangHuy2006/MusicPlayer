@@ -19,13 +19,15 @@ import {
   FaTimes,
   FaCheckCircle,
   FaPaperPlane,
-  FaDownload
+  FaDownload,
+  FaSpinner
 } from "react-icons/fa";
 import { MdOutlineExplore, MdQueueMusic } from "react-icons/md";
 import type { Song } from "../interface/song";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { usePlayer } from "../context/PlayerContext";
 import { useLike } from "../context/LikeContext";
+import { useOffline } from "../context/OfflineContext";
 import { SkeletonSongItem } from "../components/Skeleton";
 
 interface PlaylistSong extends Song {
@@ -56,6 +58,7 @@ const MusicPlayer = () => {
     sleepTimeRemaining
   } = usePlayer();
   const { likedSongIds, toggleLike } = useLike();
+  const { downloadSong, deleteOfflineSong, isDownloaded, isDownloading } = useOffline();
 
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -422,16 +425,38 @@ const MusicPlayer = () => {
                       <h4 className={`font-bold truncate ${isActive ? 'text-[var(--accent-gold)]' : 'text-white'}`}>{song.name}</h4>
                       <p className="text-xs text-slate-500 font-medium">{song.author || 'Unknown Artist'}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isDownloaded(song.id)) {
+                            if (confirm(`Xóa "${song.name}" khỏi danh sách offline?`)) {
+                              deleteOfflineSong(song.id);
+                            }
+                          } else if (!isDownloading(song.id)) {
+                            downloadSong(song);
+                          }
+                        }}
+                        className={`p-2 rounded-full transition-all ${
+                          isDownloaded(song.id)
+                            ? 'text-emerald-400 hover:text-red-400'
+                            : isDownloading(song.id)
+                            ? 'text-sky-400 animate-spin'
+                            : 'text-slate-600 hover:text-sky-400 opacity-0 group-hover:opacity-100'
+                        }`}
+                        title={isDownloaded(song.id) ? 'Đã tải offline (Click để xóa)' : isDownloading(song.id) ? 'Đang tải...' : 'Tải offline'}
+                      >
+                        {isDownloaded(song.id) ? <FaCheckCircle size={14} /> : isDownloading(song.id) ? <FaSpinner size={14} /> : <FaDownload size={14} />}
+                      </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleLike(song.id); }}
-                        className={`p-3 rounded-full transition-colors ${likedSongIds.has(song.id) ? 'text-pink-500' : 'text-slate-600 hover:text-white'}`}
+                        className={`p-2 rounded-full transition-colors ${likedSongIds.has(song.id) ? 'text-pink-500' : 'text-slate-600 hover:text-white'}`}
                       >
                         {likedSongIds.has(song.id) ? <FaHeart /> : <FaRegHeart />}
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedSongId(song.id); }}
-                        className="p-3 text-slate-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                        className="p-2 text-slate-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <FaEllipsisH />
                       </button>

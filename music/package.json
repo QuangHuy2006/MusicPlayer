@@ -75,15 +75,11 @@
     },
     "files": [
       "dist",
-      "dist-electron",
-      "server",
-      "server/.env"
+      "dist-electron"
     ],
     "asar": true,
-    "asarUnpack": [
-      "server"
-    ],
     "win": {
+      "icon": "public/artworks-RJNSviq7wyAmK3zb-Dd4G0Q-t200x200.ico",
       "target": [
         "nsis"
       ]

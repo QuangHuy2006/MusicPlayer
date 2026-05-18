@@ -2,8 +2,9 @@ import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   FaHeadphones, FaList, FaMusic, FaUserShield,
-  FaSignOutAlt, FaSearch, FaHeart, FaHistory, FaYoutube,
-  FaChevronLeft, FaChevronRight, FaUserCircle, FaBell, FaTrophy
+  FaSignOutAlt, FaSearch, FaHeart, FaHistory,
+  FaChevronLeft, FaChevronRight, FaUserCircle, FaBell, FaTrophy,
+  FaDownload
 } from "react-icons/fa";
 import { MdExplore } from "react-icons/md";
 import GlobalPlayer from "../components/GlobalPlayer";
@@ -22,6 +23,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const [userData, setUserData] = useState<any>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const { unreadCount } = useNotification();
+  
+  const isPremium = userData?.role === 'PREMIUM';
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -73,8 +76,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     { path: "/history", icon: <FaHistory size={20} />, label: "Gần Đây", color: "from-amber-500 to-orange-400" },
     { path: "/liked-songs", icon: <FaHeart size={20} />, label: "Yêu Thích", color: "from-rose-500 to-pink-400" },
     { path: "/playlist", icon: <FaList size={20} />, label: "Playlist", color: "from-emerald-500 to-teal-400" },
-    { path: "/youtube-converter", icon: <FaYoutube size={20} />, label: "Tải YouTube", color: "from-red-600 to-rose-500" },
     { path: "/my-songs", icon: <FaMusic size={20} />, label: "Của Tôi", color: "from-indigo-500 to-violet-400" },
+    { path: "/offline", icon: <FaDownload size={18} />, label: "Nhạc Offline", color: "from-sky-500 to-indigo-400" },
     { path: "/profile", icon: <FaUserCircle size={20} />, label: "Profile", color: "from-cyan-500 to-blue-400" },
   ];
 
@@ -85,12 +88,12 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen bg-ambient text-slate-200 overflow-hidden font-sans selection:bg-cyan-500/30">
+    <div className={`flex flex-col h-screen ${isPremium ? 'bg-premium-ambient' : 'bg-ambient'} text-slate-200 overflow-hidden font-sans selection:bg-cyan-500/30`}>
       <TitleBar />
       <div className="flex flex-1 overflow-hidden relative">
 
       {/* ===== SIDEBAR (Desktop) ===== */}
-      <aside className={`hidden lg:flex flex-col h-full bg-black/20 border-r border-white/5 backdrop-blur-3xl z-50 transition-all duration-500 ease-in-out relative ${isCollapsed ? 'w-24' : 'w-72'}`}>
+      <aside className={`hidden lg:flex flex-col h-full ${isPremium ? 'premium-sidebar' : 'bg-black/20 border-r border-white/5 backdrop-blur-3xl'} z-50 transition-all duration-500 ease-in-out relative ${isCollapsed ? 'w-24' : 'w-72'}`}>
         {/* Toggle Button */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -102,13 +105,17 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         {/* Logo */}
         <div className={`p-8 transition-all duration-500 ${isCollapsed ? 'px-6' : 'p-8'}`}>
           <Link to="/dashboard" className="flex items-center gap-4 group">
-            <div className="w-12 h-12 rounded-[18px] bg-gradient-to-br from-violet-500 via-cyan-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-cyan-500/20 group-hover:scale-110 transition-transform duration-500 shrink-0">
+            <div className={`w-12 h-12 rounded-[18px] ${isPremium ? 'bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 shadow-amber-500/30' : 'bg-gradient-to-br from-violet-500 via-cyan-500 to-blue-600 shadow-cyan-500/20'} flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500 shrink-0`}>
               <FaHeadphones className="text-white text-2xl" />
             </div>
             {!isCollapsed && (
               <div className="animate-[fade-in_0.3s_ease-out]">
-                <span className="text-xl font-black text-white tracking-tighter block">Q.HUY</span>
-                <span className="text-[10px] font-black text-cyan-400 tracking-[0.3em] uppercase opacity-70">Scientific</span>
+                <span className={`text-xl font-black ${isPremium ? 'shimmer-gold-text' : 'text-white'} tracking-tighter block`}>
+                  {isPremium ? 'Q.HUY VIP' : 'Q.HUY'}
+                </span>
+                <span className={`text-[10px] font-black ${isPremium ? 'text-amber-500' : 'text-cyan-400'} tracking-[0.3em] uppercase opacity-70`}>
+                  {isPremium ? 'GOLD MEMBER' : 'Scientific'}
+                </span>
               </div>
             )}
           </Link>
@@ -149,7 +156,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
       <div className="flex-1 flex flex-col h-full relative">
 
         {/* Top Header */}
-        <header className="h-20 flex items-center justify-between px-6 md:px-10 z-40 backdrop-blur-md bg-black/10 safe-top">
+        <header className={`h-20 flex items-center justify-between px-6 md:px-10 z-40 backdrop-blur-md ${isPremium ? 'bg-amber-950/5 border-b border-amber-500/10' : 'bg-black/10'} safe-top`}>
           {/* Navigation Arrows & Search */}
           <div className="flex items-center gap-6 flex-1">
             <div className="hidden md:flex items-center gap-2">
@@ -195,8 +202,15 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 {userData?.avatar ? <img src={userData.avatar} className="w-full h-full object-cover" alt="" /> : <FaUserCircle size={24} className="text-slate-500" />}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate max-w-[120px]">{userData?.name || "Người dùng"}</p>
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${userData?.role === 'PREMIUM' ? 'text-[var(--accent-gold)]' : 'text-slate-500'}`}>{userData?.role || "Member"}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-bold text-white truncate max-w-[120px]">{userData?.name || "Người dùng"}</p>
+                  {isPremium && (
+                    <span className="text-[8px] px-1.5 py-0.5 rounded-md vip-badge-glow font-black uppercase tracking-widest shrink-0">
+                      VIP
+                    </span>
+                  )}
+                </div>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${isPremium ? 'text-amber-500' : 'text-slate-500'}`}>{userData?.role || "Member"}</p>
               </div>
               <button
                 onClick={handleLogout}
