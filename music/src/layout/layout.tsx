@@ -11,6 +11,7 @@ import GlobalPlayer from "../components/GlobalPlayer";
 import NotificationPanel from "../components/NotificationPanel";
 import TitleBar from "../components/TitleBar";
 import { useNotification } from "../context/NotificationContext";
+import packageJson from "../../package.json";
 
 import { API_BASE } from "../config";
 
@@ -25,6 +26,51 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const { unreadCount } = useNotification();
   
   const isPremium = userData?.role === 'PREMIUM';
+
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [onlineVersion, setOnlineVersion] = useState("");
+
+  // Automated System Update Checker
+  useEffect(() => {
+    const checkUpdates = async () => {
+      try {
+        // Fetch the raw package.json directly from their public GitHub repo
+        const res = await fetch("https://raw.githubusercontent.com/QuangHuy2006/MusicPlayer/main/music/package.json");
+        if (res.ok) {
+          const data = await res.json();
+          const online = data.version;
+          const local = packageJson.version;
+          
+          // Compare versions (semver parts)
+          const parse = (v: string) => v.replace(/[^0-9.]/g, '').split('.').map(Number);
+          const localParts = parse(local);
+          const onlineParts = parse(online);
+          
+          let hasUpdate = false;
+          for (let i = 0; i < Math.max(localParts.length, onlineParts.length); i++) {
+            const l = localParts[i] || 0;
+            const o = onlineParts[i] || 0;
+            if (o > l) {
+              hasUpdate = true;
+              break;
+            }
+            if (l > o) break;
+          }
+          
+          if (hasUpdate) {
+            setOnlineVersion(online);
+            setShowUpdateModal(true);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to check for system updates:", err);
+      }
+    };
+
+    // Check updates after 3s to let the app initialize smoothly
+    const timeout = setTimeout(checkUpdates, 3000);
+    return () => clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -244,6 +290,78 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         <GlobalPlayer />
       </div>
 
+      {/* ==========================================
+          SYSTEM UPDATE DIALOG (Modal)
+          ========================================== */}
+      {showUpdateModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 animate-[fade-in_0.3s_ease-out]">
+          <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-2xl border border-amber-500/20 rounded-3xl p-8 shadow-[0_0_80px_rgba(245,158,11,0.15)] relative overflow-hidden text-center">
+            
+            {/* Top golden laser line */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+
+            {/* Glowing upgrade icon container */}
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 animate-[bounce-slow_4s_infinite_ease-in-out]">
+              <FaDownload className="text-white text-3xl" />
+            </div>
+
+            <h3 className="text-2xl font-black tracking-tight mb-2 uppercase text-white">
+              Cập Nhật Hệ Thống
+            </h3>
+            <p className="text-slate-400 text-sm font-semibold tracking-wide mb-6">
+              Đã phát hiện phiên bản ứng dụng mới!
+            </p>
+
+            {/* Version comparison panel */}
+            <div className="flex items-center justify-center gap-6 bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 font-semibold">
+              <div className="text-center">
+                <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-1">Phiên bản hiện tại</span>
+                <span className="text-sm font-bold text-slate-400">v{packageJson.version}</span>
+              </div>
+              <div className="h-8 w-[1px] bg-white/10"></div>
+              <div className="text-center">
+                <span className="text-[10px] text-amber-500 uppercase tracking-widest font-black block mb-1">Phiên bản mới nhất</span>
+                <span className="text-sm font-black text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">v{onlineVersion}</span>
+              </div>
+            </div>
+
+            {/* Release notes preview */}
+            <div className="text-left bg-white/5 border border-white/5 rounded-2xl p-4 text-xs font-semibold text-slate-400 leading-relaxed mb-8 max-h-32 overflow-y-auto custom-scrollbar">
+              <p className="text-white font-bold mb-1 flex items-center gap-1.5">🚀 Nhật ký cập nhật:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Bổ sung dải trình diễn sóng nhạc 3D Premium lung linh.</li>
+                <li>Tự động giải mã tag lời nhạc (USLT) trực tiếp từ file MP3.</li>
+                <li>Cải tiến giao diện Cosmic Gold VIP sang trọng, đẳng cấp.</li>
+                <li>Tối ưu hóa tốc độ tải và hiệu suất bộ nhớ ứng dụng.</li>
+              </ul>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  const ipc = (window as any).ipcRenderer;
+                  if (ipc) {
+                    ipc.send('open-external', 'https://github.com/QuangHuy2006/MusicPlayer/releases');
+                  } else {
+                    window.open('https://github.com/QuangHuy2006/MusicPlayer/releases', '_blank');
+                  }
+                  setShowUpdateModal(false);
+                }}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                Tải & Cập Nhật Ngay
+              </button>
+              <button
+                onClick={() => setShowUpdateModal(false)}
+                className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                Để Sau
+              </button>
+          </div>
+        </div>
+      </div>
+      )}
       </div>
       {/* ===== MOBILE NAV ===== */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom))] bg-black/80 backdrop-blur-xl border-t border-white/5 z-50 px-2 flex items-start pt-2 justify-around safe-bottom">

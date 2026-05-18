@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -68,6 +68,10 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
   win?.close()
+})
+
+ipcMain.on('open-external', (_, url) => {
+  shell.openExternal(url)
 })
 
 app.on('window-all-closed', () => {
