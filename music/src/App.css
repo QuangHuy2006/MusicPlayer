@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+:root {
+  --bg-dark: #000000;
+  --bg-light: #ffffff;
+  --text-main: #ffffff;
+  --text-muted: #888888;
+  --accent-primary: #ffffff;
+  --border-color: #222222;
+}
+
+@theme {
+  --color-accent-primary: var(--accent-primary);
+}
+
+body {
+  @apply bg-black text-white antialiased;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Hide scrollbars globally for a clean look */
+*::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Minimalist Utilities */
+@layer components {
+  /* Redefining old premium classes to minimal flat styles to prevent layout breaks */
+  .premium-card, .immersive-card, .glass-panel-3d {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .premium-card:hover, .immersive-card:hover {
+    border-color: #444;
+  }
+
+  .premium-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+  }
+
+  .premium-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .premium-input, .frosted-input {
+    background: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    color: var(--text-main) !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s ease !important;
+  }
+
+  .premium-input:focus, .frosted-input:focus {
+    border-color: #666 !important;
+  }
+
+  .text-gradient-premium, .text-gradient-aurora, .shimmer-gold-text {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: var(--text-main);
+    text-shadow: none;
+    animation: none;
+  }
+
+  /* Keep basic line clamp */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Electron Titlebar */
+.titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 32px;
+  background: #000;
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+  z-index: 250;
+  position: relative;
+}
+
+.titlebar-drag-region {
+  flex-grow: 1;
+  height: 100%;
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+}
+
+.titlebar-controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-button {
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.titlebar-button:hover {
+  background: #111;
+  color: #fff;
+}
+
+.titlebar-button.close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+.titlebar-button svg {
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  .titlebar {
+    display: none;
+  }
+}
+
+/* Redefine ambient classes to be completely flat */
+.bg-ambient, .bg-premium-ambient {
+  background: #000 !important;
+}
+
+.premium-sidebar {
+  background: #000 !important;
+  border-right: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.premium-gold-border {
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
+}
+
+.vip-badge-glow {
+  background: #222;
+  color: #fff;
+  text-shadow: none;
+  box-shadow: none;
+  animation: none;
+  border: 1px solid #444;
+}
+
+.premium-vip-card {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+.premium-vip-card:hover {
+  border-color: #444;
+  transform: none;
+  box-shadow: none;
+}
