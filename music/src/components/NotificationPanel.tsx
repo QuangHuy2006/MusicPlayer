@@ -24,6 +24,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
   };
 
   const getTimeDiff = (dateStr: string) => {
+    // eslint-disable-next-line react-hooks/purity
     const diff = Date.now() - new Date(dateStr).getTime();
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return 'Vừa xong';

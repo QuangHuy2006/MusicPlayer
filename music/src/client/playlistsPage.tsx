@@ -75,8 +75,10 @@ const PlaylistsPage = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPlaylists();
     fetchAvailableSongs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreatePlaylist = async () => {

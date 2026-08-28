@@ -12,7 +12,7 @@ import { API_BASE } from './config.tsx';
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
   try {
-    let response = await originalFetch(input, init);
+    const response = await originalFetch(input, init);
     if (response.status === 401) {
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken && typeof input === 'string' && !input.includes('/api/auth/refresh')) {

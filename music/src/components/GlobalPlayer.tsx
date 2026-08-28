@@ -29,39 +29,41 @@ export default function GlobalPlayer() {
   const pannerRef = useRef<StereoPannerNode | null>(null);
   const lfoGainRef = useRef<GainNode | null>(null);
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<Record<string, unknown> | null>(() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  });
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeStep, setUpgradeStep] = useState<'intro' | 'payment' | 'processing'>('intro');
 
   const isPremium = user?.role === 'PREMIUM' || user?.role === 'ADMIN';
 
-  // Load user & Poll for Premium status if pending
+  // Poll for Premium status if pending
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const u = JSON.parse(userStr);
-      setUser(u);
-      
-      // If pending, check status every 10s
-      if (u.role === 'PREMIUM_PENDING') {
-        const interval = setInterval(async () => {
-          try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE}/api/auth/verify`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.valid && data.user.role === 'PREMIUM') {
-              localStorage.setItem('user', JSON.stringify(data.user));
-              setUser(data.user);
-              clearInterval(interval);
-            }
-          } catch (e) {}
-        }, 10000);
-        return () => clearInterval(interval);
-      }
+    if (user?.role === 'PREMIUM_PENDING') {
+      const interval = setInterval(async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${API_BASE}/api/auth/verify`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (data.valid && data.user.role === 'PREMIUM') {
+            localStorage.setItem('user', JSON.stringify(data.user));
+            setUser(data.user);
+            clearInterval(interval);
+          }
+        } catch {
+          // ignore
+        }
+      }, 10000);
+      return () => clearInterval(interval);
     }
-  }, []);
+  }, [user?.role]);
 
   const handleUpgrade = async () => {
     setUpgradeStep('processing');
@@ -98,18 +100,12 @@ export default function GlobalPlayer() {
   // Resolve offline audio and cover image dynamically
   const [audioUrl, setAudioUrl] = useState<string>('');
   const [coverUrl, setCoverUrl] = useState<string>('');
-  const [dynamicLyrics, setDynamicLyrics] = useState<string>('');
 
   useEffect(() => {
     if (!currentSong) return;
 
-    setDynamicLyrics('');
-
-    if (currentSong.lyrics) {
-      setDynamicLyrics(currentSong.lyrics);
-    }
-
     if (currentSong.url.startsWith('blob:') || currentSong.url.startsWith('data:')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAudioUrl(currentSong.url);
       setCoverUrl(currentSong.imageUrl || '');
       return;
@@ -181,10 +177,10 @@ export default function GlobalPlayer() {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    if ((audioRef.current as any)._isConnectedToWebAudio) return;
+    if ((audioRef.current as Record<string, unknown>)._isConnectedToWebAudio) return;
 
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as Record<string, unknown>).webkitAudioContext as typeof window.AudioContext;
       if (!AudioContextClass) return;
 
       let ctx = audioCtxRef.current;
@@ -260,10 +256,10 @@ export default function GlobalPlayer() {
       preamp.connect(bass);
       bass.connect(treble);
       treble.connect(qual);
-      
+
       // Tách nhánh: Một luồng trực tiếp (Dry), Một luồng qua Reverb (Wet)
       qual.connect(panner);
-      
+
       // Nhánh Wet
       panner.connect(convolver);
       convolver.connect(reverbGain);
@@ -276,9 +272,9 @@ export default function GlobalPlayer() {
       masterFade.connect(compressor);
       compressor.connect(ctx.destination);
 
-      (audioRef.current as any)._isConnectedToWebAudio = true;
-    } catch (e) {
-      console.error("Audio Engine Init Error:", e);
+      (audioRef.current as Record<string, unknown>)._isConnectedToWebAudio = true;
+    } catch {
+      // Audio Engine Init Error ignored
     }
   }, [currentSong]);
 
@@ -421,7 +417,7 @@ export default function GlobalPlayer() {
   return (
     <>
       {/* ==================== GLOBAL PLAYER BAR ==================== */}
-      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-[100] bg-black border-t border-[#222] animate-[fade-in-up_0.3s_ease-out]">
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-6 left-0 md:left-6 md:right-6 right-0 z-[100] bg-black/60 backdrop-blur-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl animate-[fade-in-up_0.3s_ease-out] overflow-visible before:absolute before:inset-0 before:bg-gradient-to-r before:from-emerald-500/5 before:to-teal-500/5 before:rounded-2xl before:pointer-events-none">
         <audio
           ref={audioRef}
           src={audioUrl || currentSong.url}
@@ -433,18 +429,18 @@ export default function GlobalPlayer() {
           loop={isRepeat}
         />
 
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-24 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-24 flex items-center justify-between gap-4 relative z-10">
           {/* Song Info */}
-          <div className="flex items-center gap-3 w-1/3 min-w-0">
-            <div className="w-10 h-10 md:w-14 md:h-14 flex-shrink-0 rounded-md overflow-hidden relative bg-[#111]">
+          <div className="flex items-center gap-4 w-1/3 min-w-0">
+            <div className="w-10 h-10 md:w-16 md:h-16 flex-shrink-0 rounded-xl overflow-hidden relative shadow-lg shadow-black/50 group">
               {coverUrl ? (
                 <img
                   src={coverUrl}
                   alt={currentSong.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center bg-[#111]">
                   <FaPlay className="text-white opacity-50" size={12} />
                 </div>
               )}
@@ -452,10 +448,10 @@ export default function GlobalPlayer() {
 
             <div className="min-w-0 flex-1 flex items-center justify-between">
               <div className="min-w-0">
-                <h4 className="text-white font-medium text-xs md:text-sm truncate">
+                <h4 className="text-white font-bold text-xs md:text-[15px] truncate hover:underline cursor-pointer">
                   {currentSong.name}
                 </h4>
-                <p className="text-gray-400 text-[10px] md:text-xs truncate">
+                <p className="text-slate-400 font-medium text-[10px] md:text-xs truncate hover:underline cursor-pointer mt-0.5">
                   {currentSong.author || 'Unknown Artist'}
                 </p>
               </div>
@@ -473,11 +469,10 @@ export default function GlobalPlayer() {
             <div className="flex items-center gap-4 md:gap-6 md:mb-1">
               <button
                 onClick={toggleRandom}
-                className={`transition-colors p-2 ${
-                  isRandom
-                    ? 'text-white'
-                    : 'text-gray-500 hover:text-white'
-                }`}
+                className={`transition-colors p-2 ${isRandom
+                  ? 'text-white'
+                  : 'text-gray-500 hover:text-white'
+                  }`}
                 title="Play Random (Shuffle)"
               >
                 <FaRandom size={14} className="md:w-4 md:h-4" />
@@ -487,7 +482,7 @@ export default function GlobalPlayer() {
               </button>
               <button
                 onClick={togglePlay}
-                className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-all"
+                className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 active:scale-95 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)]"
               >
                 {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} className="ml-1" />}
               </button>
@@ -496,11 +491,10 @@ export default function GlobalPlayer() {
               </button>
               <button
                 onClick={toggleRepeat}
-                className={`transition-colors p-2 ${
-                  isRepeat
-                    ? 'text-white'
-                    : 'text-gray-500 hover:text-white'
-                }`}
+                className={`transition-colors p-2 ${isRepeat
+                  ? 'text-white'
+                  : 'text-gray-500 hover:text-white'
+                  }`}
                 title="Play Loop (Repeat)"
               >
                 <FaSync size={14} className="md:w-4 md:h-4" />
@@ -515,9 +509,9 @@ export default function GlobalPlayer() {
                 max={duration || 100}
                 value={progress}
                 onChange={handleSeek}
-                className="flex-1 h-1 bg-[#222] rounded-full appearance-none cursor-pointer"
+                className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer group-hover:h-1.5 transition-all hover:bg-white/20"
                 style={{
-                  background: `linear-gradient(to right, #fff ${(progress / (duration || 1)) * 100}%, #222 ${(progress / (duration || 1)) * 100}%)`
+                  background: `linear-gradient(to right, #10b981 ${(progress / (duration || 1)) * 100}%, rgba(255,255,255,0.1) ${(progress / (duration || 1)) * 100}%)`
                 }}
               />
               <span className="text-xs text-slate-400 w-10">{formatTime(duration)}</span>
@@ -556,18 +550,18 @@ export default function GlobalPlayer() {
               step="0.01"
               value={volume}
               onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-24 h-1 bg-[#222] rounded-full appearance-none cursor-pointer"
+              className="w-24 h-1 bg-white/10 rounded-full appearance-none cursor-pointer hover:h-1.5 transition-all"
               style={{
-                background: `linear-gradient(to right, #fff ${volume * 100}%, #222 ${volume * 100}%)`
+                background: `linear-gradient(to right, #10b981 ${volume * 100}%, rgba(255,255,255,0.1) ${volume * 100}%)`
               }}
             />
           </div>
         </div>
 
         {/* Mobile Progress */}
-        <div className="md:hidden absolute top-0 left-0 right-0 h-[3px] bg-[#0a0a0a] shadow-[var(--shadow-3d-in)]">
+        <div className="md:hidden absolute top-0 left-0 right-0 h-[2px] bg-white/10 shadow-[var(--shadow-3d-in)]">
           <div
-            className="h-full bg-[var(--accent-gold)] shadow-[0_0_10px_rgba(212,175,55,0.8)]"
+            className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"
             style={{ width: `${(progress / (duration || 1)) * 100}%` }}
           />
         </div>
@@ -613,16 +607,16 @@ export default function GlobalPlayer() {
                   <div className="animate-[scale-in_0.3s_ease-out] w-full flex flex-col items-center">
                     <h3 className="text-xl font-bold text-white mb-2">Thanh toán Chuyển khoản</h3>
                     <p className="text-xs text-slate-400 mb-6 text-center">Quét mã QR bên dưới để nâng cấp Premium</p>
-                    
+
                     <div className="p-4 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.2)] mb-6 relative">
                       <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">Auto Active</div>
-                      <img 
+                      <img
                         src={`https://img.vietqr.io/image/MB-0789088909-compact2.png?amount=29000&addInfo=MP${user?.id}`}
                         alt="QR Code"
                         className="w-48 h-48 rounded-xl object-contain"
                       />
                     </div>
-                    
+
                     <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-6 space-y-2">
                       <div className="flex justify-between text-xs">
                         <span className="text-slate-400">Ngân hàng:</span>
@@ -754,7 +748,7 @@ export default function GlobalPlayer() {
       {/* ==================== KARAOKE OVERLAY ==================== */}
       {showKaraoke && currentSong && (
         <KaraokeOverlay
-          song={{ ...currentSong, imageUrl: coverUrl, lyrics: dynamicLyrics || currentSong.lyrics }}
+          song={{ ...currentSong, imageUrl: coverUrl, lyrics: currentSong.lyrics }}
           progress={progress}
           duration={duration}
           isPlaying={isPlaying}
@@ -767,7 +761,7 @@ export default function GlobalPlayer() {
           isRepeat={isRepeat}
           toggleRandom={toggleRandom}
           toggleRepeat={toggleRepeat}
-          analyser={analyserRef.current}
+          analyserRef={analyserRef}
           isPremium={isPremium}
         />
       )}
@@ -790,10 +784,10 @@ function KaraokeOverlay({
   isRepeat,
   toggleRandom,
   toggleRepeat,
-  analyser,
+  analyserRef,
   isPremium,
 }: {
-  song: any;
+  song: Record<string, unknown>;
   progress: number;
   duration: number;
   isPlaying: boolean;
@@ -806,17 +800,19 @@ function KaraokeOverlay({
   isRepeat: boolean;
   toggleRandom: () => void;
   toggleRepeat: () => void;
-  analyser: AnalyserNode | null;
+  analyserRef: React.MutableRefObject<AnalyserNode | null>;
   isPremium: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Request Animation Frame for Visualizer
   useEffect(() => {
-    if (!isPremium || !analyser || !canvasRef.current) return;
+    if (!isPremium || !analyserRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const analyser = analyserRef.current;
     let animationFrameId: number;
 
     const resizeCanvas = () => {
@@ -841,7 +837,7 @@ function KaraokeOverlay({
       const numBars = 64; // Low density, extremely lightweight!
       const barWidth = 5;
       const gap = 5;
-      
+
       // Symmetrical Y center at 82% height of the screen (neatly below the lyrics)
       const waveY = height * 0.82;
       const totalWidth = numBars * (barWidth + gap) - gap;
@@ -855,7 +851,7 @@ function KaraokeOverlay({
         // Map to frequency data
         const dataIndex = Math.floor((i / numBars) * (bufferLength * 0.6));
         const val = dataArray[dataIndex] || 0;
-        
+
         // Short height: max 60px (very clean, doesn't block the screen)
         const barHeight = Math.max(4, (val / 255) * 60);
 
@@ -872,215 +868,191 @@ function KaraokeOverlay({
         ctx.strokeStyle = grad;
         ctx.lineWidth = barWidth;
         ctx.lineCap = 'round';
-        
+
         ctx.beginPath();
         ctx.moveTo(x, y1);
         ctx.lineTo(x, y2);
         ctx.stroke();
       }
-
-      ctx.shadowBlur = 0; // Reset shadow glow
     };
-
-    if (isPlaying) {
-      draw();
-    } else {
-      // Draw static thin line when paused
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const width = canvas.width;
-      const height = canvas.height;
-      const waveY = height * 0.82;
-      const numBars = 64;
-      const barWidth = 5;
-      const gap = 5;
-      const totalWidth = numBars * (barWidth + gap) - gap;
-      const startX = (width - totalWidth) / 2;
-
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.15)';
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(startX, waveY);
-      ctx.lineTo(startX + totalWidth, waveY);
-      ctx.stroke();
-    }
+    draw();
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', resizeCanvas);
+      cancelAnimationFrame(animationFrameId);
     };
-  }, [isPlaying, analyser, isPremium]);
-  const { lines, isLrc } = useMemo(() => {
-    if (!song.lyrics) return { lines: [], isLrc: false };
-    const rawLines = song.lyrics.split('\n').filter((l: string) => l.trim() !== '');
+  }, [isPlaying, isPremium, analyserRef]);
 
-    const lrcRegex = /\[(\d{2}):(\d{2}(?:\.\d{1,3})?)\](.*)/;
-    let isLrc = false;
+ 
+const { lines, isLrc } = useMemo(() => {
+  if (!song.lyrics) return { lines: [], isLrc: false };
+  const rawLines = song.lyrics.split('\n').filter((l: string) => l.trim() !== '');
 
-    const parsedLines = rawLines.map((line: string) => {
-      const match = lrcRegex.exec(line);
-      if (match) {
-        isLrc = true;
-        const minutes = parseInt(match[1], 10);
-        const seconds = parseFloat(match[2]);
-        const text = match[3].trim();
-        return { time: minutes * 60 + seconds, text };
-      }
-      return { time: -1, text: line };
-    });
+  const lrcRegex = /\[(\d{2}):(\d{2}(?:\.\d{1,3})?)\](.*)/;
+  let isLrc = false;
 
-    return { lines: parsedLines, isLrc };
-  }, [song.lyrics]);
-
-  const currentLineIndex = useMemo(() => {
-    if (lines.length === 0 || duration === 0) return 0;
-    if (isLrc) {
-      let activeIndex = 0;
-      for (let i = 0; i < lines.length; i++) {
-        if (progress >= lines[i].time) activeIndex = i;
-        else break;
-      }
-      return activeIndex;
-    } else {
-      const ratio = progress / duration;
-      return Math.min(Math.floor(ratio * lines.length), lines.length - 1);
+  const parsedLines = rawLines.map((line: string) => {
+    const match = lrcRegex.exec(line);
+    if (match) {
+      isLrc = true;
+      const minutes = parseInt(match[1], 10);
+      const seconds = parseFloat(match[2]);
+      const text = match[3].trim();
+      return { time: minutes * 60 + seconds, text };
     }
-  }, [progress, duration, lines, isLrc]);
+    return { time: -1, text: line };
+  });
 
-  useEffect(() => {
-    if (karaokeRef.current) {
-      const activeEl = karaokeRef.current.querySelector('[data-active="true"]');
-      activeEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return { lines: parsedLines, isLrc };
+}, [song.lyrics]);
+
+const currentLineIndex = useMemo(() => {
+  if (lines.length === 0 || duration === 0) return 0;
+  if (isLrc) {
+    let activeIndex = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (progress >= lines[i].time) activeIndex = i;
+      else break;
     }
-  }, [currentLineIndex]);
+    return activeIndex;
+  } else {
+    const ratio = progress / duration;
+    return Math.min(Math.floor(ratio * lines.length), lines.length - 1);
+  }
+}, [progress, duration, lines, isLrc]);
 
-  const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
-    const m = Math.floor(time / 60);
-    const s = Math.floor(time % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
+useEffect(() => {
+  if (karaokeRef.current) {
+    const activeEl = karaokeRef.current.querySelector('[data-active="true"]');
+    activeEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}, [currentLineIndex, karaokeRef]);
 
-  return (
-    <div className="fixed inset-0 z-[500] bg-black flex flex-col animate-[fade-in_0.3s_ease-out]">
+const formatTime = (time: number) => {
+  if (isNaN(time)) return "0:00";
+  const m = Math.floor(time / 60);
+  const s = Math.floor(time % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+};
 
-      {/* Dynamic 3D Circular Audio Visualizer (Premium Only) */}
-      {isPremium && analyser && (
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-65 z-0"
-        />
-      )}
+return (
+  <div className="fixed inset-0 z-[500] bg-black flex flex-col animate-[fade-in_0.3s_ease-out]">
 
-      {/* Header */}
-      <div className="relative z-10 flex items-center justify-between px-6 md:px-10 py-6">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#111]">
-            <img src={song.imageUrl} alt="" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white">{song.name}</h3>
-            <p className="text-xs text-gray-500 font-medium">{song.author || 'Unknown'}</p>
-          </div>
+    {/* Dynamic 3D Circular Audio Visualizer (Premium Only) */}
+    {isPremium && analyser && (
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-65 z-0"
+      />
+    )}
+
+    {/* Header */}
+    <div className="relative z-10 flex items-center justify-between px-6 md:px-10 py-6">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#111]">
+          <img src={song.imageUrl} alt="" className="w-full h-full object-cover" />
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-500 bg-white/5 px-3 py-1 rounded-full">🎤 KARAOKE</span>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
-            <FaTimes size={18} />
-          </button>
+        <div>
+          <h3 className="text-base font-bold text-white">{song.name}</h3>
+          <p className="text-xs text-gray-500 font-medium">{song.author || 'Unknown'}</p>
         </div>
       </div>
-
-      {/* Lyrics Area */}
-      <div className="flex-1 overflow-hidden relative z-10 flex items-center justify-center">
-        {lines.length === 0 ? (
-          <div className="text-center space-y-4">
-            <FaMicrophoneAlt className="text-6xl text-gray-800 mx-auto" />
-            <p className="text-2xl font-bold text-gray-500">Bài hát này chưa có lời</p>
-            <p className="text-slate-600">Thêm lời bài hát khi upload để sử dụng Karaoke mode!</p>
-          </div>
-        ) : (
-          <div
-            ref={karaokeRef}
-            className="max-w-3xl w-full h-[60vh] overflow-y-auto custom-scrollbar px-8 space-y-6"
-          >
-            {/* Spacer */}
-            <div className="h-[25vh]"></div>
-            {lines.map((lineObj: any, i: number) => {
-              const isActive = i === currentLineIndex;
-              const isPast = i < currentLineIndex;
-              return (
-                <p
-                  key={i}
-                  data-active={isActive ? 'true' : 'false'}
-                  className={`text-center transition-all duration-500 cursor-default select-none ${isActive
-                    ? 'text-3xl md:text-4xl font-bold text-white scale-105'
-                    : isPast
-                      ? 'text-xl md:text-2xl font-medium text-gray-700'
-                      : 'text-xl md:text-2xl font-medium text-gray-500 hover:text-gray-400'
-                    }`}
-                >
-                  {lineObj.text}
-                </p>
-              );
-            })}
-            {/* Spacer */}
-            <div className="h-[25vh]"></div>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Controls */}
-      <div className="relative z-10 px-6 md:px-10 pb-8 pt-4">
-        {/* Progress Bar */}
-        <div className="flex items-center gap-3 mb-6 max-w-2xl mx-auto">
-          <span className="text-xs text-slate-400 w-10 text-right font-mono">{formatTime(progress)}</span>
-          <div className="flex-1 h-1 bg-[#222] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-white rounded-full transition-all duration-200"
-              style={{ width: `${(progress / (duration || 1)) * 100}%` }}
-            />
-          </div>
-          <span className="text-xs text-slate-400 w-10 font-mono">{formatTime(duration)}</span>
-        </div>
-        {/* Playback Controls */}
-        <div className="flex items-center justify-center gap-8">
-          <button
-            onClick={toggleRandom}
-            className={`transition-colors p-2 ${
-              isRandom
-                ? 'text-white'
-                : 'text-gray-500 hover:text-white'
-            }`}
-            title="Play Random (Shuffle)"
-          >
-            <FaRandom size={18} />
-          </button>
-          <button onClick={onPrev} className="text-slate-400 hover:text-white transition-colors">
-            <FaStepBackward size={18} />
-          </button>
-          <button
-            onClick={onTogglePlay}
-            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
-          >
-            {isPlaying ? <FaPause size={20} /> : <FaPlay size={20} className="ml-1" />}
-          </button>
-          <button onClick={onNext} className="text-slate-400 hover:text-white transition-colors">
-            <FaStepForward size={18} />
-          </button>
-          <button
-            onClick={toggleRepeat}
-            className={`transition-colors p-2 ${
-              isRepeat
-                ? 'text-white'
-                : 'text-gray-500 hover:text-white'
-            }`}
-            title="Play Loop (Repeat)"
-          >
-            <FaSync size={18} />
-          </button>
-        </div>
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold text-slate-500 bg-white/5 px-3 py-1 rounded-full">🎤 KARAOKE</span>
+        <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+          <FaTimes size={18} />
+        </button>
       </div>
     </div>
-  );
+
+    {/* Lyrics Area */}
+    <div className="flex-1 overflow-hidden relative z-10 flex items-center justify-center">
+      {lines.length === 0 ? (
+        <div className="text-center space-y-4">
+          <FaMicrophoneAlt className="text-6xl text-gray-800 mx-auto" />
+          <p className="text-2xl font-bold text-gray-500">Bài hát này chưa có lời</p>
+          <p className="text-slate-600">Thêm lời bài hát khi upload để sử dụng Karaoke mode!</p>
+        </div>
+      ) : (
+        <div
+          ref={karaokeRef}
+          className="max-w-3xl w-full h-[60vh] overflow-y-auto custom-scrollbar px-8 space-y-6"
+        >
+          {/* Spacer */}
+          <div className="h-[25vh]"></div>
+          {lines.map((lineObj: { text: string; time: number }, i: number) => {
+            const isActive = i === currentLineIndex;
+            const isPast = i < currentLineIndex;
+            return (
+              <p
+                key={i}
+                data-active={isActive ? 'true' : 'false'}
+                className={`text-center transition-all duration-500 cursor-default select-none ${isActive
+                  ? 'text-3xl md:text-4xl font-bold text-white scale-105'
+                  : isPast
+                    ? 'text-xl md:text-2xl font-medium text-gray-700'
+                    : 'text-xl md:text-2xl font-medium text-gray-500 hover:text-gray-400'
+                  }`}
+              >
+                {lineObj.text}
+              </p>
+            );
+          })}
+          {/* Spacer */}
+          <div className="h-[25vh]"></div>
+        </div>
+      )}
+    </div>
+
+    {/* Bottom Controls */}
+    <div className="relative z-10 px-6 md:px-10 pb-8 pt-4">
+      {/* Progress Bar */}
+      <div className="flex items-center gap-3 mb-6 max-w-2xl mx-auto">
+        <span className="text-xs text-slate-400 w-10 text-right font-mono">{formatTime(progress)}</span>
+        <div className="flex-1 h-1 bg-[#222] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-white rounded-full transition-all duration-200"
+            style={{ width: `${(progress / (duration || 1)) * 100}%` }}
+          />
+        </div>
+        <span className="text-xs text-slate-400 w-10 font-mono">{formatTime(duration)}</span>
+      </div>
+      {/* Playback Controls */}
+      <div className="flex items-center justify-center gap-8">
+        <button
+          onClick={toggleRandom}
+          className={`transition-colors p-2 ${isRandom
+            ? 'text-white'
+            : 'text-gray-500 hover:text-white'
+            }`}
+          title="Play Random (Shuffle)"
+        >
+          <FaRandom size={18} />
+        </button>
+        <button onClick={onPrev} className="text-slate-400 hover:text-white transition-colors">
+          <FaStepBackward size={18} />
+        </button>
+        <button
+          onClick={onTogglePlay}
+          className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        >
+          {isPlaying ? <FaPause size={20} /> : <FaPlay size={20} className="ml-1" />}
+        </button>
+        <button onClick={onNext} className="text-slate-400 hover:text-white transition-colors">
+          <FaStepForward size={18} />
+        </button>
+        <button
+          onClick={toggleRepeat}
+          className={`transition-colors p-2 ${isRepeat
+            ? 'text-white'
+            : 'text-gray-500 hover:text-white'
+            }`}
+          title="Play Loop (Repeat)"
+        >
+          <FaSync size={18} />
+        </button>
+      </div>
+    </div>
+  </div>
+);
 }

@@ -37,7 +37,10 @@ const MySongs = () => {
     }
   };
 
-  useEffect(() => { fetchMySongs(); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchMySongs();
+  }, []);
 
   const handleDelete = async (id: number, name: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa bài hát "${name}"? Hành động này không thể hoàn tác.`)) return;

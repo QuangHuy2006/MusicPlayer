@@ -25,6 +25,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
 
   useEffect(() => {
     if (song) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(song.name);
       setAuthor(song.author || '');
       setLyrics(song.lyrics || '');

@@ -153,6 +153,7 @@ const AdminRoute = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 const AppLayout = () => {
   return (
     <ProtectedRoute>

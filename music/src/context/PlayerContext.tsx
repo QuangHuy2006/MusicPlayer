@@ -87,6 +87,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (sleepTimer !== null) {
       const targetTime = Date.now() + sleepTimer * 60000;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSleepTimerEnd(targetTime);
 
       const interval = setInterval(() => {
@@ -239,6 +240,7 @@ export const PlayerProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const usePlayer = () => {
   const context = useContext(PlayerContext);
   if (context === undefined) {

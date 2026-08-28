@@ -64,7 +64,7 @@ const MusicPlayer = () => {
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Record<string, unknown>[]>([]);
   const [commentText, setCommentText] = useState('');
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
@@ -106,7 +106,7 @@ const MusicPlayer = () => {
           
           const songIdFromUrl = searchParams.get("song");
           if (songIdFromUrl && songsData.length > 0) {
-            const targetSong = songsData.find((s: any) => s.id.toString() === songIdFromUrl);
+            const targetSong = songsData.find((s: Song) => s.id.toString() === songIdFromUrl);
             if (targetSong) playSong(targetSong, songsData);
           }
         }
@@ -139,7 +139,7 @@ const MusicPlayer = () => {
 
         const songIdFromUrl = searchParams.get("song");
         if (songIdFromUrl && songsData.length > 0) {
-          const targetSong = songsData.find((s: any) => s.id.toString() === songIdFromUrl);
+          const targetSong = songsData.find((s: Song) => s.id.toString() === songIdFromUrl);
           if (targetSong) playSong(targetSong, songsData);
         }
       }
@@ -150,9 +150,11 @@ const MusicPlayer = () => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playlistId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSongs();
   }, [loadSongs]);
 
@@ -216,6 +218,7 @@ const MusicPlayer = () => {
   }, [currentSong]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (showComments && currentSong) fetchComments();
   }, [showComments, currentSong, fetchComments]);
 

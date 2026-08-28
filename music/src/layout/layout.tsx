@@ -20,8 +20,30 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData] = useState<Record<string, unknown> | null>(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isAdmin] = useState(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userStr = localStorage.getItem("user");
+        const parsedUser = userStr ? JSON.parse(userStr) : {};
+        return payload.role === 'ADMIN' || payload.user?.role === 'ADMIN' || parsedUser.role === 'ADMIN';
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+
   const [showNotifications, setShowNotifications] = useState(false);
   const { unreadCount } = useNotification();
   
@@ -36,10 +58,15 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
   // Listen to in-app downloader events
   useEffect(() => {
-    const ipc = (window as any).ipcRenderer;
+    const ipc = (window as Record<string, unknown>).ipcRenderer as {
+      on: (channel: string, listener: (...args: unknown[]) => void) => void;
+      off: (channel: string, listener: (...args: unknown[]) => void) => void;
+      send: (channel: string, ...args: unknown[]) => void;
+    } | undefined;
+    
     if (!ipc) return;
 
-    const handleProgress = (_: any, percent: number) => {
+    const handleProgress = (_: unknown, percent: number) => {
       setDownloadProgress(percent);
     };
 
@@ -47,24 +74,24 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
       setDownloadStatus('completed');
     };
 
-    const handleError = (_: any, msg: string) => {
+    const handleError = (_: unknown, msg: string) => {
       setDownloadStatus('error');
       setDownloadErrorMsg(msg);
     };
 
-    ipc.on('download-progress', handleProgress);
+    ipc.on('download-progress', handleProgress as (...args: unknown[]) => void);
     ipc.on('download-complete', handleComplete);
-    ipc.on('download-error', handleError);
+    ipc.on('download-error', handleError as (...args: unknown[]) => void);
 
     return () => {
-      ipc.off('download-progress', handleProgress);
+      ipc.off('download-progress', handleProgress as (...args: unknown[]) => void);
       ipc.off('download-complete', handleComplete);
-      ipc.off('download-error', handleError);
+      ipc.off('download-error', handleError as (...args: unknown[]) => void);
     };
   }, []);
 
   const startInAppUpdate = () => {
-    const ipc = (window as any).ipcRenderer;
+    const ipc = (window as Record<string, unknown>).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
     const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
     
     if (ipc) {
@@ -113,8 +140,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 const releases = await relRes.json();
                 const latestRelease = releases[0];
                 if (latestRelease && latestRelease.assets) {
-                  const exeAsset = latestRelease.assets.find((asset: any) => asset.name.endsWith('.exe'));
-                  if (exeAsset) {
+                  const exeAsset = latestRelease.assets.find((asset: Record<string, unknown>) => typeof asset.name === 'string' && asset.name.endsWith('.exe'));
+                  if (exeAsset && typeof exeAsset.browser_download_url === 'string') {
                     setDownloadUrl(exeAsset.browser_download_url);
                   }
                 }
@@ -136,22 +163,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     return () => clearTimeout(timeout);
   }, []);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userStr = localStorage.getItem("user");
-    if (userStr) setUserData(JSON.parse(userStr));
-
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.role === 'ADMIN' || payload.user?.role === 'ADMIN' || (userStr && JSON.parse(userStr).role === 'ADMIN')) {
-          setIsAdmin(true);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
+  // Removed redundant useEffect that caused set-state-in-effect
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +185,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         },
         body: JSON.stringify({ refreshToken: localStorage.getItem("refresh_token") }) 
       });
-    } catch (e) { }
+    } catch { /* ignore */ }
     localStorage.removeItem("token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
@@ -198,16 +210,16 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className={`flex flex-col h-screen bg-black text-white overflow-hidden font-sans selection:bg-white/30`}>
+    <div className={`flex flex-col h-screen bg-[#080808] text-white overflow-hidden font-sans selection:bg-emerald-500/30 selection:text-white`}>
       <TitleBar />
       <div className="flex flex-1 overflow-hidden relative">
 
       {/* ===== SIDEBAR (Desktop) ===== */}
-      <aside className={`hidden lg:flex flex-col h-full border-r border-[#222] bg-black z-50 transition-all duration-500 ease-in-out relative ${isCollapsed ? 'w-24' : 'w-72'}`}>
+      <aside className={`hidden lg:flex flex-col h-full bg-black/40 backdrop-blur-xl border-r border-white/5 z-50 transition-all duration-500 ease-in-out relative ${isCollapsed ? 'w-24' : 'w-72'}`}>
         {/* Toggle Button */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-24 w-6 h-6 bg-white text-black border border-[#222] rounded-full flex items-center justify-center hover:scale-110 transition-transform z-50"
+          className="absolute -right-3 top-24 w-6 h-6 bg-[#1a1a1a] text-white border border-white/10 rounded-full flex items-center justify-center hover:scale-110 hover:bg-[#2a2a2a] hover:border-emerald-500/50 transition-all z-50 shadow-lg"
         >
           {isCollapsed ? <FaChevronRight size={10} /> : <FaChevronLeft size={10} />}
         </button>
@@ -215,12 +227,12 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         {/* Logo */}
         <div className={`p-8 transition-all duration-500 ${isCollapsed ? 'px-6' : 'p-8'}`}>
           <Link to="/dashboard" className="flex items-center gap-4 group">
-            <div className={`w-12 h-12 rounded-lg bg-white flex items-center justify-center shrink-0`}>
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300`}>
               <FaHeadphones className="text-black text-2xl" />
             </div>
             {!isCollapsed && (
               <div className="animate-[fade-in_0.3s_ease-out]">
-                <span className={`text-xl font-bold text-white tracking-tighter block`}>
+                <span className={`text-xl font-black text-white tracking-tight block`}>
                   {isPremium ? 'Q.HUY PRO' : 'Q.HUY'}
                 </span>
               </div>
@@ -229,9 +241,9 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 space-y-2 custom-scrollbar overflow-y-auto overflow-x-hidden">
-          <p className={`px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 transition-opacity duration-300 ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
-            Menu Chính
+        <nav className="flex-1 px-4 space-y-1.5 custom-scrollbar overflow-y-auto overflow-x-hidden pb-4">
+          <p className={`px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 transition-opacity duration-300 ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
+            Khám Phá
           </p>
           {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
@@ -240,16 +252,19 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 key={item.path}
                 to={item.path}
                 title={isCollapsed ? item.label : ""}
-                className={`flex items-center gap-4 px-5 py-4 rounded-lg transition-all duration-300 group ${isActive
-                    ? `bg-white text-black`
-                    : "text-gray-400 hover:bg-[#111] hover:text-white"
+                className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden ${isActive
+                    ? `bg-white/10 text-white shadow-sm`
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
                   } ${isCollapsed ? 'justify-center px-0' : ''}`}
               >
-                <span className={`${isActive ? "text-black" : "text-gray-400 group-hover:text-white"} transition-colors shrink-0`}>
+                {isActive && !isCollapsed && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-r-full"></div>
+                )}
+                <span className={`${isActive ? "text-emerald-400" : "text-gray-400 group-hover:text-emerald-400"} transition-colors shrink-0 z-10`}>
                   {item.icon}
                 </span>
                 {!isCollapsed && (
-                  <span className="text-sm font-bold tracking-wide animate-[fade-in_0.3s_ease-out] whitespace-nowrap">{item.label}</span>
+                  <span className={`text-sm font-semibold tracking-wide animate-[fade-in_0.3s_ease-out] whitespace-nowrap z-10 ${isActive ? 'text-white' : ''}`}>{item.label}</span>
                 )}
               </Link>
             );
@@ -263,11 +278,10 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* ===== MAIN CONTENT AREA ===== */}
       <div className="flex-1 flex flex-col h-full relative">
 
         {/* Top Header */}
-        <header className={`h-20 flex items-center justify-between px-6 md:px-10 z-40 border-b border-[#222] bg-black safe-top`}>
+        <header className={`h-20 flex items-center justify-between px-6 md:px-10 z-40 border-b border-white/5 bg-black/40 backdrop-blur-xl safe-top sticky top-0`}>
           {/* Navigation Arrows & Search */}
           <div className="flex items-center gap-6 flex-1">
             <div className="hidden md:flex items-center gap-2">
@@ -280,13 +294,13 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
             </div>
 
             <form onSubmit={handleSearch} className="relative w-full max-w-md group">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[var(--accent-blue)] transition-colors" />
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm bài hát, nghệ sĩ..."
-                className="w-full bg-transparent border border-[#333] rounded-lg py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-white transition-all placeholder:text-gray-500 font-medium"
+                placeholder="Tìm bài hát, nghệ sĩ..."
+                className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 hover:bg-white/10 hover:border-white/10 transition-all placeholder:text-gray-500 font-medium text-white shadow-inner"
               />
             </form>
           </div>
@@ -321,12 +335,12 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
             {/* User Profile Area (Header) */}
             <div className="hidden md:flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
-                {userData?.avatar ? <img src={userData.avatar} className="w-full h-full object-cover" alt="" /> : <FaUserCircle size={24} className="text-slate-500" />}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 flex items-center justify-center overflow-hidden border border-emerald-500/20 shrink-0 shadow-inner">
+                {(userData as Record<string, string>)?.avatar ? <img src={(userData as Record<string, string>).avatar} className="w-full h-full object-cover" alt="" /> : <FaUserCircle size={24} className="text-emerald-500/80" />}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-medium text-white truncate max-w-[120px]">{userData?.name || "Người dùng"}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-white truncate max-w-[120px]">{(userData as Record<string, string>)?.name || "Người dùng"}</p>
                   {isPremium && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#444] text-white uppercase tracking-widest shrink-0">
                       PRO
@@ -493,7 +507,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                   <button
                     onClick={() => {
                       const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
-                      const ipc = (window as any).ipcRenderer;
+                      const ipc = (window as Record<string, unknown>).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
                       if (ipc) {
                         ipc.send('open-external', finalUrl);
                       } else {

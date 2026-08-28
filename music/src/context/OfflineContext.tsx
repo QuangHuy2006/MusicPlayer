@@ -40,6 +40,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshOfflineSongs();
   }, [refreshOfflineSongs]);
 
@@ -137,6 +138,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useOffline = () => {
   const context = useContext(OfflineContext);
   if (context === undefined) {

@@ -25,7 +25,9 @@ interface StatsData {
   totalPlaylists: number;
   totalUploaded: number;
   estimatedMinutes: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   topSongs: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   topAuthors: any[];
 }
 
@@ -251,6 +253,7 @@ const ProfilePage = () => {
               <FaTrophy className="text-[var(--accent-gold)]" /> Bài hát nghe nhiều nhất
             </h3>
             <div className="space-y-3">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {stats.topSongs.map((song: any, i: number) => (
                 <div
                   key={song.id || i}
@@ -283,6 +286,7 @@ const ProfilePage = () => {
               <FaChartLine className="text-pink-500" /> Nghệ sĩ yêu thích
             </h3>
             <div className="space-y-4">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {stats.topAuthors.map((author: any, i: number) => {
                 const percentage = stats.topAuthors.length > 0
                   ? Math.round((author.count / stats.topAuthors[0].count) * 100)

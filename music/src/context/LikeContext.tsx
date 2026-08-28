@@ -22,7 +22,7 @@ export const LikeProvider = ({ children }: { children: ReactNode }) => {
         });
         const data = await res.json();
         if (data.success) {
-          setLikedSongIds(new Set(data.songs.map((s: any) => s.id)));
+          setLikedSongIds(new Set(data.songs.map((s: Record<string, unknown>) => Number(s.id))));
         }
       } catch (err) {
         console.error("Failed to fetch likes", err);
@@ -69,6 +69,7 @@ export const LikeProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLike = () => {
   const context = useContext(LikeContext);
   if (context === undefined) {

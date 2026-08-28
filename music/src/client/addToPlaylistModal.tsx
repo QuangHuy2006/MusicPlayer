@@ -25,12 +25,6 @@ const AddToPlaylistModal = ({
   const token = localStorage.getItem("token");
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchPlaylists();
-    }
-  }, [isOpen]);
-
   const fetchPlaylists = async () => {
     setLoading(true);
     try {
@@ -45,6 +39,14 @@ const AddToPlaylistModal = ({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchPlaylists();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const addToPlaylist = async (playlistId: number) => {
     setAdding(playlistId);

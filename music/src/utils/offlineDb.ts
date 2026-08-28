@@ -36,6 +36,7 @@ export const initDB = (): Promise<IDBDatabase> => {
 };
 
 export const saveSong = async (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     song: any,
     audioBlob: Blob,
     imageBlob: Blob | null

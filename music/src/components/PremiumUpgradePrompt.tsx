@@ -5,16 +5,15 @@ import { API_BASE } from "../config.tsx";
 export default function PremiumUpgradePrompt() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      setUser(JSON.parse(userStr));
+  const [user, setUser] = useState<Record<string, unknown> | null>(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
     }
-  }, []);
-
+  });
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   // Automated upgrade detection loop (polls every 3 seconds while payment modal is open)
   useEffect(() => {
     if (!showPaymentModal || !user || paymentSuccess) return;

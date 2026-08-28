@@ -62,7 +62,9 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleApprove = async (id: number) => {
@@ -76,7 +78,7 @@ const AdminDashboard = () => {
         toast.success("Đã duyệt bài hát!");
         fetchData();
       }
-    } catch (err) {
+    } catch {
       toast.error("Lỗi khi duyệt bài hát");
     }
   };
@@ -104,7 +106,7 @@ const AdminDashboard = () => {
         setRejectReason("");
         fetchData();
       }
-    } catch (err) {
+    } catch {
       toast.error("Lỗi khi từ chối bài hát");
     }
   };
@@ -120,7 +122,7 @@ const AdminDashboard = () => {
         toast.success(`${isBanned ? 'Gỡ chặn' : 'Chặn'} người dùng thành công`);
         fetchData();
       }
-    } catch (err) {
+    } catch {
       toast.error("Lỗi thao tác người dùng");
     }
   };
@@ -136,7 +138,7 @@ const AdminDashboard = () => {
         toast.success("Đã nâng cấp Premium cho người dùng!");
         fetchData();
       }
-    } catch (err) {
+    } catch {
       toast.error("Lỗi khi xác nhận thanh toán");
     }
   };
@@ -170,7 +172,7 @@ const AdminDashboard = () => {
       } else {
         toast.error(data.msg);
       }
-    } catch (err) {
+    } catch {
       toast.error("Lỗi khi lưu thông tin người dùng");
     }
   };
@@ -189,7 +191,7 @@ const AdminDashboard = () => {
         toast.success("Đã xóa người dùng");
         fetchData();
       }
-    } catch (err) {
+    } catch {
       toast.error("Lỗi khi xóa người dùng");
     }
   };
@@ -240,7 +242,7 @@ const AdminDashboard = () => {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'overview' | 'songs' | 'users' | 'payments')}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id
                 ? 'bg-white/10 text-white shadow-lg border border-white/10'
                 : 'text-slate-500 hover:text-slate-300'

@@ -42,7 +42,7 @@ export default function YoutubeConverter() {
         try {
           const errData = await response.json();
           if (errData.msg) errorMsg = errData.msg;
-        } catch (e) {
+        } catch {
           // ignore parsing error if it's not JSON
         }
         throw new Error(errorMsg);
@@ -79,11 +79,11 @@ export default function YoutubeConverter() {
         setUrl('');
       }, 1000);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
       setIsDownloading(false);
       setProgress(0);
-      toast.error(error.message || 'Lỗi khi kết nối đến máy chủ.');
+      toast.error((error as Error).message || 'Lỗi khi kết nối đến máy chủ.');
     }
   };
 

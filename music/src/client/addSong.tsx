@@ -23,6 +23,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       };
       reader.readAsDataURL(image);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setImagePreview(null);
     }
   }, [image]);

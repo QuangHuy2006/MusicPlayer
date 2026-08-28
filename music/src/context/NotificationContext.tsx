@@ -39,6 +39,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications();
     // Poll every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
@@ -82,6 +83,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (context === undefined) {

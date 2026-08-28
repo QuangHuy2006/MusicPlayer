@@ -11,7 +11,7 @@ import {
 // =============================================================================
 // FLOATING ICON (CSS Animation)
 // =============================================================================
-const FloatingIcon = ({ icon: Icon, x = 0, y = 0, delay = 0 }: any) => {
+const FloatingIcon = ({ icon: Icon, x = 0, y = 0, delay = 0 }: { icon: React.ElementType; x?: number; y?: number; delay?: number }) => {
   return (
     <div
       className="absolute text-slate-700 opacity-20 pointer-events-none hidden lg:block animate-float"

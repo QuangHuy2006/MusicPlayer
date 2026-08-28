@@ -88,7 +88,7 @@ const OfflinePage = () => {
           if (s.imageBlob) total += s.imageBlob.size;
         });
         setDbSize(formatBytes(total));
-      } catch (e) {
+      } catch {
         setDbSize('Unknown');
       }
     };

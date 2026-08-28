@@ -4,17 +4,19 @@ import { VscChromeMinimize, VscChromeMaximize, VscChromeRestore, VscChromeClose 
 const TitleBar: React.FC = () => {
   const [isMaximized, setIsMaximized] = React.useState(false);
 
+  const ipc = (window as Record<string, unknown>).ipcRenderer as { send: (channel: string) => void } | undefined;
+
   const handleMinimize = () => {
-    (window as any).ipcRenderer.send('window-minimize');
+    ipc?.send('window-minimize');
   };
 
   const handleMaximize = () => {
-    (window as any).ipcRenderer.send('window-maximize');
+    ipc?.send('window-maximize');
     setIsMaximized(!isMaximized);
   };
 
   const handleClose = () => {
-    (window as any).ipcRenderer.send('window-close');
+    ipc?.send('window-close');
   };
 
   return (

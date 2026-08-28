@@ -1,93 +1,178 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   DESIGN SYSTEM — Premium Music Player
+   Inspired by Spotify, Apple Music, and modern glassmorphism aesthetics.
+   ========================================================================== */
+
 :root {
-  --bg-dark: #000000;
-  --bg-light: #ffffff;
-  --text-main: #ffffff;
-  --text-muted: #888888;
-  --accent-primary: #ffffff;
-  --border-color: #222222;
+  /* Core Palette */
+  --bg-dark: #0a0a0f;
+  --bg-surface: #12121a;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.06);
+  --bg-elevated: rgba(255, 255, 255, 0.05);
+
+  /* Text */
+  --text-main: #f0f0f5;
+  --text-muted: #6b6b80;
+  --text-subtle: #3a3a50;
+
+  /* Accent (overridden by user theme) */
+  --accent-gold: #d4af37;
+  --accent-blue: #3b82f6;
+
+  /* Borders */
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+
+  /* Glass */
+  --glass-bg: rgba(18, 18, 26, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 24px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 48px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 40px rgba(212, 175, 55, 0.08);
 }
 
 @theme {
-  --color-accent-primary: var(--accent-primary);
+  --color-accent-primary: var(--accent-gold);
 }
 
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
 body {
-  @apply bg-black text-white antialiased;
+  @apply antialiased;
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden;
 }
 
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }
-
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Hide scrollbars globally for a clean look */
+/* Custom Scrollbar — subtle, modern */
 *::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+  height: 6px;
 }
-* {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
-/* Minimalist Utilities */
+/* ==========================================================================
+   GLASS & CARD SYSTEM
+   ========================================================================== */
+
 @layer components {
-  /* Redefining old premium classes to minimal flat styles to prevent layout breaks */
-  .premium-card, .immersive-card, .glass-panel-3d {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    transition: all 0.2s ease;
-  }
-  
-  .premium-card:hover, .immersive-card:hover {
-    border-color: #444;
+  /* ---- Premium Glass Card ---- */
+  .premium-card,
+  .immersive-card,
+  .glass-panel-3d {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
   }
 
+  .premium-card:hover,
+  .immersive-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  /* ---- Premium Button ---- */
   .premium-btn {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
     color: var(--text-main);
-    transition: all 0.2s ease;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
   }
 
   .premium-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
   }
 
-  .premium-input, .frosted-input {
-    background: transparent !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 8px !important;
+  /* ---- Input Fields ---- */
+  .premium-input,
+  .frosted-input {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 14px !important;
     color: var(--text-main) !important;
     outline: none !important;
     box-shadow: none !important;
-    transition: border-color 0.2s ease !important;
+    transition: all 0.3s ease !important;
+    backdrop-filter: blur(12px);
   }
 
-  .premium-input:focus, .frosted-input:focus {
-    border-color: #666 !important;
+  .premium-input:focus,
+  .frosted-input:focus {
+    border-color: var(--accent-gold) !important;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
   }
 
-  .text-gradient-premium, .text-gradient-aurora, .shimmer-gold-text {
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    color: var(--text-main);
-    text-shadow: none;
-    animation: none;
+  /* ---- Gradient Text ---- */
+  .text-gradient-premium {
+    background: linear-gradient(135deg, var(--accent-gold) 0%, #f5d784 50%, var(--accent-gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer-text 3s linear infinite;
+    background-size: 200% auto;
   }
 
-  /* Keep basic line clamp */
+  .text-gradient-aurora {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #667eea 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer-text 4s linear infinite;
+    background-size: 200% auto;
+  }
+
+  .shimmer-gold-text {
+    background: linear-gradient(90deg, var(--accent-gold) 0%, #f5e6b8 40%, var(--accent-gold) 80%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer-text 2.5s linear infinite;
+    background-size: 200% auto;
+  }
+
+  /* ---- Line Clamp ---- */
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -96,13 +181,63 @@ body {
   }
 }
 
-/* Electron Titlebar */
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+
+@keyframes shimmer-text {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
+  50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.25); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vinyl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   ELECTRON TITLEBAR
+   ========================================================================== */
+
 .titlebar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 32px;
-  background: #000;
+  height: 36px;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   user-select: none;
   z-index: 250;
@@ -129,7 +264,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #888;
+  color: var(--text-muted);
   transition: all 0.2s ease;
   cursor: pointer;
   background: transparent;
@@ -138,8 +273,8 @@ body {
 }
 
 .titlebar-button:hover {
-  background: #111;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
 }
 
 .titlebar-button.close:hover {
@@ -157,41 +292,70 @@ body {
   }
 }
 
-/* Redefine ambient classes to be completely flat */
-.bg-ambient, .bg-premium-ambient {
-  background: #000 !important;
+/* ==========================================================================
+   SIDEBAR & AMBIENT BACKGROUNDS
+   ========================================================================== */
+
+.bg-ambient,
+.bg-premium-ambient {
+  background: var(--bg-dark) !important;
 }
 
 .premium-sidebar {
-  background: #000 !important;
+  background: rgba(10, 10, 15, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   border-right: 1px solid var(--border-color) !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 .premium-gold-border {
-  border-color: var(--border-color) !important;
+  border-color: var(--glass-border) !important;
   box-shadow: none !important;
 }
 
+/* ==========================================================================
+   VIP / PREMIUM BADGES
+   ========================================================================== */
+
 .vip-badge-glow {
-  background: #222;
-  color: #fff;
-  text-shadow: none;
-  box-shadow: none;
-  animation: none;
-  border: 1px solid #444;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+  color: var(--accent-gold);
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 12px;
+  animation: pulse-glow 3s ease-in-out infinite;
 }
 
 .premium-vip-card {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  box-shadow: none;
-  transition: all 0.2s ease;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .premium-vip-card:hover {
-  border-color: #444;
-  transform: none;
-  box-shadow: none;
+  border-color: rgba(212, 175, 55, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), var(--shadow-glow);
+}
+
+/* ==========================================================================
+   UTILITY: Noise Overlay (optional ambient texture)
+   ========================================================================== */
+
+.noise-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.015;
+  pointer-events: none;
+  z-index: 999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
