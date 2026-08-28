@@ -20,7 +20,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [userData] = useState<Record<string, unknown> | null>(() => {
+  const [userData] = useState<any | null>(() => {
     try {
       const userStr = localStorage.getItem("user");
       return userStr ? JSON.parse(userStr) : null;
@@ -58,7 +58,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
   // Listen to in-app downloader events
   useEffect(() => {
-    const ipc = (window as Record<string, unknown>).ipcRenderer as {
+    const ipc = (window as any).ipcRenderer as {
       on: (channel: string, listener: (...args: unknown[]) => void) => void;
       off: (channel: string, listener: (...args: unknown[]) => void) => void;
       send: (channel: string, ...args: unknown[]) => void;
@@ -91,7 +91,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   }, []);
 
   const startInAppUpdate = () => {
-    const ipc = (window as Record<string, unknown>).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
+    const ipc = (window as any).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
     const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
     
     if (ipc) {
@@ -140,7 +140,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 const releases = await relRes.json();
                 const latestRelease = releases[0];
                 if (latestRelease && latestRelease.assets) {
-                  const exeAsset = latestRelease.assets.find((asset: Record<string, unknown>) => typeof asset.name === 'string' && asset.name.endsWith('.exe'));
+                  const exeAsset = latestRelease.assets.find((asset: any) => typeof asset.name === 'string' && asset.name.endsWith('.exe'));
                   if (exeAsset && typeof exeAsset.browser_download_url === 'string') {
                     setDownloadUrl(exeAsset.browser_download_url);
                   }
@@ -507,7 +507,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                   <button
                     onClick={() => {
                       const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
-                      const ipc = (window as Record<string, unknown>).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
+                      const ipc = (window as any).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
                       if (ipc) {
                         ipc.send('open-external', finalUrl);
                       } else {

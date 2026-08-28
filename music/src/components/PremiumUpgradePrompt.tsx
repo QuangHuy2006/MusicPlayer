@@ -5,7 +5,7 @@ import { API_BASE } from "../config.tsx";
 export default function PremiumUpgradePrompt() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [user, setUser] = useState<Record<string, unknown> | null>(() => {
+  const [user, setUser] = useState<any | null>(() => {
     try {
       const userStr = localStorage.getItem("user");
       return userStr ? JSON.parse(userStr) : null;

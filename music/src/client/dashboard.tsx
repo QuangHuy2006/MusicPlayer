@@ -64,7 +64,7 @@ const MusicPlayer = () => {
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<Record<string, unknown>[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState('');
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);

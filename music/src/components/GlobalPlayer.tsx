@@ -29,7 +29,7 @@ export default function GlobalPlayer() {
   const pannerRef = useRef<StereoPannerNode | null>(null);
   const lfoGainRef = useRef<GainNode | null>(null);
 
-  const [user, setUser] = useState<Record<string, unknown> | null>(() => {
+  const [user, setUser] = useState<any | null>(() => {
     try {
       const userStr = localStorage.getItem('user');
       return userStr ? JSON.parse(userStr) : null;
@@ -177,10 +177,10 @@ export default function GlobalPlayer() {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    if ((audioRef.current as Record<string, unknown>)._isConnectedToWebAudio) return;
+    if ((audioRef.current as any)._isConnectedToWebAudio) return;
 
     try {
-      const AudioContextClass = window.AudioContext || (window as Record<string, unknown>).webkitAudioContext as typeof window.AudioContext;
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext as typeof window.AudioContext;
       if (!AudioContextClass) return;
 
       let ctx = audioCtxRef.current;
@@ -272,7 +272,7 @@ export default function GlobalPlayer() {
       masterFade.connect(compressor);
       compressor.connect(ctx.destination);
 
-      (audioRef.current as Record<string, unknown>)._isConnectedToWebAudio = true;
+      (audioRef.current as any)._isConnectedToWebAudio = true;
     } catch {
       // Audio Engine Init Error ignored
     }
@@ -787,7 +787,7 @@ function KaraokeOverlay({
   analyserRef,
   isPremium,
 }: {
-  song: Record<string, unknown>;
+  song: any;
   progress: number;
   duration: number;
   isPlaying: boolean;
@@ -883,176 +883,176 @@ function KaraokeOverlay({
     };
   }, [isPlaying, isPremium, analyserRef]);
 
- 
-const { lines, isLrc } = useMemo(() => {
-  if (!song.lyrics) return { lines: [], isLrc: false };
-  const rawLines = song.lyrics.split('\n').filter((l: string) => l.trim() !== '');
 
-  const lrcRegex = /\[(\d{2}):(\d{2}(?:\.\d{1,3})?)\](.*)/;
-  let isLrc = false;
+  const { lines, isLrc } = useMemo(() => {
+    if (!song.lyrics) return { lines: [], isLrc: false };
+    const rawLines = song.lyrics.split('\n').filter((l: string) => l.trim() !== '');
 
-  const parsedLines = rawLines.map((line: string) => {
-    const match = lrcRegex.exec(line);
-    if (match) {
-      isLrc = true;
-      const minutes = parseInt(match[1], 10);
-      const seconds = parseFloat(match[2]);
-      const text = match[3].trim();
-      return { time: minutes * 60 + seconds, text };
+    const lrcRegex = /\[(\d{2}):(\d{2}(?:\.\d{1,3})?)\](.*)/;
+    let isLrc = false;
+
+    const parsedLines = rawLines.map((line: string) => {
+      const match = lrcRegex.exec(line);
+      if (match) {
+        isLrc = true;
+        const minutes = parseInt(match[1], 10);
+        const seconds = parseFloat(match[2]);
+        const text = match[3].trim();
+        return { time: minutes * 60 + seconds, text };
+      }
+      return { time: -1, text: line };
+    });
+
+    return { lines: parsedLines, isLrc };
+  }, [song.lyrics]);
+
+  const currentLineIndex = useMemo(() => {
+    if (lines.length === 0 || duration === 0) return 0;
+    if (isLrc) {
+      let activeIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (progress >= lines[i].time) activeIndex = i;
+        else break;
+      }
+      return activeIndex;
+    } else {
+      const ratio = progress / duration;
+      return Math.min(Math.floor(ratio * lines.length), lines.length - 1);
     }
-    return { time: -1, text: line };
-  });
+  }, [progress, duration, lines, isLrc]);
 
-  return { lines: parsedLines, isLrc };
-}, [song.lyrics]);
-
-const currentLineIndex = useMemo(() => {
-  if (lines.length === 0 || duration === 0) return 0;
-  if (isLrc) {
-    let activeIndex = 0;
-    for (let i = 0; i < lines.length; i++) {
-      if (progress >= lines[i].time) activeIndex = i;
-      else break;
+  useEffect(() => {
+    if (karaokeRef.current) {
+      const activeEl = karaokeRef.current.querySelector('[data-active="true"]');
+      activeEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    return activeIndex;
-  } else {
-    const ratio = progress / duration;
-    return Math.min(Math.floor(ratio * lines.length), lines.length - 1);
-  }
-}, [progress, duration, lines, isLrc]);
+  }, [currentLineIndex, karaokeRef]);
 
-useEffect(() => {
-  if (karaokeRef.current) {
-    const activeEl = karaokeRef.current.querySelector('[data-active="true"]');
-    activeEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}, [currentLineIndex, karaokeRef]);
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
-const formatTime = (time: number) => {
-  if (isNaN(time)) return "0:00";
-  const m = Math.floor(time / 60);
-  const s = Math.floor(time % 60);
-  return `${m}:${s < 10 ? '0' : ''}${s}`;
-};
+  return (
+    <div className="fixed inset-0 z-[500] bg-black flex flex-col animate-[fade-in_0.3s_ease-out]">
 
-return (
-  <div className="fixed inset-0 z-[500] bg-black flex flex-col animate-[fade-in_0.3s_ease-out]">
-
-    {/* Dynamic 3D Circular Audio Visualizer (Premium Only) */}
-    {isPremium && analyser && (
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none opacity-65 z-0"
-      />
-    )}
-
-    {/* Header */}
-    <div className="relative z-10 flex items-center justify-between px-6 md:px-10 py-6">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#111]">
-          <img src={song.imageUrl} alt="" className="w-full h-full object-cover" />
-        </div>
-        <div>
-          <h3 className="text-base font-bold text-white">{song.name}</h3>
-          <p className="text-xs text-gray-500 font-medium">{song.author || 'Unknown'}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-bold text-slate-500 bg-white/5 px-3 py-1 rounded-full">🎤 KARAOKE</span>
-        <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
-          <FaTimes size={18} />
-        </button>
-      </div>
-    </div>
-
-    {/* Lyrics Area */}
-    <div className="flex-1 overflow-hidden relative z-10 flex items-center justify-center">
-      {lines.length === 0 ? (
-        <div className="text-center space-y-4">
-          <FaMicrophoneAlt className="text-6xl text-gray-800 mx-auto" />
-          <p className="text-2xl font-bold text-gray-500">Bài hát này chưa có lời</p>
-          <p className="text-slate-600">Thêm lời bài hát khi upload để sử dụng Karaoke mode!</p>
-        </div>
-      ) : (
-        <div
-          ref={karaokeRef}
-          className="max-w-3xl w-full h-[60vh] overflow-y-auto custom-scrollbar px-8 space-y-6"
-        >
-          {/* Spacer */}
-          <div className="h-[25vh]"></div>
-          {lines.map((lineObj: { text: string; time: number }, i: number) => {
-            const isActive = i === currentLineIndex;
-            const isPast = i < currentLineIndex;
-            return (
-              <p
-                key={i}
-                data-active={isActive ? 'true' : 'false'}
-                className={`text-center transition-all duration-500 cursor-default select-none ${isActive
-                  ? 'text-3xl md:text-4xl font-bold text-white scale-105'
-                  : isPast
-                    ? 'text-xl md:text-2xl font-medium text-gray-700'
-                    : 'text-xl md:text-2xl font-medium text-gray-500 hover:text-gray-400'
-                  }`}
-              >
-                {lineObj.text}
-              </p>
-            );
-          })}
-          {/* Spacer */}
-          <div className="h-[25vh]"></div>
-        </div>
+      {/* Dynamic 3D Circular Audio Visualizer (Premium Only) */}
+      {isPremium && (
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none opacity-65 z-0"
+        />
       )}
-    </div>
 
-    {/* Bottom Controls */}
-    <div className="relative z-10 px-6 md:px-10 pb-8 pt-4">
-      {/* Progress Bar */}
-      <div className="flex items-center gap-3 mb-6 max-w-2xl mx-auto">
-        <span className="text-xs text-slate-400 w-10 text-right font-mono">{formatTime(progress)}</span>
-        <div className="flex-1 h-1 bg-[#222] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-white rounded-full transition-all duration-200"
-            style={{ width: `${(progress / (duration || 1)) * 100}%` }}
-          />
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between px-6 md:px-10 py-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#111]">
+            <img src={song.imageUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">{song.name}</h3>
+            <p className="text-xs text-gray-500 font-medium">{song.author || 'Unknown'}</p>
+          </div>
         </div>
-        <span className="text-xs text-slate-400 w-10 font-mono">{formatTime(duration)}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold text-slate-500 bg-white/5 px-3 py-1 rounded-full">🎤 KARAOKE</span>
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+            <FaTimes size={18} />
+          </button>
+        </div>
       </div>
-      {/* Playback Controls */}
-      <div className="flex items-center justify-center gap-8">
-        <button
-          onClick={toggleRandom}
-          className={`transition-colors p-2 ${isRandom
-            ? 'text-white'
-            : 'text-gray-500 hover:text-white'
-            }`}
-          title="Play Random (Shuffle)"
-        >
-          <FaRandom size={18} />
-        </button>
-        <button onClick={onPrev} className="text-slate-400 hover:text-white transition-colors">
-          <FaStepBackward size={18} />
-        </button>
-        <button
-          onClick={onTogglePlay}
-          className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
-        >
-          {isPlaying ? <FaPause size={20} /> : <FaPlay size={20} className="ml-1" />}
-        </button>
-        <button onClick={onNext} className="text-slate-400 hover:text-white transition-colors">
-          <FaStepForward size={18} />
-        </button>
-        <button
-          onClick={toggleRepeat}
-          className={`transition-colors p-2 ${isRepeat
-            ? 'text-white'
-            : 'text-gray-500 hover:text-white'
-            }`}
-          title="Play Loop (Repeat)"
-        >
-          <FaSync size={18} />
-        </button>
+
+      {/* Lyrics Area */}
+      <div className="flex-1 overflow-hidden relative z-10 flex items-center justify-center">
+        {lines.length === 0 ? (
+          <div className="text-center space-y-4">
+            <FaMicrophoneAlt className="text-6xl text-gray-800 mx-auto" />
+            <p className="text-2xl font-bold text-gray-500">Bài hát này chưa có lời</p>
+            <p className="text-slate-600">Thêm lời bài hát khi upload để sử dụng Karaoke mode!</p>
+          </div>
+        ) : (
+          <div
+            ref={karaokeRef}
+            className="max-w-3xl w-full h-[60vh] overflow-y-auto custom-scrollbar px-8 space-y-6"
+          >
+            {/* Spacer */}
+            <div className="h-[25vh]"></div>
+            {lines.map((lineObj: { text: string; time: number }, i: number) => {
+              const isActive = i === currentLineIndex;
+              const isPast = i < currentLineIndex;
+              return (
+                <p
+                  key={i}
+                  data-active={isActive ? 'true' : 'false'}
+                  className={`text-center transition-all duration-500 cursor-default select-none ${isActive
+                    ? 'text-3xl md:text-4xl font-bold text-white scale-105'
+                    : isPast
+                      ? 'text-xl md:text-2xl font-medium text-gray-700'
+                      : 'text-xl md:text-2xl font-medium text-gray-500 hover:text-gray-400'
+                    }`}
+                >
+                  {lineObj.text}
+                </p>
+              );
+            })}
+            {/* Spacer */}
+            <div className="h-[25vh]"></div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Controls */}
+      <div className="relative z-10 px-6 md:px-10 pb-8 pt-4">
+        {/* Progress Bar */}
+        <div className="flex items-center gap-3 mb-6 max-w-2xl mx-auto">
+          <span className="text-xs text-slate-400 w-10 text-right font-mono">{formatTime(progress)}</span>
+          <div className="flex-1 h-1 bg-[#222] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-white rounded-full transition-all duration-200"
+              style={{ width: `${(progress / (duration || 1)) * 100}%` }}
+            />
+          </div>
+          <span className="text-xs text-slate-400 w-10 font-mono">{formatTime(duration)}</span>
+        </div>
+        {/* Playback Controls */}
+        <div className="flex items-center justify-center gap-8">
+          <button
+            onClick={toggleRandom}
+            className={`transition-colors p-2 ${isRandom
+              ? 'text-white'
+              : 'text-gray-500 hover:text-white'
+              }`}
+            title="Play Random (Shuffle)"
+          >
+            <FaRandom size={18} />
+          </button>
+          <button onClick={onPrev} className="text-slate-400 hover:text-white transition-colors">
+            <FaStepBackward size={18} />
+          </button>
+          <button
+            onClick={onTogglePlay}
+            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+          >
+            {isPlaying ? <FaPause size={20} /> : <FaPlay size={20} className="ml-1" />}
+          </button>
+          <button onClick={onNext} className="text-slate-400 hover:text-white transition-colors">
+            <FaStepForward size={18} />
+          </button>
+          <button
+            onClick={toggleRepeat}
+            className={`transition-colors p-2 ${isRepeat
+              ? 'text-white'
+              : 'text-gray-500 hover:text-white'
+              }`}
+            title="Play Loop (Repeat)"
+          >
+            <FaSync size={18} />
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }

@@ -22,7 +22,7 @@ export const LikeProvider = ({ children }: { children: ReactNode }) => {
         });
         const data = await res.json();
         if (data.success) {
-          setLikedSongIds(new Set(data.songs.map((s: Record<string, unknown>) => Number(s.id))));
+          setLikedSongIds(new Set(data.songs.map((s: any) => Number(s.id))));
         }
       } catch (err) {
         console.error("Failed to fetch likes", err);

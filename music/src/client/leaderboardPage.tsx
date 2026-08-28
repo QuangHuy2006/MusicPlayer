@@ -8,8 +8,8 @@ import { MdLeaderboard } from 'react-icons/md';
 import { usePlayer } from '../context/PlayerContext';
 
 const LeaderboardPage = () => {
-  const [topSongs, setTopSongs] = useState<Record<string, unknown>[]>([]);
-  const [topUsers, setTopUsers] = useState<Record<string, unknown>[]>([]);
+  const [topSongs, setTopSongs] = useState<any[]>([]);
+  const [topUsers, setTopUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'songs' | 'users'>('songs');
   const { playSong, currentSong, isPlaying } = usePlayer();

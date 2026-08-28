@@ -4,7 +4,7 @@ import { VscChromeMinimize, VscChromeMaximize, VscChromeRestore, VscChromeClose 
 const TitleBar: React.FC = () => {
   const [isMaximized, setIsMaximized] = React.useState(false);
 
-  const ipc = (window as Record<string, unknown>).ipcRenderer as { send: (channel: string) => void } | undefined;
+  const ipc = (window as any).ipcRenderer as { send: (channel: string) => void } | undefined;
 
   const handleMinimize = () => {
     ipc?.send('window-minimize');
