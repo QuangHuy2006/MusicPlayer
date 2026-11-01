@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { FaCrown, FaLock, FaTimes, FaCopy, FaDownload, FaWaveSquare, FaMusic } from "react-icons/fa";
 import { API_BASE } from "../config.tsx";
+import type { User } from "../interface/user";
 
 export default function PremiumUpgradePrompt() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [user, setUser] = useState<any | null>(() => {
+  const [user, setUser] = useState<User | null>(() => {
     try {
       const userStr = localStorage.getItem("user");
-      return userStr ? JSON.parse(userStr) : null;
+      return userStr ? (JSON.parse(userStr) as User) : null;
     } catch {
       return null;
     }
@@ -47,7 +48,7 @@ export default function PremiumUpgradePrompt() {
     return () => clearInterval(interval);
   }, [showPaymentModal, user, paymentSuccess]);
 
-  const userId = user?.id || user?._id || "VIP";
+  const userId = user?.id || user?.id || "VIP";
   const transferContent = `QHUY ${userId}`;
   const bankName = "MBBank";
   const accountNumber = "0789088909"; // User's customized bank info or template

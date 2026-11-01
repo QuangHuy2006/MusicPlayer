@@ -6,10 +6,23 @@ import {
 } from 'react-icons/fa';
 import { MdLeaderboard } from 'react-icons/md';
 import { usePlayer } from '../context/PlayerContext';
+import type { Song } from '../interface/song';
+
+interface TopSong extends Song {
+  playCount: number;
+  image_url?: string;
+}
+
+interface TopUser {
+  id: number;
+  name?: string;
+  avatar?: string;
+  playCount: number;
+}
 
 const LeaderboardPage = () => {
-  const [topSongs, setTopSongs] = useState<any[]>([]);
-  const [topUsers, setTopUsers] = useState<any[]>([]);
+  const [topSongs, setTopSongs] = useState<TopSong[]>([]);
+  const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'songs' | 'users'>('songs');
   const { playSong, currentSong, isPlaying } = usePlayer();

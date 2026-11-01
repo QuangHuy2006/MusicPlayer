@@ -697,40 +697,9 @@ app.post('/api/songs', auth, upload.fields([
       normalizedAuthor = 'Chưa biết';
     }
 
-    // --- Chuẩn hóa nhạc về chuẩn MP3 128kbps ---
-    let normalizedBuffer;
-    try {
-      normalizedBuffer = await normalizeAudio(musicFile.buffer);
-    } catch (normalizeError) {
-      console.error('Audio normalization error:', normalizeError);
-      return res.status(400).json({
-        success: false,
-        msg: 'Không thể chuẩn hóa file nhạc này. Vui lòng kiểm tra lại định dạng file hoặc chọn file khác.'
-      });
-    }
-
-    // --- Upload file nhạc đã chuẩn hóa lên bucket 'Music' ---
-    const musicFileName = `${uuidv4()}.mp3`;
-    const musicFilePath = `songs/${musicFileName}`;
-
-    const { error: musicUploadError } = await supabase.storage
-      .from('Music')
-      .upload(musicFilePath, normalizedBuffer, {
-        contentType: 'audio/mpeg',
-        cacheControl: '3600',
-      });
-
-    if (musicUploadError) {
-      console.error('Music upload error:', musicUploadError);
-      return res.status(500).json({ success: false, msg: 'Lỗi upload file nhạc' });
-    }
-
-    const { data: musicUrlData } = supabase.storage.from('Music').getPublicUrl(musicFilePath);
-    const songUrl = musicUrlData.publicUrl;
-
-    // --- Upload ảnh bìa lên bucket 'Image' (nếu có) ---
-    let imageUrl = null;
-    if (imageFile) {
+    // --- Xử lý đa luồng song song: chuẩn hóa Audio và Upload Ảnh cùng một lúc ---
+    const imageUploadPromise = (async () => {
+      if (!imageFile) return null;
       const imageExt = path.extname(imageFile.originalname);
       const imageFileName = `${uuidv4()}${imageExt}`;
       const imageFilePath = `images/${imageFileName}`;
@@ -744,14 +713,53 @@ app.post('/api/songs', auth, upload.fields([
 
       if (imageUploadError) {
         console.error('Image upload error:', imageUploadError);
-        // Nếu upload ảnh lỗi, có thể xóa file nhạc đã upload để tránh rác
-        await supabase.storage.from('Music').remove([musicFilePath]);
-        return res.status(500).json({ success: false, msg: 'Lỗi upload ảnh bìa' });
+        return null;
       }
 
       const { data: imageUrlData } = supabase.storage.from('Image').getPublicUrl(imageFilePath);
-      imageUrl = imageUrlData.publicUrl;
+      return imageUrlData.publicUrl;
+    })();
+
+    const audioProcessPromise = (async () => {
+      let normalizedBuffer;
+      try {
+        normalizedBuffer = await normalizeAudio(musicFile.buffer);
+      } catch (normalizeError) {
+        console.error('Audio normalization error:', normalizeError);
+        throw new Error('Không thể chuẩn hóa file nhạc này. Vui lòng kiểm tra lại định dạng file hoặc chọn file khác.');
+      }
+
+      const musicFileName = `${uuidv4()}.mp3`;
+      const musicFilePath = `songs/${musicFileName}`;
+
+      const { error: musicUploadError } = await supabase.storage
+        .from('Music')
+        .upload(musicFilePath, normalizedBuffer, {
+          contentType: 'audio/mpeg',
+          cacheControl: '3600',
+        });
+
+      if (musicUploadError) {
+        console.error('Music upload error:', musicUploadError);
+        throw new Error('Lỗi upload file nhạc lên máy chủ lưu trữ');
+      }
+
+      const { data: musicUrlData } = supabase.storage.from('Music').getPublicUrl(musicFilePath);
+      return { songUrl: musicUrlData.publicUrl, musicFilePath };
+    })();
+
+    // Chạy song song cả hai luồng xử lý audio và image
+    let audioResult;
+    let imageUrl = null;
+    try {
+      const [audioRes, imgRes] = await Promise.all([audioProcessPromise, imageUploadPromise]);
+      audioResult = audioRes;
+      imageUrl = imgRes;
+    } catch (procError) {
+      return res.status(400).json({ success: false, msg: procError.message || 'Lỗi xử lý file' });
     }
+
+    const { songUrl, musicFilePath } = audioResult;
 
     // --- Lưu thông tin vào bảng songs ---
     const status = (req.user.role === 'ADMIN' || visibility === 'private') ? 'approved' : 'pending';

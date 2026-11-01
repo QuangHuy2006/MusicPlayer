@@ -35,6 +35,15 @@ interface PlaylistSong extends Song {
   addedAt?: string;
 }
 
+interface SongComment {
+  id: number;
+  content: string;
+  created_at: string;
+  users?: {
+    name?: string;
+  };
+}
+
 const MusicPlayer = () => {
   const [songs, setSongs] = useState<PlaylistSong[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<PlaylistSong[]>([]);
@@ -64,7 +73,7 @@ const MusicPlayer = () => {
   const [trendingSongs, setTrendingSongs] = useState<Song[]>([]);
   const [showLyrics, setShowLyrics] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<SongComment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [showSleepTimer, setShowSleepTimer] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
@@ -103,7 +112,7 @@ const MusicPlayer = () => {
         if (data.success) {
           const songsData = data.playlist.songs.map((s: Song) => ({ ...s, status: "approved" }));
           setSongs(songsData || []);
-          
+
           const songIdFromUrl = searchParams.get("song");
           if (songIdFromUrl && songsData.length > 0) {
             const targetSong = songsData.find((s: Song) => s.id.toString() === songIdFromUrl);
@@ -441,13 +450,12 @@ const MusicPlayer = () => {
                             downloadSong(song);
                           }
                         }}
-                        className={`p-2 rounded-full transition-all ${
-                          isDownloaded(song.id)
-                            ? 'text-emerald-400 hover:text-red-400'
-                            : isDownloading(song.id)
+                        className={`p-2 rounded-full transition-all ${isDownloaded(song.id)
+                          ? 'text-emerald-400 hover:text-red-400'
+                          : isDownloading(song.id)
                             ? 'text-sky-400 animate-spin'
                             : 'text-slate-600 hover:text-sky-400 opacity-0 group-hover:opacity-100'
-                        }`}
+                          }`}
                         title={isDownloaded(song.id) ? 'Đã tải offline (Click để xóa)' : isDownloading(song.id) ? 'Đang tải...' : 'Tải offline'}
                       >
                         {isDownloaded(song.id) ? <FaCheckCircle size={14} /> : isDownloading(song.id) ? <FaSpinner size={14} /> : <FaDownload size={14} />}
@@ -486,7 +494,7 @@ const MusicPlayer = () => {
               />
             </div>
             <div className="mt-8 space-y-2">
-              <h4 className="text-xl font-black text-white truncate max-w-[200px]">{currentSong?.name || 'Chưa chọn bài'}</h4>
+              <h4 className="text-xl font-black text-white truncate max-w">{currentSong?.name || 'Chưa chọn bài'}</h4>
               <p className="text-sm font-bold text-[var(--accent-gold)] opacity-80 uppercase tracking-widest">{currentSong?.author || 'Hệ thống'}</p>
             </div>
 

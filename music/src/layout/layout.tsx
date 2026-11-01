@@ -14,16 +14,22 @@ import { useNotification } from "../context/NotificationContext";
 import packageJson from "../../package.json";
 
 import { API_BASE } from "../config.tsx";
+import type { User } from "../interface/user";
+
+interface ReleaseAsset {
+  name?: string;
+  browser_download_url?: string;
+}
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
 
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [userData] = useState<any | null>(() => {
+  const [userData] = useState<User | null>(() => {
     try {
       const userStr = localStorage.getItem("user");
-      return userStr ? JSON.parse(userStr) : null;
+      return userStr ? (JSON.parse(userStr) as User) : null;
     } catch {
       return null;
     }
@@ -46,7 +52,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const { unreadCount } = useNotification();
-  
+
   const isPremium = userData?.role === 'PREMIUM';
 
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -58,12 +64,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
   // Listen to in-app downloader events
   useEffect(() => {
-    const ipc = (window as any).ipcRenderer as {
-      on: (channel: string, listener: (...args: unknown[]) => void) => void;
-      off: (channel: string, listener: (...args: unknown[]) => void) => void;
-      send: (channel: string, ...args: unknown[]) => void;
-    } | undefined;
-    
+    const ipc = window.ipcRenderer;
+
     if (!ipc) return;
 
     const handleProgress = (_: unknown, percent: number) => {
@@ -91,9 +93,9 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   }, []);
 
   const startInAppUpdate = () => {
-    const ipc = (window as any).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
+    const ipc = window.ipcRenderer;
     const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
-    
+
     if (ipc) {
       setDownloadStatus('downloading');
       setDownloadProgress(0);
@@ -113,12 +115,12 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
           const data = await res.json();
           const online = data.version;
           const local = packageJson.version;
-          
+
           // Compare versions (semver parts)
           const parse = (v: string) => v.replace(/[^0-9.]/g, '').split('.').map(Number);
           const localParts = parse(local);
           const onlineParts = parse(online);
-          
+
           let hasUpdate = false;
           for (let i = 0; i < Math.max(localParts.length, onlineParts.length); i++) {
             const l = localParts[i] || 0;
@@ -129,10 +131,10 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
             }
             if (l > o) break;
           }
-          
+
           if (hasUpdate) {
             setOnlineVersion(online);
-            
+
             // Dynamically query actual download URL from GitHub API
             try {
               const relRes = await fetch("https://api.github.com/repos/QuangHuy2006/MusicPlayer/releases");
@@ -140,7 +142,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 const releases = await relRes.json();
                 const latestRelease = releases[0];
                 if (latestRelease && latestRelease.assets) {
-                  const exeAsset = latestRelease.assets.find((asset: any) => typeof asset.name === 'string' && asset.name.endsWith('.exe'));
+                  const exeAsset = latestRelease.assets.find((asset: ReleaseAsset) => typeof asset.name === 'string' && asset.name.endsWith('.exe'));
                   if (exeAsset && typeof exeAsset.browser_download_url === 'string') {
                     setDownloadUrl(exeAsset.browser_download_url);
                   }
@@ -177,13 +179,13 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, { 
-        method: "POST", 
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("token")}`
         },
-        body: JSON.stringify({ refreshToken: localStorage.getItem("refresh_token") }) 
+        body: JSON.stringify({ refreshToken: localStorage.getItem("refresh_token") })
       });
     } catch { /* ignore */ }
     localStorage.removeItem("token");
@@ -214,328 +216,328 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
       <TitleBar />
       <div className="flex flex-1 overflow-hidden relative">
 
-      {/* ===== SIDEBAR (Desktop) ===== */}
-      <aside className={`hidden lg:flex flex-col h-full bg-black/40 backdrop-blur-xl border-r border-white/5 z-50 transition-all duration-500 ease-in-out relative ${isCollapsed ? 'w-24' : 'w-72'}`}>
-        {/* Toggle Button */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-24 w-6 h-6 bg-[#1a1a1a] text-white border border-white/10 rounded-full flex items-center justify-center hover:scale-110 hover:bg-[#2a2a2a] hover:border-emerald-500/50 transition-all z-50 shadow-lg"
-        >
-          {isCollapsed ? <FaChevronRight size={10} /> : <FaChevronLeft size={10} />}
-        </button>
+        {/* ===== SIDEBAR (Desktop) ===== */}
+        <aside className={`hidden lg:flex flex-col h-full bg-black/40 backdrop-blur-xl border-r border-white/5 z-50 transition-all duration-500 ease-in-out relative ${isCollapsed ? 'w-24' : 'w-72'}`}>
+          {/* Toggle Button */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="absolute -right-3 top-24 w-6 h-6 bg-[#1a1a1a] text-white border border-white/10 rounded-full flex items-center justify-center hover:scale-110 hover:bg-[#2a2a2a] hover:border-emerald-500/50 transition-all z-50 shadow-lg"
+          >
+            {isCollapsed ? <FaChevronRight size={10} /> : <FaChevronLeft size={10} />}
+          </button>
 
-        {/* Logo */}
-        <div className={`p-8 transition-all duration-500 ${isCollapsed ? 'px-6' : 'p-8'}`}>
-          <Link to="/dashboard" className="flex items-center gap-4 group">
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300`}>
-              <FaHeadphones className="text-black text-2xl" />
-            </div>
-            {!isCollapsed && (
-              <div className="animate-[fade-in_0.3s_ease-out]">
-                <span className={`text-xl font-black text-white tracking-tight block`}>
-                  {isPremium ? 'Q.HUY PRO' : 'Q.HUY'}
-                </span>
+          {/* Logo */}
+          <div className={`p-8 transition-all duration-500 ${isCollapsed ? 'px-6' : 'p-8'}`}>
+            <Link to="/dashboard" className="flex items-center gap-4 group">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300`}>
+                <FaHeadphones className="text-black text-2xl" />
               </div>
-            )}
-          </Link>
-        </div>
+              {!isCollapsed && (
+                <div className="animate-[fade-in_0.3s_ease-out]">
+                  <span className={`text-xl font-black text-white tracking-tight block`}>
+                    {isPremium ? 'Q.HUY PRO' : 'Q.HUY'}
+                  </span>
+                </div>
+              )}
+            </Link>
+          </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-4 space-y-1.5 custom-scrollbar overflow-y-auto overflow-x-hidden pb-4">
-          <p className={`px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 transition-opacity duration-300 ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
-            Khám Phá
-          </p>
-          {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                title={isCollapsed ? item.label : ""}
-                className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden ${isActive
+          {/* Navigation */}
+          <nav className="flex-1 px-4 space-y-1.5 custom-scrollbar overflow-y-auto overflow-x-hidden pb-4">
+            <p className={`px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 transition-opacity duration-300 ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
+              Khám Phá
+            </p>
+            {navItems.map((item) => {
+              const isActive = location.pathname.startsWith(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  title={isCollapsed ? item.label : ""}
+                  className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group relative overflow-hidden ${isActive
                     ? `bg-white/10 text-white shadow-sm`
                     : "text-gray-400 hover:bg-white/5 hover:text-white"
-                  } ${isCollapsed ? 'justify-center px-0' : ''}`}
-              >
-                {isActive && !isCollapsed && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-r-full"></div>
-                )}
-                <span className={`${isActive ? "text-emerald-400" : "text-gray-400 group-hover:text-emerald-400"} transition-colors shrink-0 z-10`}>
-                  {item.icon}
-                </span>
-                {!isCollapsed && (
-                  <span className={`text-sm font-semibold tracking-wide animate-[fade-in_0.3s_ease-out] whitespace-nowrap z-10 ${isActive ? 'text-white' : ''}`}>{item.label}</span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+                    } ${isCollapsed ? 'justify-center px-0' : ''}`}
+                >
+                  {isActive && !isCollapsed && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-r-full"></div>
+                  )}
+                  <span className={`${isActive ? "text-emerald-400" : "text-gray-400 group-hover:text-emerald-400"} transition-colors shrink-0 z-10`}>
+                    {item.icon}
+                  </span>
+                  {!isCollapsed && (
+                    <span className={`text-sm font-semibold tracking-wide animate-[fade-in_0.3s_ease-out] whitespace-nowrap z-10 ${isActive ? 'text-white' : ''}`}>{item.label}</span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
 
 
-        {/* Version info */}
-        <div className={`p-6 border-t border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-wider ${isCollapsed ? 'text-center' : 'pl-8'}`}>
-          {isCollapsed ? `v${packageJson.version}` : `Phiên bản v${packageJson.version}`}
-        </div>
-      </aside>
+          {/* Version info */}
+          <div className={`p-6 border-t border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-wider ${isCollapsed ? 'text-center' : 'pl-8'}`}>
+            {isCollapsed ? `v${packageJson.version}` : `Phiên bản v${packageJson.version}`}
+          </div>
+        </aside>
 
-      <div className="flex-1 flex flex-col h-full relative">
+        <div className="flex-1 flex flex-col h-full relative">
 
-        {/* Top Header */}
-        <header className={`h-20 flex items-center justify-between px-6 md:px-10 z-40 border-b border-white/5 bg-black/40 backdrop-blur-xl safe-top sticky top-0`}>
-          {/* Navigation Arrows & Search */}
-          <div className="flex items-center gap-6 flex-1">
-            <div className="hidden md:flex items-center gap-2">
-              <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400 transition-all border border-white/5">
-                <FaChevronLeft />
-              </button>
-              <button onClick={() => navigate(1)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400 transition-all border border-white/5">
-                <FaChevronRight />
-              </button>
+          {/* Top Header */}
+          <header className={`h-20 flex items-center justify-between px-6 md:px-10 z-40 border-b border-white/5 bg-black/40 backdrop-blur-xl safe-top sticky top-0`}>
+            {/* Navigation Arrows & Search */}
+            <div className="flex items-center gap-6 flex-1">
+              <div className="hidden md:flex items-center gap-2">
+                <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400 transition-all border border-white/5">
+                  <FaChevronLeft />
+                </button>
+                <button onClick={() => navigate(1)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400 transition-all border border-white/5">
+                  <FaChevronRight />
+                </button>
+              </div>
+
+              <form onSubmit={handleSearch} className="relative w-full max-w-md group">
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm bài hát, nghệ sĩ..."
+                  className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 hover:bg-white/10 hover:border-white/10 transition-all placeholder:text-gray-500 font-medium text-white shadow-inner"
+                />
+              </form>
             </div>
 
-            <form onSubmit={handleSearch} className="relative w-full max-w-md group">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm bài hát, nghệ sĩ..."
-                className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 hover:bg-white/10 hover:border-white/10 transition-all placeholder:text-gray-500 font-medium text-white shadow-inner"
-              />
-            </form>
-          </div>
-
-          {/* Notification Bell & Profile */}
-          <div className="flex items-center gap-4 md:gap-6">
-            {onlineVersion && (
-              <button
-                onClick={() => setShowUpdateModal(true)}
-                className="relative p-2.5 text-amber-500 hover:text-amber-400 transition-colors animate-pulse flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 rounded-xl border border-amber-500/20 shadow-lg shadow-amber-500/10 cursor-pointer"
-                title={`Có bản cập nhật mới v${onlineVersion}`}
-              >
-                <FaDownload size={16} className="text-amber-500" />
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2.5 text-slate-400 hover:text-[var(--accent-gold)] transition-colors"
-            >
-              <FaBell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
+            {/* Notification Bell & Profile */}
+            <div className="flex items-center gap-4 md:gap-6">
+              {onlineVersion && (
+                <button
+                  onClick={() => setShowUpdateModal(true)}
+                  className="relative p-2.5 text-amber-500 hover:text-amber-400 transition-colors animate-pulse flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 rounded-xl border border-amber-500/20 shadow-lg shadow-amber-500/10 cursor-pointer"
+                  title={`Có bản cập nhật mới v${onlineVersion}`}
+                >
+                  <FaDownload size={16} className="text-amber-500" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                </button>
               )}
-            </button>
 
-            <div className="h-8 w-[1px] bg-white/10 hidden md:block"></div>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2.5 text-slate-400 hover:text-[var(--accent-gold)] transition-colors"
+              >
+                <FaBell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
 
-            {/* User Profile Area (Header) */}
-            <div className="hidden md:flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 flex items-center justify-center overflow-hidden border border-emerald-500/20 shrink-0 shadow-inner">
-                {(userData as Record<string, string>)?.avatar ? <img src={(userData as Record<string, string>).avatar} className="w-full h-full object-cover" alt="" /> : <FaUserCircle size={24} className="text-emerald-500/80" />}
+              <div className="h-8 w-[1px] bg-white/10 hidden md:block"></div>
+
+              {/* User Profile Area (Header) */}
+              <div className="hidden md:flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 flex items-center justify-center overflow-hidden border border-emerald-500/20 shrink-0 shadow-inner">
+                  {userData?.avatar ? <img src={userData.avatar} className="w-full h-full object-cover" alt="" /> : <FaUserCircle size={24} className="text-emerald-500/80" />}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-white truncate max-w-[120px]">{userData?.name || "Người dùng"}</p>
+                    {isPremium && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#444] text-white uppercase tracking-widest shrink-0">
+                        PRO
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-slate-500 hover:text-rose-500 transition-colors p-2 ml-2 bg-white/5 rounded-full hover:bg-white/10"
+                  title="Đăng xuất"
+                >
+                  <FaSignOutAlt size={16} />
+                </button>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-white truncate max-w-[120px]">{(userData as Record<string, string>)?.name || "Người dùng"}</p>
-                  {isPremium && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#444] text-white uppercase tracking-widest shrink-0">
-                      PRO
-                    </span>
-                  )}
+
+              {/* Mobile Menu Toggle (Simplified) */}
+              <div className="lg:hidden flex items-center gap-3">
+                <button onClick={handleLogout} className="text-slate-500 hover:text-rose-500 p-2" title="Đăng xuất">
+                  <FaSignOutAlt size={18} />
+                </button>
+                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                  <FaHeadphones className="text-black" />
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-slate-500 hover:text-rose-500 transition-colors p-2 ml-2 bg-white/5 rounded-full hover:bg-white/10"
-                title="Đăng xuất"
-              >
-                <FaSignOutAlt size={16} />
-              </button>
             </div>
+          </header>
 
-            {/* Mobile Menu Toggle (Simplified) */}
-            <div className="lg:hidden flex items-center gap-3">
-              <button onClick={handleLogout} className="text-slate-500 hover:text-rose-500 p-2" title="Đăng xuất">
-                 <FaSignOutAlt size={18} />
-              </button>
-              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
-                <FaHeadphones className="text-black" />
-              </div>
-            </div>
-          </div>
-        </header>
+          {/* Notification Panel */}
+          <NotificationPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
 
-        {/* Notification Panel */}
-        <NotificationPanel isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+          {/* Dynamic Content */}
+          <main className="flex-1 overflow-y-auto custom-scrollbar pb-32">
+            {children || <Outlet />}
+          </main>
 
-        {/* Dynamic Content */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar pb-32">
-          {children || <Outlet />}
-        </main>
+          <GlobalPlayer />
+        </div>
 
-        <GlobalPlayer />
-      </div>
-
-      {/* ==========================================
+        {/* ==========================================
           SYSTEM UPDATE DIALOG (Modal)
           ========================================== */}
-      {showUpdateModal && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 animate-[fade-in_0.3s_ease-out]">
-          <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-2xl border border-amber-500/20 rounded-3xl p-8 shadow-[0_0_80px_rgba(245,158,11,0.15)] relative overflow-hidden text-center">
-            
-            {/* Top golden laser line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+        {showUpdateModal && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 animate-[fade-in_0.3s_ease-out]">
+            <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-2xl border border-amber-500/20 rounded-3xl p-8 shadow-[0_0_80px_rgba(245,158,11,0.15)] relative overflow-hidden text-center">
 
-            {downloadStatus === 'idle' ? (
-              <>
-                {/* Glowing upgrade icon container */}
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 animate-[bounce-slow_4s_infinite_ease-in-out]">
-                  <FaDownload className="text-white text-3xl" />
-                </div>
+              {/* Top golden laser line */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
 
-                <h3 className="text-2xl font-black tracking-tight mb-2 uppercase text-white">
-                  Cập Nhật Hệ Thống
-                </h3>
-                <p className="text-slate-400 text-sm font-semibold tracking-wide mb-6">
-                  Đã phát hiện phiên bản ứng dụng mới!
-                </p>
-
-                {/* Version comparison panel */}
-                <div className="flex items-center justify-center gap-6 bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 font-semibold">
-                  <div className="text-center">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-1">Phiên bản hiện tại</span>
-                    <span className="text-sm font-bold text-slate-400">v{packageJson.version}</span>
+              {downloadStatus === 'idle' ? (
+                <>
+                  {/* Glowing upgrade icon container */}
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 animate-[bounce-slow_4s_infinite_ease-in-out]">
+                    <FaDownload className="text-white text-3xl" />
                   </div>
-                  <div className="h-8 w-[1px] bg-white/10"></div>
-                  <div className="text-center">
-                    <span className="text-[10px] text-amber-500 uppercase tracking-widest font-black block mb-1">Phiên bản mới nhất</span>
-                    <span className="text-sm font-black text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">v{onlineVersion}</span>
+
+                  <h3 className="text-2xl font-black tracking-tight mb-2 uppercase text-white">
+                    Cập Nhật Hệ Thống
+                  </h3>
+                  <p className="text-slate-400 text-sm font-semibold tracking-wide mb-6">
+                    Đã phát hiện phiên bản ứng dụng mới!
+                  </p>
+
+                  {/* Version comparison panel */}
+                  <div className="flex items-center justify-center gap-6 bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 font-semibold">
+                    <div className="text-center">
+                      <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-1">Phiên bản hiện tại</span>
+                      <span className="text-sm font-bold text-slate-400">v{packageJson.version}</span>
+                    </div>
+                    <div className="h-8 w-[1px] bg-white/10"></div>
+                    <div className="text-center">
+                      <span className="text-[10px] text-amber-500 uppercase tracking-widest font-black block mb-1">Phiên bản mới nhất</span>
+                      <span className="text-sm font-black text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">v{onlineVersion}</span>
+                    </div>
+                  </div>
+
+                  {/* Release notes preview */}
+                  <div className="text-left bg-white/5 border border-white/5 rounded-2xl p-4 text-xs font-semibold text-slate-400 leading-relaxed mb-8 max-h-32 overflow-y-auto custom-scrollbar">
+                    <p className="text-white font-bold mb-1 flex items-center gap-1.5">🚀 Nhật ký cập nhật:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>Bổ sung dải trình diễn sóng nhạc 3D Premium lung linh.</li>
+                      <li>Tự động giải mã tag lời nhạc (USLT) trực tiếp từ file MP3.</li>
+                      <li>Cải tiến giao diện Cosmic Gold VIP sang trọng, đẳng cấp.</li>
+                      <li>Tối ưu hóa tốc độ tải và hiệu suất bộ nhớ ứng dụng.</li>
+                    </ul>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={startInAppUpdate}
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-amber-500/20 cursor-pointer"
+                    >
+                      Tải & Cập Nhật Ngay
+                    </button>
+                    <button
+                      onClick={() => setShowUpdateModal(false)}
+                      className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Để Sau
+                    </button>
+                  </div>
+                </>
+              ) : downloadStatus === 'downloading' ? (
+                <div className="py-6">
+                  {/* Spinning loader */}
+                  <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border-4 border-white/5"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+                    <div className="text-lg font-black text-amber-400">
+                      {downloadProgress}%
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
+                    Đang Tải Bản Cập Nhật
+                  </h3>
+                  <p className="text-slate-400 text-xs font-semibold mb-6 px-4">
+                    Đang tải file cài đặt trực tiếp từ hệ thống GitHub Releases...
+                  </p>
+
+                  {/* Progress bar */}
+                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-2 border border-white/5 max-w-xs mx-auto">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)] transition-all duration-300"
+                      style={{ width: `${downloadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">
+                    Vui lòng không đóng ứng dụng
+                  </p>
+                </div>
+              ) : downloadStatus === 'completed' ? (
+                <div className="py-8">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-3xl animate-bounce">
+                    ✓
+                  </div>
+                  <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
+                    Tải Hoàn Tất!
+                  </h3>
+                  <p className="text-slate-400 text-sm font-semibold mb-6 px-4">
+                    Đang khởi chạy trình cài đặt mới và tự động khởi động lại MusicPlayer...
+                  </p>
+                  <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+              ) : (
+                <div className="py-6">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 text-3xl">
+                    ⚠
+                  </div>
+                  <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
+                    Tải Thất Bại
+                  </h3>
+                  <p className="text-rose-400/90 text-xs font-bold mb-6 px-4">
+                    Lỗi: {downloadErrorMsg}
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={startInAppUpdate}
+                      className="w-full py-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-white font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
+                    >
+                      Thử Tải Lại
+                    </button>
+                    <button
+                      onClick={() => {
+                        const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
+                        const ipc = window.ipcRenderer;
+                        if (ipc) {
+                          ipc.send('open-external', finalUrl);
+                        } else {
+                          window.open(finalUrl, '_blank');
+                        }
+                        setShowUpdateModal(false);
+                        setDownloadStatus('idle');
+                      }}
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
+                    >
+                      Tải Thủ Công (Trình Duyệt)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUpdateModal(false);
+                        setDownloadStatus('idle');
+                      }}
+                      className="w-full py-3 rounded-2xl text-slate-500 hover:text-slate-400 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Đóng
+                    </button>
                   </div>
                 </div>
+              )}
 
-                {/* Release notes preview */}
-                <div className="text-left bg-white/5 border border-white/5 rounded-2xl p-4 text-xs font-semibold text-slate-400 leading-relaxed mb-8 max-h-32 overflow-y-auto custom-scrollbar">
-                  <p className="text-white font-bold mb-1 flex items-center gap-1.5">🚀 Nhật ký cập nhật:</p>
-                  <ul className="list-disc pl-4 space-y-1">
-                    <li>Bổ sung dải trình diễn sóng nhạc 3D Premium lung linh.</li>
-                    <li>Tự động giải mã tag lời nhạc (USLT) trực tiếp từ file MP3.</li>
-                    <li>Cải tiến giao diện Cosmic Gold VIP sang trọng, đẳng cấp.</li>
-                    <li>Tối ưu hóa tốc độ tải và hiệu suất bộ nhớ ứng dụng.</li>
-                  </ul>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={startInAppUpdate}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-amber-500/20 cursor-pointer"
-                  >
-                    Tải & Cập Nhật Ngay
-                  </button>
-                  <button
-                    onClick={() => setShowUpdateModal(false)}
-                    className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Để Sau
-                  </button>
-                </div>
-              </>
-            ) : downloadStatus === 'downloading' ? (
-              <div className="py-6">
-                {/* Spinning loader */}
-                <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-4 border-white/5"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-                  <div className="text-lg font-black text-amber-400">
-                    {downloadProgress}%
-                  </div>
-                </div>
-
-                <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
-                  Đang Tải Bản Cập Nhật
-                </h3>
-                <p className="text-slate-400 text-xs font-semibold mb-6 px-4">
-                  Đang tải file cài đặt trực tiếp từ hệ thống GitHub Releases...
-                </p>
-
-                {/* Progress bar */}
-                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-2 border border-white/5 max-w-xs mx-auto">
-                  <div 
-                    className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)] transition-all duration-300"
-                    style={{ width: `${downloadProgress}%` }}
-                  ></div>
-                </div>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">
-                  Vui lòng không đóng ứng dụng
-                </p>
-              </div>
-            ) : downloadStatus === 'completed' ? (
-              <div className="py-8">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-3xl animate-bounce">
-                  ✓
-                </div>
-                <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
-                  Tải Hoàn Tất!
-                </h3>
-                <p className="text-slate-400 text-sm font-semibold mb-6 px-4">
-                  Đang khởi chạy trình cài đặt mới và tự động khởi động lại MusicPlayer...
-                </p>
-                <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-              </div>
-            ) : (
-              <div className="py-6">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 text-3xl">
-                  ⚠
-                </div>
-                <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
-                  Tải Thất Bại
-                </h3>
-                <p className="text-rose-400/90 text-xs font-bold mb-6 px-4">
-                  Lỗi: {downloadErrorMsg}
-                </p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={startInAppUpdate}
-                    className="w-full py-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-white font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
-                  >
-                    Thử Tải Lại
-                  </button>
-                  <button
-                    onClick={() => {
-                      const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
-                      const ipc = (window as any).ipcRenderer as { send: (channel: string, ...args: unknown[]) => void } | undefined;
-                      if (ipc) {
-                        ipc.send('open-external', finalUrl);
-                      } else {
-                        window.open(finalUrl, '_blank');
-                      }
-                      setShowUpdateModal(false);
-                      setDownloadStatus('idle');
-                    }}
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
-                  >
-                    Tải Thủ Công (Trình Duyệt)
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowUpdateModal(false);
-                      setDownloadStatus('idle');
-                    }}
-                    className="w-full py-3 rounded-2xl text-slate-500 hover:text-slate-400 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            )}
-
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
       {/* ===== MOBILE NAV ===== */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom))] bg-black border-t border-[#222] z-50 px-2 flex items-start pt-2 justify-around safe-bottom">

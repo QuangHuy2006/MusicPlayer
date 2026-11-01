@@ -3,6 +3,9 @@ import { usePlayer } from '../context/PlayerContext';
 import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaVolumeUp, FaVolumeMute, FaHeart, FaRegHeart, FaSlidersH, FaTimes, FaMicrophoneAlt, FaCrown, FaRandom, FaSync } from 'react-icons/fa';
 import { useLike } from '../context/LikeContext';
 import { API_BASE } from '../config.tsx';
+import type { Song } from '../interface/song';
+import type { User } from '../interface/user';
+import { getSong } from '../utils/offlineDb';
 
 export default function GlobalPlayer() {
   const { currentSong, isPlaying, togglePlay, setIsPlaying, playNext, playPrevious, volume, setVolume, isRandom, isRepeat, toggleRandom, toggleRepeat } = usePlayer();
@@ -26,13 +29,14 @@ export default function GlobalPlayer() {
   const bassFilterRef = useRef<BiquadFilterNode | null>(null);
   const trebleFilterRef = useRef<BiquadFilterNode | null>(null);
   const qualityFilterRef = useRef<BiquadFilterNode | null>(null);
+  const headShadowFilterRef = useRef<BiquadFilterNode | null>(null);
+  const distanceGainRef = useRef<GainNode | null>(null);
   const pannerRef = useRef<StereoPannerNode | null>(null);
-  const lfoGainRef = useRef<GainNode | null>(null);
 
-  const [user, setUser] = useState<any | null>(() => {
+  const [user, setUser] = useState<User | null>(() => {
     try {
       const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
+      return userStr ? (JSON.parse(userStr) as User) : null;
     } catch {
       return null;
     }
@@ -117,7 +121,6 @@ export default function GlobalPlayer() {
 
     const checkOffline = async () => {
       try {
-        const { getSong } = await import('../utils/offlineDb');
         const dbSong = await getSong(currentSong.id);
         if (dbSong && dbSong.audioBlob) {
           localAudioUrl = URL.createObjectURL(dbSong.audioBlob);
@@ -159,16 +162,17 @@ export default function GlobalPlayer() {
   const reverbGainRef = useRef<GainNode | null>(null);
   const masterFadeRef = useRef<GainNode | null>(null);
 
-  // Tạo Reverb (Hiệu ứng vang không gian 3D - Concert Hall)
+  // Tạo Reverb (Hiệu ứng vang phòng Studio / Hall đặc trưng của nhạc 8D YouTube)
   const createConcertHallReverb = (ctx: AudioContext) => {
-    const length = ctx.sampleRate * 2.5; // Vang 2.5 giây
+    const length = ctx.sampleRate * 2.0; // Vang 2.0 giây tạo không gian phòng kín (Room Ambience)
     const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
     const left = impulse.getChannelData(0);
     const right = impulse.getChannelData(1);
     for (let i = 0; i < length; i++) {
-      const decay = Math.exp(-i / (ctx.sampleRate * 0.5));
-      left[i] = (Math.random() * 2 - 1) * decay;
-      right[i] = (Math.random() * 2 - 1) * decay;
+      // Dùng hàm suy giảm kép để đuôi vang mượt, không rát tai
+      const decay = Math.exp(-i / (ctx.sampleRate * 0.45));
+      left[i] = (Math.random() * 2 - 1) * decay * 0.35;
+      right[i] = (Math.random() * 2 - 1) * decay * 0.35;
     }
     const convolver = ctx.createConvolver();
     convolver.buffer = impulse;
@@ -177,10 +181,11 @@ export default function GlobalPlayer() {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    if ((audioRef.current as any)._isConnectedToWebAudio) return;
+    const audioElement = audioRef.current as HTMLAudioElement & { _isConnectedToWebAudio?: boolean };
+    if (audioElement._isConnectedToWebAudio) return;
 
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext as typeof window.AudioContext;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!AudioContextClass) return;
 
       let ctx = audioCtxRef.current;
@@ -189,7 +194,7 @@ export default function GlobalPlayer() {
         audioCtxRef.current = ctx;
       }
 
-      const source = ctx.createMediaElementSource(audioRef.current);
+      const source = ctx.createMediaElementSource(audioElement);
       sourceRef.current = source;
 
       // 1. Phân tích phổ âm thanh (Spectrum Analyzer)
@@ -199,7 +204,7 @@ export default function GlobalPlayer() {
 
       // 2. Preamp (Chống vỡ âm dải tần số)
       const preamp = ctx.createGain();
-      preamp.gain.value = 0.75;
+      preamp.gain.value = 0.85;
 
       // 3. EQ đa băng tần
       const bass = ctx.createBiquadFilter();
@@ -217,38 +222,39 @@ export default function GlobalPlayer() {
       qual.frequency.value = 22000;
       qualityFilterRef.current = qual;
 
-      // 4. 8D Spatial Panner
+      // 4. Head Shadow Filter (Lọc tần số khi âm thanh vòng ra sau lưng đầu)
+      const headShadow = ctx.createBiquadFilter();
+      headShadow.type = 'lowpass';
+      headShadow.frequency.value = 22000;
+      headShadowFilterRef.current = headShadow;
+
+      // 5. Distance Gain (Mô phỏng khoảng cách xa - gần theo quỹ đạo)
+      const distGain = ctx.createGain();
+      distGain.gain.value = 1;
+      distanceGainRef.current = distGain;
+
+      // 6. 8D Spatial Panner (Stereo Panner Node)
       const panner = ctx.createStereoPanner();
       pannerRef.current = panner;
 
-      const lfo = ctx.createOscillator();
-      lfo.type = 'sine';
-      lfo.frequency.value = 0.1; // Tốc độ xoay não
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 0;
-      lfo.connect(lfoGain);
-      lfoGain.connect(panner.pan);
-      lfo.start();
-      lfoGainRef.current = lfoGain;
-
-      // 5. 3D Reverb / Không gian 3 chiều
+      // 7. 3D Reverb / Không gian 3 chiều
       const convolver = createConcertHallReverb(ctx);
       const reverbGain = ctx.createGain();
       reverbGain.gain.value = 0; // Tắt mặc định
       reverbGainRef.current = reverbGain;
 
-      // 6. Master Fade (Tạo hiệu ứng Fade in/out mượt mà khi Play/Pause)
+      // 8. Master Fade
       const masterFade = ctx.createGain();
       masterFade.gain.value = 1;
       masterFadeRef.current = masterFade;
 
-      // 7. Auto Mastering Compressor
+      // 9. Auto Mastering Compressor
       const compressor = ctx.createDynamicsCompressor();
-      compressor.threshold.value = -3;
-      compressor.knee.value = 15;
-      compressor.ratio.value = 20;
-      compressor.attack.value = 0.002;
-      compressor.release.value = 0.1;
+      compressor.threshold.value = -6;
+      compressor.knee.value = 20;
+      compressor.ratio.value = 8;
+      compressor.attack.value = 0.005;
+      compressor.release.value = 0.15;
 
       // Định tuyến âm thanh (Routing Graph):
       source.connect(analyser);
@@ -257,10 +263,12 @@ export default function GlobalPlayer() {
       bass.connect(treble);
       treble.connect(qual);
 
-      // Tách nhánh: Một luồng trực tiếp (Dry), Một luồng qua Reverb (Wet)
-      qual.connect(panner);
+      // Đi qua Head Shadow Filter -> Distance Gain -> Panner
+      qual.connect(headShadow);
+      headShadow.connect(distGain);
+      distGain.connect(panner);
 
-      // Nhánh Wet
+      // Tách nhánh: Một luồng trực tiếp (Dry), Một luồng qua Reverb (Wet)
       panner.connect(convolver);
       convolver.connect(reverbGain);
       reverbGain.connect(masterFade);
@@ -272,7 +280,7 @@ export default function GlobalPlayer() {
       masterFade.connect(compressor);
       compressor.connect(ctx.destination);
 
-      (audioRef.current as any)._isConnectedToWebAudio = true;
+      audioElement._isConnectedToWebAudio = true;
     } catch {
       // Audio Engine Init Error ignored
     }
@@ -288,46 +296,94 @@ export default function GlobalPlayer() {
 
     switch (eqPreset) {
       case 'bass':
-        bass.gain.value = 10;
-        treble.gain.value = 0;
+        bass.gain.value = 5.5; // Ấm, sâu, không bị rỗ rè dải trầm
+        treble.gain.value = 0.5;
         break;
       case 'vocal':
-        bass.gain.value = -3;
-        treble.gain.value = 8;
+        bass.gain.value = -1.5;
+        treble.gain.value = 4.0; // Trong trẻo, không bị chói
         break;
       case 'loudness':
-        bass.gain.value = 6;
-        treble.gain.value = 6;
+        bass.gain.value = 3.5;
+        treble.gain.value = 3.0;
         break;
       case 'electronic':
-        bass.gain.value = 8;
-        treble.gain.value = 5;
+        bass.gain.value = 4.5;
+        treble.gain.value = 3.5;
         break;
       default:
         bass.gain.value = 0;
         treble.gain.value = 0;
     }
 
-    qual.frequency.value = quality === 'normal' ? 2000 : 22000;
+    qual.frequency.value = quality === 'normal' ? 8000 : 22000;
 
-    if (lfoGainRef.current && audioCtxRef.current && reverbGainRef.current) {
+    // Hiệu ứng Reverb khi bật 8D (Chuẩn Reverb của nhạc 8D YouTube: tạo cảm giác nghe trong căn phòng rộng)
+    if (reverbGainRef.current && audioCtxRef.current) {
       const t = audioCtxRef.current.currentTime;
-      if (is8D) {
-        lfoGainRef.current.gain.setTargetAtTime(0.7, t, 0.5); // Xoay 70%
-        reverbGainRef.current.gain.setTargetAtTime(0.3, t, 0.5); // Bật tiếng vang Concert Hall 30%
-      } else {
-        lfoGainRef.current.gain.setTargetAtTime(0, t, 0.5);
-        reverbGainRef.current.gain.setTargetAtTime(0, t, 0.5);
-      }
-    }
-    if (pannerRef.current && !is8D && audioCtxRef.current) {
-      pannerRef.current.pan.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.5);
+      reverbGainRef.current.gain.setTargetAtTime(is8D ? 0.22 : 0, t, 0.4);
     }
 
     if (audioCtxRef.current.state === 'suspended' && isPlaying) {
       audioCtxRef.current.resume();
     }
   }, [eqPreset, quality, is8D, isPlaying, currentSong]);
+
+  // 8D Audio Motion Loop (Chuẩn YouTube 8D Audio Format)
+  useEffect(() => {
+    const panner = pannerRef.current;
+    const headShadow = headShadowFilterRef.current;
+    const distGain = distanceGainRef.current;
+
+    if (!is8D) {
+      if (panner) panner.pan.value = 0;
+      if (headShadow) headShadow.frequency.value = 22000;
+      if (distGain) distGain.gain.value = 1;
+      return;
+    }
+
+    let animId: number;
+    let startTime: number | null = null;
+    // Chu kỳ 6.8 giây chuẩn nhạc 8D: đủ chậm để cảm nhận âm thanh lướt từ trái -> sau đầu -> phải -> trước mặt
+    const cycleDuration = 6800;
+
+    const animate8D = (time: number) => {
+      if (!startTime) startTime = time;
+      const elapsed = time - startTime;
+      const angle = ((elapsed % cycleDuration) / cycleDuration) * Math.PI * 2;
+
+      const x = Math.sin(angle);
+      const y = Math.cos(angle);
+
+      // 1. Panning xoay vòm (0.52): âm thanh tách bạch rõ giữa 2 tai theo chuẩn 8D nhưng không gây khó chịu
+      if (panner) {
+        panner.pan.value = x * 0.52;
+      }
+
+      // 2. Head Shadow (Lọc dải tần khi xoay ra sau lưng người nghe)
+      if (headShadow) {
+        // Tần số từ 12000Hz đến 22000Hz tạo độ sâu không gian 3 chiều
+        const cutoff = 12000 + ((y + 1) / 2) * 10000;
+        headShadow.frequency.value = cutoff;
+      }
+
+      // 3. Distance Gain (Âm lượng xa - gần): Trước mặt 1.0, sau lưng 0.89
+      if (distGain) {
+        const depthVolume = 0.89 + ((y + 1) / 2) * 0.11;
+        distGain.gain.value = depthVolume;
+      }
+
+      animId = requestAnimationFrame(animate8D);
+    };
+
+    animId = requestAnimationFrame(animate8D);
+    return () => {
+      cancelAnimationFrame(animId);
+      if (pannerRef.current) pannerRef.current.pan.value = 0;
+      if (headShadowFilterRef.current) headShadowFilterRef.current.frequency.value = 22000;
+      if (distanceGainRef.current) distanceGainRef.current.gain.value = 1;
+    };
+  }, [is8D]);
 
   // Volume
   useEffect(() => {
@@ -787,7 +843,7 @@ function KaraokeOverlay({
   analyserRef,
   isPremium,
 }: {
-  song: any;
+  song: Song;
   progress: number;
   duration: number;
   isPlaying: boolean;

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { API_BASE } from '../config.tsx';
+import type { Song } from '../interface/song';
 
 interface LikeContextType {
   likedSongIds: Set<number>;
@@ -22,7 +23,7 @@ export const LikeProvider = ({ children }: { children: ReactNode }) => {
         });
         const data = await res.json();
         if (data.success) {
-          setLikedSongIds(new Set(data.songs.map((s: any) => Number(s.id))));
+          setLikedSongIds(new Set(data.songs.map((s: Song) => Number(s.id))));
         }
       } catch (err) {
         console.error("Failed to fetch likes", err);
