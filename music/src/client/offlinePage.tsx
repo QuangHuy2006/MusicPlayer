@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import type { Song } from '../interface/song';
 import { FaTrash, FaPlay, FaPause, FaDownload, FaWifi } from 'react-icons/fa';
@@ -7,6 +8,7 @@ import { useOffline } from '../context/OfflineContext';
 import * as offlineDb from '../utils/offlineDb';
 
 const OfflinePage = () => {
+  const { t } = useTranslation();
   const { currentSong, isPlaying, playSong } = usePlayer();
   const { offlineSongs, deleteOfflineSong } = useOffline();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -106,9 +108,9 @@ const OfflinePage = () => {
               <MdOutlineOfflineBolt size={48} />
             </div>
             <div className="space-y-2">
-              <h1 className="text-3xl md:text-5xl font-black text-white">Thư viện <span className="text-sky-400">Offline</span></h1>
+              <h1 className="text-3xl md:text-5xl font-black text-white">{t("offline.title")}</h1>
               <p className="text-slate-400 font-medium">
-                {offlineSongs.length} giai điệu chất lượng cao đã tải xuống • Dung lượng: {dbSize}
+                {offlineSongs.length} • {dbSize}
               </p>
             </div>
           </div>
@@ -120,7 +122,7 @@ const OfflinePage = () => {
               : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
               }`}>
               {isOnline ? <FaWifi /> : <MdOutlineOfflineBolt />}
-              {isOnline ? 'Đang Trực Tuyến' : 'Đang Ngoại Tuyến (Offline Mode)'}
+              {isOnline ? t('offline.status_online') : t('offline.status_offline')}
             </div>
 
             {offlineSongs.length > 0 && (
@@ -128,7 +130,7 @@ const OfflinePage = () => {
                 onClick={handlePlayAll}
                 className="px-6 py-3 bg-gradient-to-r from-sky-400 to-indigo-500 hover:from-sky-500 hover:to-indigo-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg shadow-sky-500/20 transition-all transform hover:scale-105"
               >
-                Phát Tất Cả
+                {t('offline.play_all')}
               </button>
             )}
           </div>
@@ -140,7 +142,7 @@ const OfflinePage = () => {
         <div className="max-w-5xl mx-auto">
           <input
             type="text"
-            placeholder="Tìm kiếm bài hát, nghệ sĩ trong thư viện offline..."
+            placeholder={t('offline.search_placeholder')}
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-sky-500/50 focus:ring-4 focus:ring-sky-500/5 transition-all text-sm font-semibold placeholder-slate-500"
@@ -154,23 +156,22 @@ const OfflinePage = () => {
           <div className="w-20 h-20 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-6">
             <FaDownload className="text-4xl text-sky-400 opacity-40" />
           </div>
-          <h3 className="text-2xl font-black text-white">Chưa có nhạc offline</h3>
+          <h3 className="text-2xl font-black text-white">{t('offline.empty_title')}</h3>
           <p className="text-slate-500 mt-2 max-w-md mx-auto font-medium text-sm leading-relaxed px-4">
-            Nâng cấp PREMIUM ngay và click vào biểu tượng Tải xuống ở các bài hát để lưu nhạc offline. Nghe mọi lúc mọi nơi không cần Internet!
-          </p>
+            {t("offline.empty_desc")}</p>
         </div>
       ) : filteredSongs.length === 0 ? (
         <div className="text-center py-20 glass-panel-3d rounded-[40px] border-0 max-w-5xl mx-auto">
           <h3 className="text-xl font-bold text-white">Không tìm thấy bài hát nào</h3>
-          <p className="text-slate-500 mt-2 font-medium">Thử nhập từ khóa khác xem sao nhé.</p>
+          <p className="text-slate-500 mt-2 font-medium">{t('history.try_different_keyword')}</p>
         </div>
       ) : (
         <div className="space-y-3 max-w-5xl mx-auto">
           <div className="flex items-center px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
             <div className="w-12">#</div>
-            <div className="flex-1">Bài hát</div>
-            <div className="hidden md:block w-48">Nghệ sĩ</div>
-            <div className="w-24 text-right">Hành động</div>
+            <div className="flex-1">{t('table.song')}</div>
+            <div className="hidden md:block w-48">{t('table.artist')}</div>
+            <div className="w-24 text-right">{t('table.actions')}</div>
           </div>
 
           {paginatedSongs.map((song, index) => {
@@ -235,12 +236,12 @@ const OfflinePage = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Bạn có chắc chắn muốn xóa bài hát offline "${song.name}"?`)) {
+                      if (confirm(t('offline.confirm_delete', { name: song.name }))) {
                         deleteOfflineSong(song.id);
                       }
                     }}
                     className="p-3 text-slate-600 hover:text-red-400 hover:scale-110 transition-all rounded-full hover:bg-red-500/10"
-                    title="Xóa offline"
+                    title={t("offline.delete_tooltip")}
                   >
                     <FaTrash size={14} />
                   </button>
@@ -258,9 +259,7 @@ const OfflinePage = () => {
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none rounded-xl border border-white/5 transition-all"
-          >
-            Trước
-          </button>
+          >{t("table.prev")}</button>
 
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button

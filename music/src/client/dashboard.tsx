@@ -29,6 +29,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { usePlayer } from "../context/PlayerContext";
 import { useLike } from "../context/LikeContext";
 import { useOffline } from "../context/OfflineContext";
+import { useTranslation } from "react-i18next";
 import { SkeletonSongItem } from "../components/Skeleton";
 
 interface PlaylistSong extends Song {
@@ -45,6 +46,7 @@ interface SongComment {
 }
 
 const MusicPlayer = () => {
+  const { t } = useTranslation();
   const [songs, setSongs] = useState<PlaylistSong[]>([]);
   const [recommendedSongs, setRecommendedSongs] = useState<PlaylistSong[]>([]);
   const [basedOn, setBasedOn] = useState<string[]>([]);
@@ -93,11 +95,11 @@ const MusicPlayer = () => {
   };
 
   const themes = [
-    { name: 'Vàng Hoàng Gia', color: '#d4af37' },
-    { name: 'Xanh Spotify', color: '#1db954' },
-    { name: 'Hồng BlackPink', color: '#ff66c4' },
-    { name: 'Xanh Biển', color: '#00d2ff' },
-    { name: 'Tím Neon', color: '#b829ea' }
+    { name: t('dashboard.theme_gold'), color: '#d4af37' },
+    { name: t('dashboard.theme_green'), color: '#1db954' },
+    { name: t('dashboard.theme_pink'), color: '#ff66c4' },
+    { name: t('dashboard.theme_blue'), color: '#00d2ff' },
+    { name: t('dashboard.theme_neon'), color: '#b829ea' }
   ];
 
   const loadSongs = useCallback(async () => {
@@ -155,7 +157,7 @@ const MusicPlayer = () => {
       setError(null);
     } catch (err) {
       console.error(err);
-      setError("Không thể tải danh sách bài hát");
+      setError(t('dashboard.load_songs_error'));
     } finally {
       setLoading(false);
     }
@@ -211,7 +213,7 @@ const MusicPlayer = () => {
       document.body.removeChild(a);
     } catch (e) {
       console.error('Download error:', e);
-      alert('Không thể tải bài hát này. Có thể do lỗi kết nối hoặc phân quyền.');
+      alert(t('dashboard.cannot_play_error'));
     }
   };
 
@@ -282,27 +284,27 @@ const MusicPlayer = () => {
         <div className="glass-panel-3d border-0 p-6 md:p-12 relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
           <div className="flex-1 space-y-6 text-center md:text-left">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-[var(--accent-gold)] uppercase tracking-widest">
-              <FaFire className="animate-bounce" /> Trending Now
+              <FaFire className="animate-bounce" /> {t('dashboard.trending_now')}
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white leading-tight">
-              Chào ngày mới, <br />
-              <span className="text-gradient-aurora">Giai điệu của bạn đây!</span>
+              {t('dashboard.hero_title_1')} <br />
+              <span className="text-gradient-aurora">{t("dashboard.hero_title_2")}</span>
             </h1>
             <p className="text-slate-400 text-lg max-w-xl">
-              Khám phá những bản nhạc mới nhất và tạo nên playlist mang đậm phong cách cá nhân của riêng bạn.
+              {t('dashboard.hero_desc')}
             </p>
             <div className="flex flex-wrap items-center gap-4 justify-center md:justify-start">
               <button
                 onClick={() => trendingToDisplay[0] && handleSelectSong(trendingToDisplay[0])}
                 className="px-8 py-4 bg-[var(--accent-gold)] text-black font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-[var(--accent-gold)]/20 hover:scale-105 transition-transform flex items-center gap-3 cursor-pointer"
               >
-                <FaPlay /> Nghe Ngay
+                <FaPlay /> {t("dashboard.listen_now")}
               </button>
               <button
                 onClick={() => navigate('/playlist')}
                 className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl border border-white/10 transition-all flex items-center gap-3 cursor-pointer"
               >
-                <FaPlus /> Thêm Playlist
+                <FaPlus /> {t("dashboard.add_playlist")}
               </button>
             </div>
           </div>
@@ -340,10 +342,10 @@ const MusicPlayer = () => {
           <section className="space-y-6">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <MdOutlineExplore className="text-[var(--accent-blue)]" /> Mới cập nhật
+                <MdOutlineExplore className="text-[var(--accent-blue)]" /> {t("dashboard.new_releases")}
               </h2>
               <button className="text-sm font-bold text-slate-500 hover:text-[var(--accent-gold)] transition-colors flex items-center gap-2">
-                Tất cả <FaChevronRight size={10} />
+                {t("dashboard.all")} <FaChevronRight size={10} />
               </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -374,10 +376,10 @@ const MusicPlayer = () => {
               <div className="flex items-center justify-between px-2">
                 <div className="flex flex-col">
                   <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                    <FaFire className="text-pink-500" /> Gợi ý cho bạn
+                    <FaFire className="text-pink-500" /> {t('dashboard.for_you')}
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    Dựa trên sở thích nghe nhạc {basedOn.length > 0 ? `(${basedOn.join(', ')})` : ''}
+                    {t('dashboard.based_on_favorites')} {basedOn.length > 0 ? `(${basedOn.join(', ')})` : ''}
                   </p>
                 </div>
               </div>
@@ -408,9 +410,9 @@ const MusicPlayer = () => {
           <section className="space-y-6">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <FaMusic className="text-[var(--accent-gold)]" /> {searchQuery ? 'Kết quả tìm kiếm' : 'Dành cho bạn'}
+                <FaMusic className="text-[var(--accent-gold)]" /> {searchQuery ? t('dashboard.search_results') : t('dashboard.for_you')}
               </h2>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{filteredSongs.length} bài hát</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('dashboard.songs_count', { count: filteredSongs.length })}</span>
             </div>
             <div className="space-y-3">
               {filteredSongs.map((song, index) => {
@@ -443,7 +445,7 @@ const MusicPlayer = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isDownloaded(song.id)) {
-                            if (confirm(`Xóa "${song.name}" khỏi danh sách offline?`)) {
+                            if (confirm(t('dashboard.confirm_remove_offline', { name: song.name }))) {
                               deleteOfflineSong(song.id);
                             }
                           } else if (!isDownloading(song.id)) {
@@ -485,7 +487,7 @@ const MusicPlayer = () => {
 
           {/* Mini Player / Now Playing */}
           <div className="glass-panel-3d border-0 p-8 rounded-[40px] flex flex-col items-center text-center">
-            <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Đang phát</h3>
+            <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] mb-6">{t("dashboard.now_playing")}</h3>
             <div className={`w-48 h-48 rounded-full border-4 border-[var(--accent-gold)]/20 p-2 ${isPlaying ? 'animate-[spin_20s_linear_infinite]' : ''}`}>
               <img
                 src={currentSong?.imageUrl || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80"}
@@ -494,8 +496,8 @@ const MusicPlayer = () => {
               />
             </div>
             <div className="mt-8 space-y-2">
-              <h4 className="text-xl font-black text-white truncate max-w">{currentSong?.name || 'Chưa chọn bài'}</h4>
-              <p className="text-sm font-bold text-[var(--accent-gold)] opacity-80 uppercase tracking-widest">{currentSong?.author || 'Hệ thống'}</p>
+              <h4 className="text-xl font-black text-white truncate max-w">{currentSong?.name || t('dashboard.no_song_selected')}</h4>
+              <p className="text-sm font-bold text-[var(--accent-gold)] opacity-80 uppercase tracking-widest">{currentSong?.author || t('dashboard.system_artist')}</p>
             </div>
 
             {/* Context Actions */}
@@ -503,25 +505,25 @@ const MusicPlayer = () => {
               <button onClick={handleDownload} className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white relative group tooltip-trigger">
                 <FaDownload />
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                  Tải nhạc
+                  {t('dashboard.btn_download')}
                 </span>
               </button>
               <button onClick={handleShare} className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white tooltip-trigger relative group">
                 {copied ? <FaCheckCircle className="text-emerald-400" /> : <FaShareAlt />}
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                  {copied ? 'Đã copy!' : 'Chia sẻ'}
+                  {copied ? t('dashboard.btn_shared') : t('dashboard.btn_share')}
                 </span>
               </button>
               <button onClick={() => setShowLyrics(!showLyrics)} className={`p-3 rounded-full text-white relative group ${showLyrics ? 'bg-[var(--accent-gold)] text-black' : 'bg-white/5 hover:bg-white/10'}`}>
                 <FaMicrophoneAlt />
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                  Lời bài hát
+                  {t('dashboard.btn_lyrics')}
                 </span>
               </button>
               <button onClick={() => setShowComments(!showComments)} className={`p-3 rounded-full text-white relative group ${showComments ? 'bg-[var(--accent-gold)] text-black' : 'bg-white/5 hover:bg-white/10'}`}>
                 <FaCommentAlt />
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                  Bình luận
+                  {t('dashboard.btn_comments')}
                 </span>
               </button>
             </div>
@@ -530,14 +532,14 @@ const MusicPlayer = () => {
                 <FaClock />
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
                   {sleepTimeRemaining !== null
-                    ? `${Math.floor(sleepTimeRemaining / 60)}:${String(sleepTimeRemaining % 60).padStart(2, '0')} còn lại`
-                    : 'Hẹn giờ'}
+                    ? `${Math.floor(sleepTimeRemaining / 60)}:${String(sleepTimeRemaining % 60).padStart(2, '0')} {t('dashboard.sleep_remaining', { time: '' })}`
+                    : t('dashboard.btn_timer')}
                 </span>
               </button>
               <button onClick={() => setShowThemeSelector(!showThemeSelector)} className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white relative group">
                 <FaPalette />
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                  Đổi Theme
+                  {t('dashboard.btn_theme')}
                 </span>
               </button>
             </div>
@@ -547,9 +549,9 @@ const MusicPlayer = () => {
           <div className="glass-panel-3d border-0 p-8 rounded-[40px] space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                <MdQueueMusic size={18} className="text-[var(--accent-blue)]" /> Hàng chờ
+                <MdQueueMusic size={18} className="text-[var(--accent-blue)]" /> {t('dashboard.queue')}
               </h3>
-              <span className="text-[10px] font-bold text-slate-500">{queue.length} bài</span>
+              <span className="text-[10px] font-bold text-slate-500">{t('dashboard.queue_count', { count: queue.length })}</span>
             </div>
             <div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
               {queue.slice(0, 10).map((song, i) => (
@@ -570,7 +572,7 @@ const MusicPlayer = () => {
                 <p className="text-[10px] text-slate-600 text-center font-bold italic">Và {queue.length - 10} bài hát khác...</p>
               )}
               {queue.length === 0 && (
-                <p className="text-xs text-slate-600 text-center py-4">Hàng chờ trống</p>
+                <p className="text-xs text-slate-600 text-center py-4">{t('dashboard.queue_empty')}</p>
               )}
             </div>
           </div>
@@ -589,7 +591,7 @@ const MusicPlayer = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="glass-panel-3d p-8 rounded-3xl w-full max-w-sm relative">
             <button onClick={() => setShowThemeSelector(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"><FaTimes /></button>
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><FaPalette /> Chọn Theme</h3>
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><FaPalette /> {t('dashboard.choose_theme')}</h3>
             <div className="space-y-3">
               {themes.map(t => (
                 <button key={t.color} onClick={() => changeTheme(t.color)} className="w-full flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer">
@@ -607,15 +609,15 @@ const MusicPlayer = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="glass-panel-3d p-8 rounded-3xl w-full max-w-sm relative">
             <button onClick={() => setShowSleepTimer(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"><FaTimes /></button>
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><FaClock /> Hẹn giờ tắt nhạc</h3>
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><FaClock /> {t('dashboard.sleep_timer')}</h3>
             <div className="grid grid-cols-2 gap-3">
               {[15, 30, 45, 60].map(m => (
                 <button key={m} onClick={() => { setSleepTimer(m); setShowSleepTimer(false); }} className={`p-4 rounded-xl border cursor-pointer ${sleepTimer === m ? 'bg-[var(--accent-gold)] text-black border-transparent' : 'bg-white/5 text-white border-white/10 hover:bg-white/10'}`}>
-                  {m} phút
+                  {t('dashboard.minutes_unit', { count: m })}
                 </button>
               ))}
               <button onClick={() => { setSleepTimer(null); setShowSleepTimer(false); }} className="col-span-2 p-4 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 font-bold mt-2 cursor-pointer">
-                Tắt hẹn giờ
+                {t('dashboard.turn_off_sleep_timer')}
               </button>
             </div>
           </div>
@@ -627,7 +629,7 @@ const MusicPlayer = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="glass-panel-3d p-6 rounded-3xl w-full max-w-lg relative h-[600px] flex flex-col">
             <button onClick={() => setShowComments(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"><FaTimes /></button>
-            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><FaCommentAlt /> Bình luận</h3>
+            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><FaCommentAlt /> {t('dashboard.btn_comments')}</h3>
             <p className="text-xs text-[var(--accent-gold)] mb-6 truncate">{currentSong.name}</p>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 mb-4 pr-2">
@@ -651,7 +653,7 @@ const MusicPlayer = () => {
                 type="text"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Nhập bình luận..."
+                placeholder={t("dashboard.comment_placeholder")}
                 className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[var(--accent-gold)]/50"
               />
               <button type="submit" disabled={!commentText.trim()} className="bg-[var(--accent-gold)] text-black px-4 rounded-xl disabled:opacity-50 flex items-center justify-center cursor-pointer">
@@ -683,7 +685,7 @@ const MusicPlayer = () => {
                   );
                 })
               ) : (
-                <p className="text-slate-500 italic mt-20">Bài hát này chưa có lời.</p>
+                <p className="text-slate-500 italic mt-20">{t('dashboard.no_lyrics')}</p>
               )}
             </div>
           </div>

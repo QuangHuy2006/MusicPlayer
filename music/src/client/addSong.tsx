@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { API_BASE } from '../config.tsx';
@@ -18,6 +19,7 @@ interface BatchItem {
 }
 
 const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<'single' | 'batch'>('single');
 
   // Single Mode State
@@ -100,7 +102,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!name || !file) {
-      setMessage({ text: 'Vui lòng nhập tên bài hát và chọn file nhạc', type: 'error' });
+      setMessage({ text: t('toasts.name_file_required'), type: 'error' });
       return;
     }
     setLoading(true);
@@ -128,8 +130,8 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       if (data.success) {
         setMessage({
           text: isPrivate
-            ? 'Thêm nhạc riêng tư thành công!'
-            : 'Thêm nhạc thành công! Đang chờ quản trị viên duyệt.',
+            ? t('toasts.add_private_success')
+            : t('toasts.add_public_success'),
           type: 'success'
         });
         setTimeout(() => {
@@ -221,13 +223,13 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               onClick={() => !isBatchUploading && setTab('single')}
               className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${tab === 'single' ? 'bg-[var(--accent-gold)] text-black shadow-lg shadow-[var(--accent-gold)]/20' : 'text-slate-400 hover:text-white bg-white/5'}`}
             >
-              <FaMusic /> Tải 1 bài
+              <FaMusic /> {t('modals.single_upload_tab')}
             </button>
             <button
               onClick={() => !loading && setTab('batch')}
               className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${tab === 'batch' ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-lg shadow-cyan-400/20' : 'text-slate-400 hover:text-white bg-white/5'}`}
             >
-              <FaLayerGroup /> Đa luồng (Nhiều bài)
+              <FaLayerGroup /> {t('modals.batch_upload_tab')}
               {batchItems.length > 0 && (
                 <span className="bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded-full">{batchItems.length}</span>
               )}
@@ -257,7 +259,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   ) : (
                     <div className="flex flex-col items-center text-slate-500">
                       <FaImage size={40} className="mb-2 opacity-20" />
-                      <p className="text-[10px] font-medium uppercase tracking-wider">Chưa có ảnh</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wider">{t('modals.no_image')}</p>
                     </div>
                   )}
                 </div>
@@ -281,7 +283,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                       <FaMusic size={12} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white truncate font-medium">{file ? file.name : 'Chưa chọn file...'}</p>
+                      <p className="text-xs text-white truncate font-medium">{file ? file.name : t('modals.select_file_hint')}</p>
                       <p className="text-[9px] text-slate-500 uppercase">{file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Audio Format'}</p>
                     </div>
                   </div>
@@ -300,32 +302,32 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Nhập tên bài hát..."
+                    placeholder={t("add_song.song_name_placeholder")}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--accent-gold)]/50 transition-all"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <FaUser className="text-[var(--accent-gold)]" /> Nghệ sĩ / Tác giả
+                    <FaUser className="text-[var(--accent-gold)]" /> {t('modals.artist_label')}
                   </label>
                   <input
                     type="text"
                     value={author}
                     onChange={(e) => setAuthor(e.target.value)}
-                    placeholder="Nhập tên nghệ sĩ..."
+                    placeholder={t('modals.enter_artist')}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--accent-gold)]/50 transition-all"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Lời bài hát (Tùy chọn)
+                    {t('add_song.lyrics_label')}
                   </label>
                   <textarea
                     value={lyrics}
                     onChange={(e) => setLyrics(e.target.value)}
-                    placeholder="Nhập lời bài hát (nếu có)..."
+                    placeholder={t("add_song.lyrics_placeholder")}
                     rows={2}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[var(--accent-gold)]/50 transition-all resize-none custom-scrollbar"
                   />
@@ -333,8 +335,8 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
                 <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
                   <div>
-                    <label className="text-xs font-bold text-slate-300">Chế độ riêng tư</label>
-                    <p className="text-[10px] text-slate-500">Chỉ bạn nghe được & không cần duyệt</p>
+                    <label className="text-xs font-bold text-slate-300">{t('add_song.private_mode')}</label>
+                    <p className="text-[10px] text-slate-500">{t('modals.private_song_desc')}</p>
                   </div>
                   <button
                     type="button"
@@ -348,13 +350,13 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <label className={`flex flex-col items-center justify-center gap-1.5 p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer ${file ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-800 hover:border-slate-600 bg-black/20'}`}>
                     <FaCloudUploadAlt size={18} className={file ? 'text-emerald-400' : 'text-slate-500'} />
-                    <span className="text-[10px] font-bold text-slate-300 uppercase">{file ? 'Đã chọn nhạc' : 'Chọn file nhạc'}</span>
+                    <span className="text-[10px] font-bold text-slate-300 uppercase">{file ? t('modals.audio_selected') : t('modals.select_audio_btn')}</span>
                     <input type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
                   </label>
 
                   <label className={`flex flex-col items-center justify-center gap-1.5 p-3.5 rounded-xl border-2 border-dashed transition-all cursor-pointer ${image ? 'border-blue-500/50 bg-blue-500/5' : 'border-slate-800 hover:border-slate-600 bg-black/20'}`}>
                     <FaImage size={18} className={image ? 'text-blue-400' : 'text-slate-500'} />
-                    <span className="text-[10px] font-bold text-slate-300 uppercase">{image ? 'Đã chọn ảnh' : 'Chọn ảnh bìa'}</span>
+                    <span className="text-[10px] font-bold text-slate-300 uppercase">{image ? t('modals.image_selected') : t('modals.select_image_btn')}</span>
                     <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                   </label>
                 </div>
@@ -373,10 +375,10 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 >
                   {loading ? (
                     <>
-                      <FaSpinner className="animate-spin" /> Đang tải lên song song...
+                      <FaSpinner className="animate-spin" /> {t('add_song.uploading_parallel')}
                     </>
                   ) : (
-                    'Thêm Nhạc Ngay'
+                    t('modals.submit_song')
                   )}
                 </button>
               </form>
@@ -389,18 +391,18 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               {/* Batch Defaults */}
               <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3">
                 <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <FaUser className="text-cyan-400" /> Tác giả mặc định
+                  <FaUser className="text-cyan-400" /> {t('modals.batch_default_author')}
                 </h4>
                 <input
                   type="text"
                   value={batchAuthor}
                   onChange={(e) => setBatchAuthor(e.target.value)}
-                  placeholder="Áp dụng cho tất cả file..."
+                  placeholder={t('modals.batch_author_placeholder')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400"
                 />
 
                 <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                  <span className="text-xs text-slate-300 font-medium">Nhạc riêng tư</span>
+                  <span className="text-xs text-slate-300 font-medium">{t('modals.batch_private')}</span>
                   <button
                     type="button"
                     onClick={() => setIsBatchPrivate(!isBatchPrivate)}
@@ -421,13 +423,13 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white font-bold mb-1">Ảnh bìa chung</p>
+                  <p className="text-xs text-white font-bold mb-1">{t('modals.batch_cover')}</p>
                   <label className="inline-block px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-bold text-cyan-300 uppercase cursor-pointer transition-colors">
-                    Chọn ảnh
+                    {t('modals.choose_image')}
                     <input type="file" accept="image/*" onChange={(e) => e.target.files && setBatchImage(e.target.files[0])} className="hidden" />
                   </label>
                   {batchImage && (
-                    <button onClick={() => setBatchImage(null)} className="ml-2 text-[10px] text-rose-400 hover:underline">Xóa</button>
+                    <button onClick={() => setBatchImage(null)} className="ml-2 text-[10px] text-rose-400 hover:underline">{t('modals.btn_delete_short')}</button>
                   )}
                 </div>
               </div>
@@ -435,8 +437,8 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               {/* Add Files Dropzone */}
               <label className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-2 border-dashed border-cyan-400/30 hover:border-cyan-400/60 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all">
                 <FaCloudUploadAlt size={28} className="text-cyan-400" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider text-center">Chọn nhiều file nhạc</span>
-                <span className="text-[10px] text-slate-400">Hỗ trợ MP3, WAV, FLAC, M4A...</span>
+                <span className="text-xs font-bold text-white uppercase tracking-wider text-center">{t('modals.batch_select_audio')}</span>
+                <span className="text-[10px] text-slate-400">{t('modals.batch_support_formats')}</span>
                 <input type="file" accept="audio/*" multiple onChange={handleBatchFilesChange} className="hidden" />
               </label>
             </div>
@@ -444,10 +446,10 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             {/* Batch Item List */}
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider px-2">
-                <span>Hàng đợi upload ({batchItems.length} bài)</span>
+                <span>{t('modals.batch_queue', { count: batchItems.length })}</span>
                 {batchItems.length > 0 && !isBatchUploading && (
                   <button onClick={() => setBatchItems([])} className="text-rose-400 hover:text-rose-300 text-[10px] flex items-center gap-1 cursor-pointer">
-                    <FaTrashAlt /> Xóa danh sách
+                    <FaTrashAlt /> {t('add_song.clear_batch_list')}
                   </button>
                 )}
               </div>
@@ -455,7 +457,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               {batchItems.length === 0 ? (
                 <div className="text-center py-12 border border-white/5 border-dashed rounded-2xl bg-black/20">
                   <FaMusic className="mx-auto text-3xl text-slate-700 mb-2" />
-                  <p className="text-xs text-slate-500">Chưa có bài hát nào được chọn vào hàng đợi</p>
+                  <p className="text-xs text-slate-500">{t('modals.empty_queue')}</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
@@ -472,17 +474,17 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                             setBatchItems(prev => prev.map(i => i.id === item.id ? { ...i, name: val } : i));
                           }}
                           className="w-full bg-transparent text-xs font-bold text-white focus:outline-none focus:border-b border-cyan-400 truncate"
-                          placeholder="Tên bài hát"
+                          placeholder={t('modals.song_name')}
                         />
                         <p className="text-[10px] text-slate-500 truncate mt-0.5">{item.file.name} • {(item.file.size / (1024 * 1024)).toFixed(2)} MB</p>
                       </div>
 
                       {/* Status indicator */}
                       <div className="shrink-0 flex items-center gap-2">
-                        {item.status === 'pending' && <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full">Chờ</span>}
+                        {item.status === 'pending' && <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full">{t('modals.status_waiting')}</span>}
                         {item.status === 'uploading' && <span className="text-[10px] font-bold text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full flex items-center gap-1"><FaSpinner className="animate-spin" /> Đang up</span>}
                         {item.status === 'success' && <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full flex items-center gap-1"><FaCheckCircle /> Xong</span>}
-                        {item.status === 'error' && <span className="text-[10px] font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded-full" title={item.errorMsg}>Lỗi</span>}
+                        {item.status === 'error' && <span className="text-[10px] font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded-full" title={item.errorMsg}>{t('modals.status_error')}</span>}
 
                         {!isBatchUploading && (
                           <button onClick={() => handleRemoveBatchItem(item.id)} className="text-slate-500 hover:text-rose-400 p-1 cursor-pointer">
@@ -513,7 +515,7 @@ const AddSongPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   <FaSpinner className="animate-spin" /> Đang tải đa luồng (4 luồng song song)...
                 </>
               ) : (
-                `Bắt đầu tải lên đa luồng (${batchItems.length} bài)`
+                t('add_song.batch_start', { count: batchItems.length })
               )}
             </button>
           </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import type { Song } from '../interface/song';
 import { API_BASE } from '../config.tsx';
@@ -9,6 +10,7 @@ import { SkeletonSongItem } from '../components/Skeleton';
 import AddToPlaylistModal from './addToPlaylistModal';
 
 const HistoryPage = () => {
+  const { t } = useTranslation();
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
@@ -77,8 +79,8 @@ const HistoryPage = () => {
             <MdHistory size={48} />
           </div>
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black text-white">Gần <span className="text-amber-500">Đây</span></h1>
-            <p className="text-slate-400 font-medium">{filteredSongs.length} bài hát nghe gần đây</p>
+            <h1 className="text-4xl md:text-5xl font-black text-white">{t("history.title")}</h1>
+            <p className="text-slate-400 font-medium">{t("history.subtitle", { count: filteredSongs.length })}</p>
           </div>
         </div>
       </section>
@@ -88,7 +90,7 @@ const HistoryPage = () => {
         <div className="max-w-5xl mx-auto">
           <input
             type="text"
-            placeholder="Tìm kiếm bài hát, nghệ sĩ trong lịch sử nghe..."
+            placeholder={t("history.search_placeholder")}
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/5 transition-all text-sm font-semibold placeholder-slate-500"
@@ -100,23 +102,23 @@ const HistoryPage = () => {
       {songs.length === 0 ? (
         <div className="text-center py-32 glass-panel-3d rounded-[40px] border-0">
           <FaHistory className="text-8xl text-amber-500 opacity-10 mx-auto mb-6" />
-          <h3 className="text-2xl font-black text-white">Lịch sử trống</h3>
+          <h3 className="text-2xl font-black text-white">{t("history.empty_title")}</h3>
           <p className="text-slate-500 mt-2 max-w-md mx-auto font-medium">
-            Hãy bắt đầu nghe nhạc để chúng tôi lưu giữ những kỉ niệm của bạn.
+            {t('history.start_listening_hint')}
           </p>
         </div>
       ) : filteredSongs.length === 0 ? (
         <div className="text-center py-20 glass-panel-3d rounded-[40px] border-0 max-w-5xl mx-auto">
-          <h3 className="text-xl font-bold text-white">Không tìm thấy bài hát nào</h3>
-          <p className="text-slate-500 mt-2 font-medium">Thử nhập từ khóa khác xem sao nhé.</p>
+          <h3 className="text-xl font-bold text-white">{t("history.not_found")}</h3>
+          <p className="text-slate-500 mt-2 font-medium">{t('history.try_different_keyword')}</p>
         </div>
       ) : (
         <div className="space-y-3 max-w-5xl mx-auto">
           <div className="flex items-center px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
             <div className="w-12">#</div>
-            <div className="flex-1">Bài hát</div>
-            <div className="hidden md:block w-48">Nghệ sĩ</div>
-            <div className="w-20 text-right">Thao tác</div>
+            <div className="flex-1">{t('table.song')}</div>
+            <div className="hidden md:block w-48">{t('table.artist')}</div>
+            <div className="w-20 text-right">{t('table.actions')}</div>
           </div>
 
           {paginatedSongs.map((song, index) => {
@@ -196,9 +198,7 @@ const HistoryPage = () => {
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none rounded-xl border border-white/5 transition-all"
-          >
-            Trước
-          </button>
+          >{t("table.prev")}</button>
           
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button

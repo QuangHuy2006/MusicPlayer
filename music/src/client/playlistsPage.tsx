@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FaPlus, FaTrash, FaMusic, FaList } from 'react-icons/fa';
@@ -10,6 +11,7 @@ import { useToast } from '../context/ToastContext';
 import { SkeletonPlaylistCard } from '../components/Skeleton';
 
 const PlaylistsPage = () => {
+  const { t } = useTranslation();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
@@ -98,7 +100,7 @@ const PlaylistsPage = () => {
         setPlaylists([data.playlist, ...playlists]);
         setShowCreateModal(false);
         setNewPlaylistName('');
-        toast.success('Tạo playlist thành công');
+        toast.success(t('toasts.playlist_created'));
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
@@ -117,7 +119,7 @@ const PlaylistsPage = () => {
       if (!res.ok) throw new Error(data.msg || 'Xóa thất bại');
       setPlaylists(playlists.filter(p => p.id !== playlistId));
       if (selectedPlaylist?.id === playlistId) setSelectedPlaylist(null);
-      toast.success('Đã xóa playlist');
+      toast.success(t('toasts.playlist_deleted'));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
       toast.error('Xóa thất bại: ' + message);
@@ -157,7 +159,7 @@ const PlaylistsPage = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.msg || 'Lỗi thêm bài hát');
       await viewPlaylistDetail(selectedPlaylist);
-      toast.success('Đã thêm bài hát vào playlist');
+      toast.success(t('toasts.song_added_to_playlist'));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
       toast.error(message || 'Lỗi thêm bài hát');
@@ -174,7 +176,7 @@ const PlaylistsPage = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.msg || 'Xóa thất bại');
       await viewPlaylistDetail(selectedPlaylist);
-      toast.success('Đã xóa bài hát khỏi playlist');
+      toast.success(t('toasts.song_removed_from_playlist'));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
       toast.error('Xóa bài hát khỏi playlist thất bại: ' + message);
@@ -206,13 +208,13 @@ const PlaylistsPage = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            Playlists của tôi
+            {t('playlists.my_playlists')}
           </h1>
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-white text-black px-6 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-gray-200 transition-colors"
           >
-            <FaPlus /> Tạo playlist
+            <FaPlus /> {t('playlists.create_button')}
           </button>
         </div>
 
@@ -221,7 +223,7 @@ const PlaylistsPage = () => {
           <div className="max-w-7xl mx-auto mb-8">
             <input
               type="text"
-              placeholder="Tìm kiếm playlist theo tên..."
+              placeholder={t('playlists.search_by_name')}
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="w-full bg-transparent border border-[#333] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all text-sm font-medium placeholder-gray-500"
@@ -248,12 +250,12 @@ const PlaylistsPage = () => {
                     <FaTrash size={14} />
                   </button>
                 </div>
-                <p className="text-gray-400 text-xs mt-1">Tạo: {pl.created_at ? new Date(pl.created_at).toLocaleDateString() : 'N/A'}</p>
+                <p className="text-gray-400 text-xs mt-1">{t('playlists.created_date', { date: pl.created_at ? new Date(pl.created_at).toLocaleDateString() : 'N/A' })}</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); viewPlaylistDetail(pl); }}
                   className="mt-5 w-full bg-[#111] hover:bg-white hover:text-black border border-[#333] text-white text-xs font-medium py-2 rounded-lg flex justify-center transition-colors"
                 >
-                  Xem chi tiết
+                  {t('playlists.view_detail')}
                 </button>
               </div>
             </div>
@@ -261,17 +263,17 @@ const PlaylistsPage = () => {
           {playlists.length === 0 ? (
             <div className="col-span-full flex flex-col items-center justify-center text-gray-500 py-20 border border-[#333] border-dashed rounded-xl">
               <FaList size={48} className="mb-4 opacity-20" />
-              <p className="text-lg">Bạn chưa có playlist nào.</p>
+              <p className="text-lg">{t('playlists.empty_title')}</p>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="mt-4 text-white font-medium hover:underline"
               >
-                Tạo playlist đầu tiên!
+                {t('playlists.create_first')}
               </button>
             </div>
           ) : filteredPlaylists.length === 0 ? (
             <div className="col-span-full flex flex-col items-center justify-center text-gray-500 py-20 border border-[#333] rounded-xl">
-              <p className="text-lg">Không tìm thấy playlist nào phù hợp.</p>
+              <p className="text-lg">{t('playlists.no_matching')}</p>
             </div>
           ) : null}
         </div>
@@ -283,9 +285,7 @@ const PlaylistsPage = () => {
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-transparent hover:bg-[#222] disabled:opacity-30 disabled:pointer-events-none rounded border border-[#333] transition-all"
-            >
-              Trước
-            </button>
+            >{t("table.prev")}</button>
             
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <button
@@ -318,8 +318,8 @@ const PlaylistsPage = () => {
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-4">
                   <div>
-                    <h2 className="text-xl font-bold text-white">Tạo Playlist</h2>
-                    <p className="text-xs text-gray-400">Đặt tên cho bộ sưu tập của bạn</p>
+                    <h2 className="text-xl font-bold text-white">{t('playlists.modal_create_title')}</h2>
+                    <p className="text-xs text-gray-400">{t('playlists.modal_create_desc')}</p>
                   </div>
                 </div>
                 <button
@@ -332,12 +332,12 @@ const PlaylistsPage = () => {
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-400 ml-1">Tên playlist mới</label>
+                  <label className="text-xs font-medium text-gray-400 ml-1">{t('playlists.modal_new_name')}</label>
                   <input
                     type="text"
                     value={newPlaylistName}
                     onChange={(e) => setNewPlaylistName(e.target.value)}
-                    placeholder="Ví dụ: Nhạc chill cuối tuần..."
+                    placeholder={t("playlists.name_placeholder")}
                     className="w-full bg-transparent border border-[#333] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all text-sm placeholder-gray-500"
                     autoFocus
                   />
@@ -348,13 +348,13 @@ const PlaylistsPage = () => {
                     onClick={() => setShowCreateModal(false)}
                     className="flex-1 px-4 py-3 text-sm font-medium text-gray-400 hover:text-white hover:bg-[#222] rounded-lg border border-transparent hover:border-[#333] transition-colors"
                   >
-                    Hủy bỏ
+                    {t('playlists.btn_cancel')}
                   </button>
                   <button
                     onClick={handleCreatePlaylist}
                     className="flex-[2] py-3 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors"
                   >
-                    Tạo Ngay
+                    {t('playlists.btn_create_now')}
                   </button>
                 </div>
               </div>
@@ -379,13 +379,13 @@ const PlaylistsPage = () => {
                   {/* Cột trái: Bài hát trong playlist */}
                   <div>
                     <h3 className="text-base font-medium text-white mb-4">
-                      Trong playlist
+                      {t('playlists.in_playlist')}
                     </h3>
                     {loadingSongs ? (
                       <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>
                     ) : selectedPlaylist.songs?.length === 0 ? (
                       <div className="text-center py-10 text-gray-500 border border-[#333] rounded-lg">
-                        Chưa có bài hát nào.
+                        {t('playlists.no_songs_in_pl')}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -393,12 +393,12 @@ const PlaylistsPage = () => {
                           <div key={song.id} className="group border border-[#222] bg-[#111] p-3 rounded-lg flex justify-between items-center hover:border-[#444]">
                             <div className="min-w-0 pr-4">
                               <p className="text-white text-sm font-medium truncate">{song.name}</p>
-                              <p className="text-gray-500 text-xs truncate">{song.author || 'Không rõ'}</p>
+                              <p className="text-gray-500 text-xs truncate">{song.author || t('playlists.unknown_author')}</p>
                             </div>
                             <button
                               onClick={() => removeSongFromPlaylist(song.id)}
                               className="text-gray-600 hover:text-red-400 transition-colors p-2 shrink-0"
-                              title="Xóa khỏi playlist"
+                              title={t('playlists.remove_from_pl')}
                             >
                               <FaTrash size={14} />
                             </button>
@@ -411,24 +411,24 @@ const PlaylistsPage = () => {
                   {/* Cột phải: Thư viện bài hát */}
                   <div>
                     <h3 className="text-base font-medium text-white mb-4">
-                      Thêm từ thư viện
+                      {t('playlists.add_from_library')}
                     </h3>
                     <div className="space-y-3">
                       {songsNotInPlaylist.length === 0 ? (
                         <p className="text-gray-500 text-center py-10 border border-[#333] rounded-lg">
-                          Tất cả bài hát đã được thêm
+                          {t('playlists.all_songs_added')}
                         </p>
                       ) : (
                         songsNotInPlaylist.map(song => (
                           <div key={song.id} className="group border border-[#222] bg-[#111] p-3 rounded-lg flex justify-between items-center hover:border-[#444]">
                             <div className="min-w-0 pr-4">
                               <p className="text-white text-sm font-medium truncate">{song.name}</p>
-                              <p className="text-gray-500 text-xs truncate">{song.author || 'Không rõ'}</p>
+                              <p className="text-gray-500 text-xs truncate">{song.author || t('playlists.unknown_author')}</p>
                             </div>
                             <button
                               onClick={() => addSongToPlaylist(song.id)}
                               className="text-gray-500 hover:text-white border border-[#333] bg-black hover:border-white rounded px-3 py-1.5 shrink-0 transition-all"
-                              title="Thêm vào playlist"
+                              title={t('playlists.add_to_pl')}
                             >
                               <FaPlus size={14} />
                             </button>

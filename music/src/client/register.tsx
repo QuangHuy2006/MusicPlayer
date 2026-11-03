@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from '../config.tsx';
@@ -29,6 +30,7 @@ const FloatingIcon = ({ icon: Icon, x = 0, y = 0, delay = 0 }: { icon: React.Ele
 // MAIN REGISTER PAGE
 // =============================================================================
 export default function Register() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -45,7 +47,7 @@ export default function Register() {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      return toast.error("Mật khẩu xác nhận không khớp");
+      return toast.error(t("toasts.password_mismatch"));
     }
 
     setIsLoading(true);
@@ -59,14 +61,14 @@ export default function Register() {
 
       setIsLoading(false);
       if (data.success) {
-        toast.success("Đăng ký thành công! Chào mừng tân binh.");
+        toast.success(t("toasts.register_success"));
         navigate("/login");
       } else {
         toast.error(data.msg || "Đăng ký thất bại");
       }
     } catch {
       setIsLoading(false);
-      toast.error("Lỗi kết nối hệ thống");
+      toast.error(t("toasts.system_connect_error"));
     }
   };
 
@@ -103,7 +105,7 @@ export default function Register() {
             </h1>
 
             <p className="text-xl text-slate-400 max-w-md">
-              Tạo danh tính âm nhạc của bạn và bắt đầu hành trình sáng tạo những giai điệu mới.
+              {t("auth.register_subtitle")} và bắt đầu hành trình sáng tạo những giai điệu mới.
             </p>
           </div>
         </div>
@@ -112,22 +114,22 @@ export default function Register() {
         <div className="p-8 md:p-20 bg-white/[0.02] border-l border-white/5 flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full space-y-10">
             <div>
-              <h3 className="text-4xl font-black tracking-tight mb-2">Đăng Ký</h3>
+              <h3 className="text-4xl font-black tracking-tight mb-2">{t("auth.register_title")}</h3>
               <p className="text-slate-500 text-sm font-medium uppercase tracking-widest">
-                Thiết lập tài khoản mới
+                {t('auth.new_account_setup')}
               </p>
             </div>
 
             <form onSubmit={handleRegister} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Họ tên</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('auth.fullname_label')}</label>
                   <div className="relative">
                     <FaUser className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                     <input
                       type="text"
                       required
-                      placeholder="Nguyễn Văn A"
+                      placeholder={t("auth.fullname_placeholder")}
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 pl-14 pr-6 text-white focus:outline-none focus:border-cyan-400 focus:bg-white/10 transition-all"
@@ -164,7 +166,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Mật khẩu</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('auth.password_label')}</label>
                 <div className="relative">
                   <FaLock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                   <input
@@ -179,7 +181,7 @@ export default function Register() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Xác nhận mật khẩu</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('auth.confirm_password_label')}</label>
                 <div className="relative">
                   <FaLock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                   <input
@@ -202,7 +204,7 @@ export default function Register() {
                   <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    Đăng Ký Ngay
+                    {t('auth.register_now_btn')}
                     <FaArrowRight />
                   </>
                 )}
@@ -210,12 +212,12 @@ export default function Register() {
             </form>
 
             <p className="text-center text-sm text-slate-500">
-              Đã có tài khoản?{" "}
+              {t("auth.already_account")}{" "}
               <button
                 onClick={() => navigate('/login')}
                 className="text-cyan-400 hover:text-white font-bold transition-colors"
               >
-                Đăng nhập
+                {t("auth.back_to_login")}
               </button>
             </p>
           </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
 import { API_BASE } from '../config.tsx';
 import { useToast } from '../context/ToastContext';
@@ -32,6 +33,7 @@ interface StatsData {
 }
 
 const ProfilePage = () => {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,12 +123,12 @@ const ProfilePage = () => {
   };
 
   const formatTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes} phút`;
+    if (minutes < 60) return t('profile.minutes_unit', { count: minutes });
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     if (hours < 24) return `${hours}h ${mins}p`;
     const days = Math.floor(hours / 24);
-    return `${days} ngày ${hours % 24}h`;
+    return t('profile.days_hours_unit', { days, hours: hours % 24 });
   };
 
   if (loading) {
@@ -182,20 +184,20 @@ const ProfilePage = () => {
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xl font-bold focus:outline-none focus:border-[var(--accent-gold)]/50"
-                    placeholder="Tên của bạn"
+                    placeholder={t('profile.name_placeholder')}
                   />
                   <textarea
                     value={editBio}
                     onChange={e => setEditBio(e.target.value)}
                     className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[var(--accent-gold)]/50 resize-none h-24"
-                    placeholder="Giới thiệu về bản thân..."
+                    placeholder={t('profile.bio_placeholder')}
                   />
                   <div className="flex gap-3">
                     <button onClick={handleSaveProfile} className="px-6 py-2 bg-[var(--accent-gold)] text-black font-bold rounded-xl flex items-center gap-2 hover:scale-105 transition-transform">
-                      <FaSave /> Lưu
+                      <FaSave /> {t('profile.save')}
                     </button>
                     <button onClick={() => setEditing(false)} className="px-6 py-2 bg-white/5 text-white font-bold rounded-xl flex items-center gap-2 hover:bg-white/10">
-                      <FaTimes /> Hủy
+                      <FaTimes /> {t('profile.cancel')}
                     </button>
                   </div>
                 </div>
@@ -210,11 +212,11 @@ const ProfilePage = () => {
                       <FaEdit size={18} />
                     </button>
                   </div>
-                  <p className="text-slate-400 text-sm max-w-xl">{profile?.bio || 'Chưa có giới thiệu. Nhấn nút chỉnh sửa để thêm bio!'}</p>
+                  <p className="text-slate-400 text-sm max-w-xl">{profile?.bio || t('profile.no_bio')}</p>
                   <div className="flex items-center gap-4 text-xs text-slate-500 justify-center md:justify-start">
                     <span>{profile?.email}</span>
                     <span>•</span>
-                    <span>Tham gia {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                    <span>{t('profile.joined')} {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </>
               )}
@@ -227,11 +229,11 @@ const ProfilePage = () => {
       {stats && (
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[
-            { icon: <FaPlay className="text-cyan-400" />, label: 'Lượt nghe', value: stats.totalPlays, gradient: 'from-cyan-500/20 to-blue-500/20' },
-            { icon: <FaClock className="text-amber-400" />, label: 'Thời gian nghe', value: formatTime(stats.estimatedMinutes), gradient: 'from-amber-500/20 to-orange-500/20' },
-            { icon: <FaHeart className="text-pink-400" />, label: 'Yêu thích', value: stats.totalLikes, gradient: 'from-pink-500/20 to-rose-500/20' },
+            { icon: <FaPlay className="text-cyan-400" />, label: t('profile.stat_total_plays'), value: stats.totalPlays, gradient: 'from-cyan-500/20 to-blue-500/20' },
+            { icon: <FaClock className="text-amber-400" />, label: t('profile.stat_time_listened'), value: formatTime(stats.estimatedMinutes), gradient: 'from-amber-500/20 to-orange-500/20' },
+            { icon: <FaHeart className="text-pink-400" />, label: t('profile.stat_likes'), value: stats.totalLikes, gradient: 'from-pink-500/20 to-rose-500/20' },
             { icon: <FaList className="text-emerald-400" />, label: 'Playlist', value: stats.totalPlaylists, gradient: 'from-emerald-500/20 to-teal-500/20' },
-            { icon: <FaMusic className="text-violet-400" />, label: 'Đã tải lên', value: stats.totalUploaded, gradient: 'from-violet-500/20 to-purple-500/20' },
+            { icon: <FaMusic className="text-violet-400" />, label: t('profile.stat_uploaded'), value: stats.totalUploaded, gradient: 'from-violet-500/20 to-purple-500/20' },
             { icon: <FaFire className="text-red-400" />, label: 'Top Artist', value: stats.topAuthors[0]?.name || 'N/A', gradient: 'from-red-500/20 to-orange-500/20' }
           ].map((stat, i) => (
             <div key={i} className={`glass-panel-3d border-0 p-5 rounded-[24px] bg-gradient-to-br ${stat.gradient} hover:scale-105 transition-transform group cursor-default`}>
@@ -250,7 +252,7 @@ const ProfilePage = () => {
         {stats && stats.topSongs.length > 0 && (
           <section className="glass-panel-3d border-0 p-8 rounded-[40px] space-y-6">
             <h3 className="text-xl font-black text-white flex items-center gap-3">
-              <FaTrophy className="text-[var(--accent-gold)]" /> Bài hát nghe nhiều nhất
+              <FaTrophy className="text-[var(--accent-gold)]" /> {t('profile.top_songs_listened')}
             </h3>
             <div className="space-y-3">
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -283,7 +285,7 @@ const ProfilePage = () => {
         {stats && stats.topAuthors.length > 0 && (
           <section className="glass-panel-3d border-0 p-8 rounded-[40px] space-y-6">
             <h3 className="text-xl font-black text-white flex items-center gap-3">
-              <FaChartLine className="text-pink-500" /> Nghệ sĩ yêu thích
+              <FaChartLine className="text-pink-500" /> {t('profile.favorite_artists')}
             </h3>
             <div className="space-y-4">
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -300,7 +302,7 @@ const ProfilePage = () => {
                         </div>
                         <div>
                           <p className="font-bold text-white text-sm">{author.name}</p>
-                          <p className="text-[10px] text-slate-500">{author.count} lượt nghe</p>
+                          <p className="text-[10px] text-slate-500">{t('profile.plays_count', { count: author.count })}</p>
                         </div>
                       </div>
                       <span className="text-xs font-bold text-pink-400">{percentage}%</span>

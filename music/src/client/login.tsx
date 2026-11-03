@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE } from '../config.tsx';
@@ -30,6 +31,7 @@ const FloatingIcon = ({ icon: Icon, x = 0, y = 0, delay = 0 }: { icon: React.Ele
 // MAIN LOGIN PAGE
 // =============================================================================
 export default function Login() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +41,7 @@ export default function Login() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return toast.error("Vui lòng điền đầy đủ thông tin");
+    if (!email || !password) return toast.error(t("toasts.fill_all_info"));
 
     setIsLoading(true);
     fetch(`${API_BASE}/api/auth/login`, {
@@ -56,7 +58,7 @@ export default function Login() {
             localStorage.setItem("refresh_token", data.refreshToken);
           }
           localStorage.setItem("user", JSON.stringify(data.user));
-          toast.success("Đăng nhập thành công! Chào mừng trở lại!");
+          toast.success(t("toasts.login_success"));
           navigate("/dashboard");
         } else {
           toast.error(data.msg || "Thông tin đăng nhập không hợp lệ");
@@ -65,7 +67,7 @@ export default function Login() {
       .catch((err) => {
         setIsLoading(false);
         console.error(err);
-        toast.error("Lỗi kết nối tới máy chủ");
+        toast.error(t("toasts.server_connect_error"));
       });
   };
 
@@ -135,9 +137,9 @@ export default function Login() {
         <div className="p-8 md:p-20 bg-white/[0.02] border-l border-white/5 flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full space-y-10">
             <div className="text-center lg:text-left">
-              <h3 className="text-4xl font-black tracking-tight mb-2">Đăng Nhập</h3>
+              <h3 className="text-4xl font-black tracking-tight mb-2">{t("auth.login_title")}</h3>
               <p className="text-slate-500 text-sm font-medium uppercase tracking-widest">
-                Truy cập hệ thống quản lý âm nhạc
+                {t("auth.login_subtitle")}
               </p>
             </div>
 
@@ -160,7 +162,7 @@ export default function Login() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Mật khẩu</label>
-                  <a href="#" className="text-cyan-400 text-xs hover:text-white transition-colors">Quên mật khẩu?</a>
+                  <a href="#" className="text-cyan-400 text-xs hover:text-white transition-colors">{t("auth.forgot_password")}</a>
                 </div>
                 <div className="relative">
                   <FaLock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
@@ -216,12 +218,12 @@ export default function Login() {
             </div>
 
             <p className="text-center text-sm text-slate-500">
-              Chưa có tài khoản?{" "}
+              {t("auth.no_account")}{" "}
               <button
                 onClick={() => navigate('/register')}
                 className="text-cyan-400 hover:text-white font-bold transition-colors"
               >
-                Đăng ký ngay
+                {t("auth.register_now")}
               </button>
             </p>
           </div>

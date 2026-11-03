@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { FaCrown, FaLock, FaTimes, FaCopy, FaDownload, FaWaveSquare, FaMusic } from "react-icons/fa";
 import { API_BASE } from "../config.tsx";
 import type { User } from "../interface/user";
 
 export default function PremiumUpgradePrompt() {
+  const { t } = useTranslation();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [user, setUser] = useState<User | null>(() => {
@@ -80,10 +82,10 @@ export default function PremiumUpgradePrompt() {
         </div>
 
         <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-2">
-          Mở Khóa <span className="shimmer-gold-text">PREMIUM VIP</span>
+          {t('premium_prompt.title')}
         </h1>
         <p className="text-slate-400 text-sm md:text-base max-w-md mx-auto mb-8 font-medium">
-          Nghe nhạc đẳng cấp không giới hạn và sở hữu những tính năng thời thượng nhất chỉ với <span className="text-amber-400 font-bold">19.000đ/tháng</span>.
+          {t('premium.upgrade_banner_sub')} <span className="text-amber-400 font-bold">19.000đ{t('premium.per_month')}</span>.
         </p>
 
         {/* Features List */}
@@ -93,11 +95,11 @@ export default function PremiumUpgradePrompt() {
               <FaDownload size={18} />
             </div>
             <h4 className="text-sm font-bold text-white mb-1.5 flex items-center gap-1.5">
-              Nghe Nhạc Offline
+              {t('premium_prompt.feat_offline')}
               <FaLock size={10} className="text-amber-500/70" />
             </h4>
             <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-              Tải bài hát trực tiếp về thiết bị của bạn. Nghe nhạc bất cứ lúc nào không cần mạng.
+              {t('premium.feature_offline_desc')}
             </p>
           </div>
 
@@ -106,11 +108,11 @@ export default function PremiumUpgradePrompt() {
               <FaWaveSquare size={18} />
             </div>
             <h4 className="text-sm font-bold text-white mb-1.5 flex items-center gap-1.5">
-              Sóng Nhạc 3D VIP
+              {t('premium.feature_visualizer_title')}
               <FaLock size={10} className="text-amber-500/70" />
             </h4>
             <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-              Trình diễn sóng nhạc hình học động 3D chuyển động rực rỡ theo từng nhịp điệu của âm bass.
+              {t('premium.feature_visualizer_desc')}
             </p>
           </div>
 
@@ -119,11 +121,11 @@ export default function PremiumUpgradePrompt() {
               <FaMusic size={16} />
             </div>
             <h4 className="text-sm font-bold text-white mb-1.5 flex items-center gap-1.5">
-              Âm Thanh Lossless
+              {t('premium.feature_lossless_title')}
               <FaLock size={10} className="text-amber-500/70" />
             </h4>
             <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-              Trải nghiệm âm thanh chất lượng siêu cao 320kbps và Lossless cho chất lượng trung thực nhất.
+              {t('premium.feature_lossless_desc')}
             </p>
           </div>
         </div>
@@ -133,7 +135,7 @@ export default function PremiumUpgradePrompt() {
           onClick={() => setShowPaymentModal(true)}
           className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest px-10 py-4 rounded-2xl transition-all duration-300 hover:scale-[1.03] shadow-lg shadow-amber-500/20 cursor-pointer"
         >
-          Nâng Cấp Ngay - 19,000đ
+          {t('premium.upgrade_now_btn')}
         </button>
       </div>
 
@@ -159,8 +161,8 @@ export default function PremiumUpgradePrompt() {
                 {/* Header */}
                 <div className="text-center mb-6">
                   <FaCrown className="text-amber-400 text-3xl mx-auto mb-2 animate-bounce" />
-                  <h3 className="text-lg font-black text-white uppercase tracking-wider">Thanh Toán Premium</h3>
-                  <p className="text-xs text-slate-400 mt-1">Hệ thống kích hoạt tự động qua ngân hàng 24/7</p>
+                  <h3 className="text-lg font-black text-white uppercase tracking-wider">{t('premium.payment_title')}</h3>
+                  <p className="text-xs text-slate-400 mt-1">{t('premium.payment_subtitle')}</p>
                 </div>
 
                 {/* QR Code Container */}
@@ -175,25 +177,25 @@ export default function PremiumUpgradePrompt() {
                 {/* Bank details and dynamic content */}
                 <div className="space-y-3 bg-white/5 border border-white/5 rounded-2xl p-4 text-left mb-6 text-sm font-semibold">
                   <div className="flex justify-between items-center py-1 border-b border-white/5">
-                    <span className="text-slate-400 text-xs">Ngân hàng</span>
+                    <span className="text-slate-400 text-xs">{t("premium_prompt.bank")}</span>
                     <span className="text-white">{bankName}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-white/5">
-                    <span className="text-slate-400 text-xs">Số tài khoản</span>
+                    <span className="text-slate-400 text-xs">{t("premium_prompt.account_number")}</span>
                     <span className="text-white">{accountNumber}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-white/5">
-                    <span className="text-slate-400 text-xs">Số tiền</span>
+                    <span className="text-slate-400 text-xs">{t("premium_prompt.amount")}</span>
                     <span className="text-amber-400 font-bold">{parseInt(amount).toLocaleString()}đ</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 text-xs">Nội dung chuyển khoản</span>
+                    <span className="text-slate-400 text-xs">{t("premium_prompt.transfer_content")}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-amber-400 font-black tracking-wider bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{transferContent}</span>
                       <button
                         onClick={handleCopy}
                         className="text-slate-400 hover:text-white transition-colors"
-                        title="Sao chép nội dung"
+                        title={t('premium.copy_content')}
                       >
                         <FaCopy size={14} />
                       </button>
@@ -208,7 +210,7 @@ export default function PremiumUpgradePrompt() {
                   </p>
                   {copied && (
                     <p className="text-xs text-emerald-400 mt-2 font-bold animate-[fade-in-up_0.2s_ease-out]">
-                      Đã sao chép nội dung chuyển khoản!
+                      {t('premium_prompt.copied')}
                     </p>
                   )}
                 </div>
@@ -221,10 +223,10 @@ export default function PremiumUpgradePrompt() {
                 </div>
 
                 <h3 className="text-2xl font-black text-amber-400 tracking-wide uppercase mb-3 drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]">
-                  Kích Hoạt Thành Công!
+                  {t('premium_prompt.success_title')}
                 </h3>
                 <p className="text-white text-sm font-bold mb-2">
-                  Chào mừng bạn đến với PREMIUM VIP 💎
+                  {t('premium.vip_welcome_title')}
                 </p>
                 <p className="text-slate-400 text-xs font-semibold px-4 mb-8 leading-relaxed">
                   Giao dịch đã được hệ thống ngân hàng tự động xác nhận thành công. Hãy nhấn nút bên dưới để tận hưởng thế giới âm nhạc đẳng cấp Cosmic Gold ngay bây giờ!
@@ -237,7 +239,7 @@ export default function PremiumUpgradePrompt() {
                   }}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.03] shadow-lg shadow-amber-500/30 cursor-pointer"
                 >
-                  Bắt Đầu Trải Nghiệm
+                  {t('premium_prompt.start_now')}
                 </button>
               </div>
             )}

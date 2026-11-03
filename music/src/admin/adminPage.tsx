@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Song } from "../interface/song";
@@ -20,6 +21,7 @@ interface Stats {
 }
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'overview' | 'songs' | 'users' | 'payments'>('overview');
   const [stats, setStats] = useState<Stats | null>(null);
   const [pendingSongs, setPendingSongs] = useState<Song[]>([]);
@@ -55,7 +57,7 @@ const AdminDashboard = () => {
       if (paymentsData.success) setPendingPayments(paymentsData.users);
     } catch (err) {
       console.error(err);
-      toast.error("Lỗi khi tải dữ liệu admin");
+      toast.error(t("toasts.admin_data_error"));
     } finally {
       setLoading(false);
     }
@@ -75,11 +77,11 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Đã duyệt bài hát!");
+        toast.success(t("toasts.song_approved"));
         fetchData();
       }
     } catch {
-      toast.error("Lỗi khi duyệt bài hát");
+      toast.error(t("toasts.song_approve_error"));
     }
   };
 
@@ -89,7 +91,7 @@ const AdminDashboard = () => {
   };
 
   const confirmReject = async () => {
-    if (!rejectReason.trim()) return toast.error("Vui lòng nhập lý do");
+    if (!rejectReason.trim()) return toast.error(t("toasts.reject_reason_required"));
     try {
       const res = await fetch(`${API_BASE}/api/songs/${selectedSongId}/reject`, {
         method: 'PUT',
@@ -101,13 +103,13 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Đã từ chối bài hát");
+        toast.success(t("toasts.song_rejected"));
         setShowRejectModal(false);
         setRejectReason("");
         fetchData();
       }
     } catch {
-      toast.error("Lỗi khi từ chối bài hát");
+      toast.error(t("toasts.song_reject_error"));
     }
   };
 
@@ -119,11 +121,11 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`${isBanned ? 'Gỡ chặn' : 'Chặn'} người dùng thành công`);
+        toast.success(isBanned ? t('admin.user_unbanned') : t('admin.user_banned'));
         fetchData();
       }
     } catch {
-      toast.error("Lỗi thao tác người dùng");
+      toast.error(t('admin.user_op_error'));
     }
   };
 
@@ -135,17 +137,17 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Đã nâng cấp Premium cho người dùng!");
+        toast.success(t("toasts.premium_upgraded"));
         fetchData();
       }
     } catch {
-      toast.error("Lỗi khi xác nhận thanh toán");
+      toast.error(t("toasts.payment_verify_error"));
     }
   };
 
   const handleSaveUser = async () => {
     if (!userFormData.name || !userFormData.email || (!selectedUser && !userFormData.password)) {
-      return toast.error("Vui lòng điền đủ thông tin");
+      return toast.error(t("toasts.fill_all_info"));
     }
 
     try {
@@ -164,7 +166,7 @@ const AdminDashboard = () => {
 
       const data = await res.json();
       if (data.success) {
-        toast.success(selectedUser ? "Đã cập nhật người dùng" : "Đã tạo người dùng mới");
+        toast.success(selectedUser ? t('admin.user_updated') : t('admin.user_created'));
         setShowUserModal(false);
         setSelectedUser(null);
         setUserFormData({ name: "", email: "", password: "", role: "USER" });
@@ -173,13 +175,13 @@ const AdminDashboard = () => {
         toast.error(data.msg);
       }
     } catch {
-      toast.error("Lỗi khi lưu thông tin người dùng");
+      toast.error(t('admin.user_save_error'));
     }
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (id === 1) return toast.error("Không thể xóa Admin gốc");
-    if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
+    if (id === 1) return toast.error(t("toasts.cannot_delete_root_admin"));
+    if (!confirm(t('admin.confirm_delete_user'))) return;
 
     try {
       const res = await fetch(`${API_BASE}/api/admin/users/${id}`, {
@@ -188,11 +190,11 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Đã xóa người dùng");
+        toast.success(t("toasts.user_deleted"));
         fetchData();
       }
     } catch {
-      toast.error("Lỗi khi xóa người dùng");
+      toast.error(t("toasts.delete_user_error"));
     }
   };
 
@@ -228,17 +230,17 @@ const AdminDashboard = () => {
             <span className="p-3 bg-[var(--accent-gold)]/10 rounded-2xl text-[var(--accent-gold)]">
               <FaUserShield size={32} />
             </span>
-            Trung Tâm <span className="text-gradient-premium">Điều Khiển</span>
+            {t('admin.ctrl_center')}
           </h1>
-          <p className="text-slate-500 font-medium ml-1">Quản lý hệ thống, bài hát và người dùng của Q.Huy Music</p>
+          <p className="text-slate-500 font-medium ml-1">{t('admin.ctrl_desc')}</p>
         </div>
 
         <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5 shadow-inner">
           {[
-            { id: 'overview', icon: <MdDashboard />, label: 'Tổng quan' },
-            { id: 'songs', icon: <MdLibraryMusic />, label: 'Duyệt nhạc' },
-            { id: 'users', icon: <MdPeopleAlt />, label: 'Người dùng' },
-            { id: 'payments', icon: <FaCheckCircle />, label: 'Thanh toán' }
+            { id: 'overview', icon: <MdDashboard />, label: t('admin.tab_overview') },
+            { id: 'songs', icon: <MdLibraryMusic />, label: t('admin.tab_songs') },
+            { id: 'users', icon: <MdPeopleAlt />, label: t('admin.tab_users') },
+            { id: 'payments', icon: <FaCheckCircle />, label: t('admin.tab_payments') }
           ].map(tab => (
             <button
               key={tab.id}
@@ -260,11 +262,11 @@ const AdminDashboard = () => {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { label: 'Người dùng', val: stats?.totalUsers || 0, icon: <FaUsers />, color: 'from-blue-500 to-indigo-600', sub: '+12% tháng này', up: true },
-              { label: 'Bài hát', val: stats?.totalSongs || 0, icon: <FaMusic />, color: 'from-[var(--accent-gold)] to-orange-500', sub: '+5 bài mới', up: true },
-              { label: 'Chờ duyệt', val: stats?.pendingSongs || 0, icon: <FaExclamationTriangle />, color: 'from-rose-500 to-red-600', sub: 'Cần xử lý gấp', up: false },
-              { label: 'Thanh toán', val: stats?.pendingPayments || 0, icon: <FaCheckCircle />, color: 'from-amber-500 to-yellow-600', sub: 'Chờ nâng cấp', up: false },
-              { label: 'Playlist', val: stats?.totalPlaylists || 0, icon: <FaChartBar />, color: 'from-emerald-500 to-teal-600', sub: 'Tăng trưởng đều', up: true }
+              { label: t('admin.card_users'), val: stats?.totalUsers || 0, icon: <FaUsers />, color: 'from-blue-500 to-indigo-600', sub: '+12% tháng này', up: true },
+              { label: t('admin.card_songs'), val: stats?.totalSongs || 0, icon: <FaMusic />, color: 'from-[var(--accent-gold)] to-orange-500', sub: '+5 bài mới', up: true },
+              { label: t('admin.card_pending'), val: stats?.pendingSongs || 0, icon: <FaExclamationTriangle />, color: 'from-rose-500 to-red-600', sub: 'Cần xử lý gấp', up: false },
+              { label: t('admin.card_payments'), val: stats?.pendingPayments || 0, icon: <FaCheckCircle />, color: 'from-amber-500 to-yellow-600', sub: 'Chờ nâng cấp', up: false },
+              { label: t('admin.card_playlists'), val: stats?.totalPlaylists || 0, icon: <FaChartBar />, color: 'from-emerald-500 to-teal-600', sub: 'Tăng trưởng đều', up: true }
             ].map((item, i) => (
               <div key={i} className="immersive-card p-6 rounded-[32px] group relative overflow-hidden">
                 <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${item.color} opacity-5 blur-2xl group-hover:opacity-20 transition-opacity`}></div>
@@ -289,9 +291,9 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-white flex items-center gap-3">
                 <span className="w-2 h-8 bg-rose-500 rounded-full"></span>
-                Bài hát chờ duyệt gần đây
+                {t('admin.pending_recent')}
               </h2>
-              <button onClick={() => setActiveTab('songs')} className="text-sm font-bold text-[var(--accent-blue)] hover:underline">Xem tất cả</button>
+              <button onClick={() => setActiveTab('songs')} className="text-sm font-bold text-[var(--accent-blue)] hover:underline">{t('admin.view_all')}</button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {pendingSongs.slice(0, 4).map(song => (
@@ -307,7 +309,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               ))}
-              {pendingSongs.length === 0 && <p className="col-span-full text-center py-10 text-slate-500 font-medium">🎉 Tất cả đã được xử lý xong!</p>}
+              {pendingSongs.length === 0 && <p className="col-span-full text-center py-10 text-slate-500 font-medium">{t('admin.all_handled')}</p>}
             </div>
           </div>
         </div>
@@ -317,7 +319,7 @@ const AdminDashboard = () => {
       {activeTab === 'songs' && (
         <div className="glass-panel-3d border-0 p-8 rounded-[40px] space-y-8 animate-[fade-in_0.3s_ease-out]">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-black text-white">Danh sách bài hát cần duyệt</h2>
+            <h2 className="text-2xl font-black text-white">{t('admin.songs_need_approval')}</h2>
             <span className="px-4 py-1 bg-rose-500/10 text-rose-400 rounded-full text-xs font-bold border border-rose-500/20">{pendingSongs.length} bài đang chờ</span>
           </div>
           <div className="space-y-4">
@@ -330,7 +332,7 @@ const AdminDashboard = () => {
                   <div>
                     <h3 className="text-2xl font-black text-white truncate">{song.name}</h3>
                     <p className="text-[var(--accent-gold)] font-bold flex items-center justify-center lg:justify-start gap-2">
-                      <FaUser size={14} /> {song.author || "Nghệ sĩ ẩn danh"}
+                      <FaUser size={14} /> {song.author || t('admin.anonymous_artist')}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
@@ -344,15 +346,15 @@ const AdminDashboard = () => {
                   <audio controls src={song.url} className="w-full h-10 premium-input rounded-xl" />
                 </div>
                 <div className="flex flex-row lg:flex-col gap-3 w-full lg:w-48">
-                  <button onClick={() => handleApprove(song.id)} className="flex-1 py-4 bg-emerald-500/10 text-emerald-500 font-black rounded-2xl hover:bg-emerald-500 hover:text-white transition-all shadow-xl shadow-emerald-500/5 flex items-center justify-center gap-2"><FaCheck /> DUYỆT</button>
-                  <button onClick={() => handleRejectClick(song.id)} className="flex-1 py-4 bg-rose-500/10 text-rose-500 font-black rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-xl shadow-rose-500/5 flex items-center justify-center gap-2"><FaTimes /> TỪ CHỐI</button>
+                  <button onClick={() => handleApprove(song.id)} className="flex-1 py-4 bg-emerald-500/10 text-emerald-500 font-black rounded-2xl hover:bg-emerald-500 hover:text-white transition-all shadow-xl shadow-emerald-500/5 flex items-center justify-center gap-2"><FaCheck /> {t('admin.btn_approve')}</button>
+                  <button onClick={() => handleRejectClick(song.id)} className="flex-1 py-4 bg-rose-500/10 text-rose-500 font-black rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-xl shadow-rose-500/5 flex items-center justify-center gap-2"><FaTimes /> {t('admin.btn_reject')}</button>
                 </div>
               </div>
             ))}
             {pendingSongs.length === 0 && (
               <div className="py-20 text-center space-y-4">
                 <FaCheckCircle size={64} className="text-emerald-500 opacity-20 mx-auto" />
-                <p className="text-slate-500 font-bold text-xl uppercase tracking-widest">Tuyệt vời! Không có bài hát nào chờ duyệt</p>
+                <p className="text-slate-500 font-bold text-xl uppercase tracking-widest">{t('admin.no_pending_songs')}</p>
               </div>
             )}
           </div>
@@ -363,7 +365,7 @@ const AdminDashboard = () => {
       {activeTab === 'users' && (
         <div className="glass-panel-3d border-0 p-8 rounded-[40px] animate-[fade-in_0.3s_ease-out]">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black text-white">Quản lý người dùng</h2>
+            <h2 className="text-2xl font-black text-white">{t('admin.user_management')}</h2>
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => {
@@ -373,11 +375,11 @@ const AdminDashboard = () => {
                 }}
                 className="flex items-center gap-2 px-6 py-3 bg-[var(--accent-gold)] text-black font-black rounded-xl hover:scale-105 transition-all shadow-lg"
               >
-                <MdPersonAdd size={20} /> THÊM NGƯỜI DÙNG
+                <MdPersonAdd size={20} /> {t('admin.btn_add_user')}
               </button>
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
                 <FaUsers className="text-slate-500" />
-                <span className="text-sm font-bold text-white">{users.length} thành viên</span>
+                <span className="text-sm font-bold text-white">{t('admin.members_count', { count: users.length })}</span>
               </div>
             </div>
           </div>
@@ -402,7 +404,7 @@ const AdminDashboard = () => {
                     <p className="text-sm font-bold text-slate-200">#{user.id}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Quyền</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('admin.role_col')}</p>
                     <p className="text-sm font-bold text-slate-200 truncate">{user.role}</p>
                   </div>
                 </div>
@@ -412,14 +414,14 @@ const AdminDashboard = () => {
                       onClick={() => openEditUser(user)}
                       className="flex-1 py-3 bg-blue-500/10 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2 font-bold text-xs"
                     >
-                      <MdEdit /> SỬA
+                      <MdEdit /> {t('admin.btn_edit')}
                     </button>
                     {user.id !== 1 && (
                       <button 
                         onClick={() => handleDeleteUser(user.id)}
                         className="flex-1 py-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 font-bold text-xs"
                       >
-                        <MdDelete /> XÓA
+                        <MdDelete /> {t('admin.btn_delete')}
                       </button>
                     )}
                   </div>
@@ -432,12 +434,12 @@ const AdminDashboard = () => {
                         : 'bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white'
                         }`}
                     >
-                      {user.isBanned || user.is_banned ? "Gỡ Chặn" : "Chặn User"}
+                      {user.isBanned || user.is_banned ? t("admin.btn_unban") : t("admin.btn_ban")}
                     </button>
                   )}
                   {user.role === 'ADMIN' && (
                     <div className="w-full py-3 bg-white/5 rounded-xl text-[10px] text-slate-500 font-black text-center uppercase tracking-widest">
-                      Quản Trị Viên Hệ Thống
+                      {t('admin.sys_admin')}
                     </div>
                   )}
                 </div>
@@ -451,7 +453,7 @@ const AdminDashboard = () => {
       {activeTab === 'payments' && (
         <div className="glass-panel-3d border-0 p-8 rounded-[40px] animate-[fade-in_0.3s_ease-out] space-y-8">
            <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black text-white">Xác nhận thanh toán Premium</h2>
+            <h2 className="text-2xl font-black text-white">{t('admin.premium_confirm_title')}</h2>
             <span className="px-4 py-1 bg-amber-500/10 text-amber-400 rounded-full text-xs font-bold border border-amber-500/20">{pendingPayments.length} yêu cầu mới</span>
           </div>
           
@@ -465,21 +467,21 @@ const AdminDashboard = () => {
                   <div>
                     <h4 className="font-bold text-white truncate">{user.name}</h4>
                     <p className="text-xs text-slate-500">{user.email}</p>
-                    <p className="text-[10px] text-amber-500 font-black mt-1 uppercase tracking-widest">Đang chờ Premium</p>
+                    <p className="text-[10px] text-amber-500 font-black mt-1 uppercase tracking-widest">{t('admin.waiting_premium')}</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => handleApprovePayment(user.id)}
                   className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
                 >
-                  <FaCheck /> XÁC NHẬN
+                  <FaCheck /> {t('admin.btn_confirm')}
                 </button>
               </div>
             ))}
             {pendingPayments.length === 0 && (
               <div className="col-span-full py-20 text-center space-y-4">
                 <FaCheckCircle size={64} className="text-emerald-500 opacity-20 mx-auto" />
-                <p className="text-slate-500 font-bold text-xl uppercase tracking-widest">Không có yêu cầu thanh toán nào</p>
+                <p className="text-slate-500 font-bold text-xl uppercase tracking-widest">{t('admin.no_payments')}</p>
               </div>
             )}
           </div>
@@ -496,21 +498,21 @@ const AdminDashboard = () => {
                   <FaExclamationTriangle size={20} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white">Lý Do Từ Chối</h2>
-                  <p className="text-xs text-slate-500 font-medium">Giải thích tại sao bài hát này không hợp lệ</p>
+                  <h2 className="text-2xl font-black text-white">{t("admin.reject_reason_title")}</h2>
+                  <p className="text-xs text-slate-500 font-medium">{t('admin.reject_reason_desc')}</p>
                 </div>
               </div>
             </div>
             <textarea
               className="w-full p-6 premium-input resize-none h-40"
-              placeholder="Nhập lý do chi tiết..."
+              placeholder={t('admin.enter_reason')}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               autoFocus
             />
             <div className="flex gap-4 mt-8">
               <button onClick={() => setShowRejectModal(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-white transition-colors">Hủy</button>
-              <button onClick={confirmReject} className="flex-[2] py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl shadow-xl shadow-rose-500/20 transition-all">Xác Nhận Từ Chối</button>
+              <button onClick={confirmReject} className="flex-[2] py-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl shadow-xl shadow-rose-500/20 transition-all">{t("admin.confirm_reject")}</button>
             </div>
           </div>
         </div>,
@@ -522,12 +524,12 @@ const AdminDashboard = () => {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 animate-[fade-in_0.2s_ease-out]">
           <div className="glass-panel-3d p-8 w-full max-w-md rounded-[40px] scale-100 animate-[zoom-in_0.3s_ease-out]">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-black text-white">{selectedUser ? "Sửa Người Dùng" : "Thêm Người Dùng"}</h2>
+              <h2 className="text-2xl font-black text-white">{selectedUser ? t("admin.edit_user") : t("admin.add_user")}</h2>
             </div>
             
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase">Tên hiển thị</label>
+                <label className="text-xs font-bold text-slate-500 uppercase">{t('admin.user_display_name')}</label>
                 <input 
                   type="text" 
                   className="w-full p-4 premium-input"
@@ -548,7 +550,7 @@ const AdminDashboard = () => {
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase">
-                  {selectedUser ? "Mật khẩu mới (để trống nếu không đổi)" : "Mật khẩu"}
+                  {selectedUser ? t("admin.user_pass_edit") : t("admin.user_pass")}
                 </label>
                 <input 
                   type="password" 
@@ -559,22 +561,22 @@ const AdminDashboard = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase">Vai trò</label>
+                <label className="text-xs font-bold text-slate-500 uppercase">{t('admin.user_role')}</label>
                 <select 
                   className="w-full p-4 premium-input bg-black"
                   value={userFormData.role}
                   onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
                 >
-                  <option value="USER">Người dùng thường</option>
+                  <option value="USER">{t('admin.role_standard')}</option>
                   <option value="PREMIUM">Premium Member</option>
-                  <option value="ADMIN">Quản trị viên</option>
+                  <option value="ADMIN">{t('admin.role_admin')}</option>
                 </select>
               </div>
             </div>
 
             <div className="flex gap-4 mt-8">
               <button onClick={() => setShowUserModal(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-white transition-colors">Hủy</button>
-              <button onClick={handleSaveUser} className="flex-[2] py-4 bg-[var(--accent-gold)] text-black font-black rounded-2xl shadow-xl transition-all">Lưu Thay Đổi</button>
+              <button onClick={handleSaveUser} className="flex-[2] py-4 bg-[var(--accent-gold)] text-black font-black rounded-2xl shadow-xl transition-all">{t("admin.save_changes")}</button>
             </div>
           </div>
         </div>,

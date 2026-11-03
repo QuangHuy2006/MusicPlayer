@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import type { Song } from '../interface/song';
 import { API_BASE } from '../config.tsx';
@@ -10,6 +11,7 @@ import { SkeletonSongItem } from '../components/Skeleton';
 import AddToPlaylistModal from './addToPlaylistModal';
 
 const LikedSongs = () => {
+  const { t } = useTranslation();
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSongId, setSelectedSongId] = useState<number | null>(null);
@@ -85,8 +87,8 @@ const LikedSongs = () => {
             <MdFavorite size={48} />
           </div>
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black text-white">Yêu <span className="text-pink-500">Thích</span></h1>
-            <p className="text-slate-400 font-medium">{filteredSongs.length} bài hát yêu thích</p>
+            <h1 className="text-4xl md:text-5xl font-black text-white">{t("liked.title")}</h1>
+            <p className="text-slate-400 font-medium">{t("liked.subtitle", { count: filteredSongs.length })}</p>
           </div>
         </div>
       </section>
@@ -96,7 +98,7 @@ const LikedSongs = () => {
         <div className="max-w-5xl mx-auto">
           <input
             type="text"
-            placeholder="Tìm kiếm bài hát, nghệ sĩ trong danh sách yêu thích..."
+            placeholder={t("liked.search_placeholder")}
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-pink-500/50 focus:ring-4 focus:ring-pink-500/5 transition-all text-sm font-semibold placeholder-slate-500"
@@ -108,23 +110,23 @@ const LikedSongs = () => {
       {songs.length === 0 ? (
         <div className="text-center py-32 glass-panel-3d rounded-[40px] border-0">
           <FaHeart className="text-8xl text-pink-500 opacity-10 mx-auto mb-6" />
-          <h3 className="text-2xl font-black text-white">Trống trải quá...</h3>
+          <h3 className="text-2xl font-black text-white">{t("liked.empty_title")}</h3>
           <p className="text-slate-500 mt-2 max-w-md mx-auto font-medium">
-            Hãy thả tim những bài hát bạn yêu thích để chúng xuất hiện ở đây nhé.
+            {t("liked.empty_desc")}
           </p>
         </div>
       ) : filteredSongs.length === 0 ? (
         <div className="text-center py-20 glass-panel-3d rounded-[40px] border-0 max-w-5xl mx-auto">
-          <h3 className="text-xl font-bold text-white">Không tìm thấy bài hát nào</h3>
-          <p className="text-slate-500 mt-2 font-medium">Thử nhập từ khóa khác xem sao nhé.</p>
+          <h3 className="text-xl font-bold text-white">{t("liked.not_found")}</h3>
+          <p className="text-slate-500 mt-2 font-medium">{t('history.try_different_keyword')}</p>
         </div>
       ) : (
         <div className="space-y-3 max-w-5xl mx-auto">
           <div className="flex items-center px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
             <div className="w-12">#</div>
-            <div className="flex-1">Bài hát</div>
-            <div className="hidden md:block w-48">Nghệ sĩ</div>
-            <div className="w-20 text-right">Thao tác</div>
+            <div className="flex-1">{t('table.song')}</div>
+            <div className="hidden md:block w-48">{t('table.artist')}</div>
+            <div className="w-20 text-right">{t('table.actions')}</div>
           </div>
 
           {paginatedSongs.map((song, index) => {
@@ -182,7 +184,7 @@ const LikedSongs = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (isDownloaded(song.id)) {
-                        if (confirm(`Xóa "${song.name}" khỏi danh sách offline?`)) {
+                        if (confirm(t('dashboard.confirm_remove_offline', { name: song.name }))) {
                           deleteOfflineSong(song.id);
                         }
                       } else if (!isDownloading(song.id)) {
@@ -196,14 +198,14 @@ const LikedSongs = () => {
                         ? 'text-sky-400 animate-spin'
                         : 'text-slate-600 hover:text-sky-400 opacity-0 group-hover:opacity-100'
                     }`}
-                    title={isDownloaded(song.id) ? 'Đã tải offline (Click để xóa)' : isDownloading(song.id) ? 'Đang tải...' : 'Tải offline'}
+                    title={isDownloaded(song.id) ? t('dashboard.downloaded_tooltip') : isDownloading(song.id) ? t('dashboard.downloading_tooltip') : t('dashboard.download_tooltip')}
                   >
                     {isDownloaded(song.id) ? <FaCheckCircle size={14} /> : isDownloading(song.id) ? <FaSpinner size={14} /> : <FaDownload size={14} />}
                   </button>
                   <button
                     onClick={(e) => handleUnlike(e, song.id)}
                     className="p-2 text-pink-500 hover:scale-120 transition-transform"
-                    title="Bỏ thích"
+                    title={t("liked.unlike_tooltip")}
                   >
                     <FaHeart size={16} />
                   </button>
@@ -227,9 +229,7 @@ const LikedSongs = () => {
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
             className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none rounded-xl border border-white/5 transition-all"
-          >
-            Trước
-          </button>
+          >{t("table.prev")}</button>
           
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import type { Song } from '../interface/song';
 import { API_BASE } from '../config.tsx';
@@ -8,6 +9,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { SkeletonSongCard } from '../components/Skeleton';
 
 const MySongs = () => {
+  const { t } = useTranslation();
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -29,9 +31,9 @@ const MySongs = () => {
       });
       const data = await res.json();
       if (data.success) setSongs(data.songs);
-      else setMessage(data.msg || 'Lỗi tải danh sách');
+      else setMessage(data.msg || t('client.load_list_error'));
     } catch (err) {
-      setMessage(err as string || 'Lỗi kết nối');
+      setMessage(err as string || t('client.connection_error'));
     } finally {
       setLoading(false);
     }
@@ -43,7 +45,7 @@ const MySongs = () => {
   }, []);
 
   const handleDelete = async (id: number, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa bài hát "${name}"? Hành động này không thể hoàn tác.`)) return;
+    if (!window.confirm(t('client.confirm_delete_song', { name }))) return;
     try {
       const res = await fetch(`${API_BASE}/api/user/my-songs/${id}`, {
         method: 'DELETE', headers: {
@@ -52,19 +54,19 @@ const MySongs = () => {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage('Xóa bài hát thành công');
+        setMessage(t('client.delete_success'));
         fetchMySongs();
-      } else setMessage(data.msg || 'Xóa thất bại');
+      } else setMessage(data.msg || t('client.delete_failed'));
     } catch (err) {
-      setMessage(err as string || 'Lỗi kết nối');
+      setMessage(err as string || t('client.connection_error'));
     }
   };
 
   const getStatusBadge = (status: Song['status']) => {
     switch (status) {
-      case 'approved': return <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-medium border border-green-800">Đã duyệt</span>;
-      case 'pending': return <span className="bg-yellow-900/50 text-yellow-400 px-2 py-1 rounded text-xs font-medium border border-yellow-800">Chờ duyệt</span>;
-      case 'rejected': return <span className="bg-red-900/50 text-red-400 px-2 py-1 rounded text-xs font-medium border border-red-800">Bị từ chối</span>;
+      case 'approved': return <span className="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs font-medium border border-green-800">{t('my_songs.status_approved')}</span>;
+      case 'pending': return <span className="bg-yellow-900/50 text-yellow-400 px-2 py-1 rounded text-xs font-medium border border-yellow-800">{t('my_songs.status_pending')}</span>;
+      case 'rejected': return <span className="bg-red-900/50 text-red-400 px-2 py-1 rounded text-xs font-medium border border-red-800">{t('my_songs.status_rejected')}</span>;
       default: return <span className="bg-[#222] text-gray-400 px-2 py-1 rounded text-xs font-medium">{status}</span>;
     }
   };
@@ -106,13 +108,13 @@ const MySongs = () => {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            Bài hát của tôi
+            {t('my_songs.title')}
           </h1>
           <button
             onClick={() => setIsPopupOpen(true)}
             className="bg-white text-black px-6 py-2.5 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-gray-200 transition-colors"
           >
-            <FaPlus /> Thêm Nhạc
+            <FaPlus /> {t('my_songs.add_button')}
           </button>
         </div>
 
@@ -126,7 +128,7 @@ const MySongs = () => {
         {songs.length > 0 && (
           <input
             type="text"
-            placeholder="Tìm kiếm trong danh sách bài hát đã tải lên..."
+            placeholder={t('client.search_my_songs')}
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full bg-transparent border border-[#333] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all text-sm font-medium placeholder-gray-500"
@@ -136,17 +138,17 @@ const MySongs = () => {
         {songs.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-gray-500 py-20 border border-[#333] border-dashed rounded-xl">
             <FaMusic size={48} className="mb-4 opacity-20" />
-            <p className="text-lg">Bạn chưa tải lên bài hát nào.</p>
+            <p className="text-lg">{t('client.no_songs_uploaded')}</p>
             <button
               onClick={() => setIsPopupOpen(true)}
               className="mt-4 text-[var(--accent-blue)] font-bold hover:underline"
             >
-              Tải lên ngay!
+              {t('client.upload_now')}
             </button>
           </div>
         ) : filteredSongs.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-gray-500 py-20 border border-[#333] rounded-xl">
-            <p className="text-lg">Không tìm thấy bài hát nào phù hợp.</p>
+            <p className="text-lg">{t('client.no_matching_songs')}</p>
           </div>
         ) : (
           <>
@@ -160,9 +162,9 @@ const MySongs = () => {
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         {getStatusBadge(song.status)}
                         {song.visibility === 'private' ? (
-                          <span className="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs font-medium border border-[#444]">Riêng tư</span>
+                          <span className="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs font-medium border border-[#444]">{t('my_songs.visibility_private')}</span>
                         ) : (
-                          <span className="bg-blue-900/30 text-blue-400 px-2 py-1 rounded text-xs font-medium border border-blue-800/50">Công khai</span>
+                          <span className="bg-blue-900/30 text-blue-400 px-2 py-1 rounded text-xs font-medium border border-blue-800/50">{t('my_songs.visibility_public')}</span>
                         )}
                       </div>
                       {song.status === 'rejected' && song.rejection_reason && (
@@ -174,14 +176,14 @@ const MySongs = () => {
                       <button
                         onClick={() => { setSelectedSong(song); setIsEditOpen(true); }}
                         className="text-gray-500 hover:text-white p-2 rounded-md transition-colors border border-transparent hover:border-[#444] bg-[#111]"
-                        title="Chỉnh sửa bài hát"
+                        title={t('my_songs.edit_tooltip')}
                       >
                         <FaEdit size={14} />
                       </button>
                       <button
                         onClick={() => handleDelete(song.id, song.name)}
                         className="text-gray-500 hover:text-red-400 p-2 rounded-md transition-colors border border-transparent hover:border-red-900/50 bg-[#111]"
-                        title="Xóa bài hát"
+                        title={t('my_songs.delete_tooltip')}
                       >
                         <FaTrash size={16} />
                       </button>
@@ -201,11 +203,11 @@ const MySongs = () => {
                     >
                         {currentSong?.id === song.id && isPlaying ? (
                           <>
-                            <FaPause size={12} /> Tạm dừng
+                            <FaPause size={12} /> {t('my_songs.pause')}
                           </>
                         ) : (
                           <>
-                            <FaPlay size={12} /> Nghe thử
+                            <FaPlay size={12} /> {t('my_songs.listen_preview')}
                           </>
                         )}
                     </button>
@@ -221,9 +223,7 @@ const MySongs = () => {
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-transparent hover:bg-[#222] disabled:opacity-30 disabled:pointer-events-none rounded border border-[#333] transition-all"
-                >
-                  Trước
-                </button>
+                >{t("table.prev")}</button>
                 
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                   <button

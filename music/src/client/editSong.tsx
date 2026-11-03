@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { API_BASE } from '../config.tsx';
@@ -13,6 +14,7 @@ interface EditSongPopupProps {
 }
 
 const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [author, setAuthor] = useState('');
   const [lyrics, setLyrics] = useState('');
@@ -63,7 +65,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
     e.preventDefault();
     if (!song) return;
     if (!name) {
-      setMessage({ text: 'Vui lòng nhập tên bài hát', type: 'error' });
+      setMessage({ text: t('toasts.song_name_required'), type: 'error' });
       return;
     }
     setLoading(true);
@@ -91,17 +93,17 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ text: data.msg || 'Cập nhật nhạc thành công!', type: 'success' });
+        setMessage({ text: data.msg || t('edit_song.update_success'), type: 'success' });
         setTimeout(() => {
           onSuccess();
           onClose();
         }, 1500);
       } else {
-        setMessage({ text: data.msg || 'Lỗi khi cập nhật nhạc', type: 'error' });
+        setMessage({ text: data.msg || t('edit_song.update_error'), type: 'error' });
       }
     } catch (err) {
       console.error(err);
-      setMessage({ text: 'Lỗi kết nối server', type: 'error' });
+      setMessage({ text: t('client.connection_error'), type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -154,7 +156,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
                     <FaMusic size={14} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-white truncate font-medium">{file ? file.name : 'Giữ file cũ...'}</p>
+                    <p className="text-xs text-white truncate font-medium">{file ? file.name : t('edit_song.keep_old_file')}</p>
                     <p className="text-[10px] text-slate-500 uppercase">{file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Audio Format'}</p>
                   </div>
                 </div>
@@ -166,7 +168,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
         <div className="flex-1 p-8 md:p-10 bg-[#0a0a0a]/40 backdrop-blur-xl">
           <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
              <span className="w-8 h-1 bg-[var(--accent-gold)] rounded-full"></span>
-             Chỉnh Sửa Nhạc
+             {t('edit_song.title')}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -179,7 +181,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Nhập tên bài hát..."
+                  placeholder={t("add_song.song_name_placeholder")}
                   className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--accent-gold)]/50 focus:ring-4 focus:ring-[var(--accent-gold)]/5 transition-all"
                 />
               </div>
@@ -200,12 +202,12 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                Lời bài hát (Tùy chọn)
+                {t('add_song.lyrics_label')}
               </label>
               <textarea
                 value={lyrics}
                 onChange={(e) => setLyrics(e.target.value)}
-                placeholder="Nhập lời bài hát (nếu có)..."
+                placeholder={t("add_song.lyrics_placeholder")}
                 rows={3}
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-[var(--accent-gold)]/50 focus:ring-4 focus:ring-[var(--accent-gold)]/5 transition-all resize-none custom-scrollbar"
               />
@@ -214,7 +216,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
             <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/5">
               <div>
                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Chế độ riêng tư
+                  {t('add_song.private_mode')}
                 </label>
                 <p className="text-[10px] text-slate-500 mt-1">Nhạc cá nhân, chỉ bạn mới nghe được và không cần duyệt</p>
               </div>
@@ -231,7 +233,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
 
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Đổi File Nhạc</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('modals.change_audio')}</label>
                 <label className={`flex flex-col items-center justify-center gap-2 px-4 py-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer ${file ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-800 hover:border-slate-600 bg-black/20'}`}>
                   <FaCloudUploadAlt size={20} className={file ? 'text-emerald-400' : 'text-slate-500'} />
                   <span className="text-[10px] font-bold text-slate-400 uppercase">{file ? 'Đã chọn' : 'Chọn file mới'}</span>
@@ -239,7 +241,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
                 </label>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Đổi Ảnh Bìa</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('modals.change_image')}</label>
                 <label className={`flex flex-col items-center justify-center gap-2 px-4 py-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer ${image ? 'border-blue-500/50 bg-blue-500/5' : 'border-slate-800 hover:border-slate-600 bg-black/20'}`}>
                   <FaImage size={20} className={image ? 'text-blue-400' : 'text-slate-500'} />
                   <span className="text-[10px] font-bold text-slate-400 uppercase">{image ? 'Đã chọn' : 'Chọn ảnh mới'}</span>
@@ -262,7 +264,7 @@ const EditSongPopup = ({ isOpen, onClose, song, onSuccess }: EditSongPopupProps)
             >
               <span className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-[-20deg]"></span>
               <FaSave size={16} />
-              <span className="relative z-10">{loading ? 'Đang cập nhật...' : 'Lưu Thay Đổi'}</span>
+              <span className="relative z-10">{loading ? 'Đang cập nhật...' : t('modals.save_changes')}</span>
             </button>
           </form>
         </div>

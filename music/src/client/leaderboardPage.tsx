@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../config.tsx';
 import {
@@ -21,6 +22,7 @@ interface TopUser {
 }
 
 const LeaderboardPage = () => {
+  const { t } = useTranslation();
   const [topSongs, setTopSongs] = useState<TopSong[]>([]);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,10 +129,10 @@ const LeaderboardPage = () => {
               <FaFire /> Live Ranking
             </div>
             <h1 className="text-3xl md:text-5xl font-bold text-white">
-              Bảng Xếp Hạng
+              {t('leaderboard.title')}
             </h1>
             <p className="text-gray-400 text-sm max-w-xl">
-              Khám phá những bài hát và thính giả thịnh hành nhất trên nền tảng.
+              {t('leaderboard.desc')}
             </p>
           </div>
         </div>
@@ -142,13 +144,13 @@ const LeaderboardPage = () => {
           onClick={() => handleTabChange('songs')}
           className={`px-6 py-3 font-medium text-sm transition-all flex items-center gap-2 border-b-2 ${activeTab === 'songs' ? 'border-white text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
         >
-          <FaTrophy /> Top Bài Hát
+          <FaTrophy /> {t('leaderboard.tab_songs')}
         </button>
         <button
           onClick={() => handleTabChange('users')}
           className={`px-6 py-3 font-medium text-sm transition-all flex items-center gap-2 border-b-2 ${activeTab === 'users' ? 'border-white text-white' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
         >
-          <FaChartLine /> Top Thính Giả
+          <FaChartLine /> {t('leaderboard.tab_listeners')}
         </button>
       </div>
 
@@ -157,7 +159,7 @@ const LeaderboardPage = () => {
         <div className="max-w-4xl mx-auto mt-4">
           <input
             type="text"
-            placeholder={activeTab === 'songs' ? 'Tìm kiếm bài hát, nghệ sĩ xếp hạng...' : 'Tìm kiếm thính giả...'}
+            placeholder={activeTab === 'songs' ? t('leaderboard.search_placeholder_songs') : t('leaderboard.search_placeholder_users')}
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
             className="w-full bg-transparent border border-[#333] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white transition-all text-sm font-medium placeholder-gray-500"
@@ -200,9 +202,9 @@ const LeaderboardPage = () => {
           {filteredSongs.length > 0 && (
             <div className="flex items-center px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
               <div className="w-12">#</div>
-              <div className="flex-1">Bài hát</div>
-              <div className="hidden md:block w-40">Nghệ sĩ</div>
-              <div className="w-24 text-right">Lượt nghe</div>
+              <div className="flex-1">{t('table.song')}</div>
+              <div className="hidden md:block w-40">{t('table.artist')}</div>
+              <div className="w-24 text-right">{t('table.plays')}</div>
             </div>
           )}
 
@@ -248,12 +250,12 @@ const LeaderboardPage = () => {
           {topSongs.length === 0 ? (
             <div className="text-center py-20 border border-[#333] rounded-xl border-dashed">
               <FaTrophy className="text-6xl text-gray-800 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-500">Chưa có dữ liệu</h3>
-              <p className="text-gray-600 mt-2">Hãy nghe nhạc để bảng xếp hạng hoạt động!</p>
+              <h3 className="text-xl font-bold text-gray-500">{t('leaderboard.no_data')}</h3>
+              <p className="text-gray-600 mt-2">{t('leaderboard.listen_to_activate')}</p>
             </div>
           ) : filteredSongs.length === 0 ? (
             <div className="text-center py-20 border border-[#333] rounded-xl">
-              <h3 className="text-lg font-medium text-gray-500">Không tìm thấy kết quả nào</h3>
+              <h3 className="text-lg font-medium text-gray-500">{t('leaderboard.no_results')}</h3>
             </div>
           ) : null}
 
@@ -264,9 +266,7 @@ const LeaderboardPage = () => {
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-transparent hover:bg-[#222] disabled:opacity-30 disabled:pointer-events-none rounded border border-[#333] transition-all"
-              >
-                Trước
-              </button>
+              >{t("table.prev")}</button>
               {Array.from({ length: totalPagesSongs }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}
@@ -319,7 +319,7 @@ const LeaderboardPage = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm text-white truncate">{user.name || 'User'}</h4>
-                    <p className="text-xs text-gray-500">{user.playCount} lượt nghe</p>
+                    <p className="text-xs text-gray-500">{t('leaderboard.plays_count', { count: user.playCount })}</p>
                   </div>
                   <span className="text-xs font-medium text-gray-400">{percentage}%</span>
                 </div>
@@ -336,12 +336,12 @@ const LeaderboardPage = () => {
           {topUsers.length === 0 ? (
             <div className="text-center py-20 border border-[#333] border-dashed rounded-xl">
               <FaChartLine className="text-6xl text-gray-800 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-500">Chưa có dữ liệu</h3>
-              <p className="text-gray-600 mt-2">Bảng xếp hạng sẽ cập nhật khi có người nghe nhạc!</p>
+              <h3 className="text-xl font-bold text-gray-500">{t('leaderboard.no_data')}</h3>
+              <p className="text-gray-600 mt-2">{t('leaderboard.listeners_update_hint')}</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-20 border border-[#333] rounded-xl">
-              <h3 className="text-lg font-medium text-gray-500">Không tìm thấy thính giả nào</h3>
+              <h3 className="text-lg font-medium text-gray-500">{t('leaderboard.no_listeners_found')}</h3>
             </div>
           ) : null}
 
@@ -352,9 +352,7 @@ const LeaderboardPage = () => {
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-transparent hover:bg-[#222] disabled:opacity-30 disabled:pointer-events-none rounded border border-[#333] transition-all"
-              >
-                Trước
-              </button>
+              >{t("table.prev")}</button>
               {Array.from({ length: totalPagesUsers }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}

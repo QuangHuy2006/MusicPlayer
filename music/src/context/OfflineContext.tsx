@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { Song } from '../interface/song';
 import * as offlineDb from '../utils/offlineDb';
 import { useToast } from './ToastContext';
+import { useTranslation } from 'react-i18next';
 
 interface OfflineContextType {
   offlineSongs: Song[];
@@ -20,6 +21,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
   const [offlineSongs, setOfflineSongs] = useState<Song[]>([]);
   const [downloadingIds, setDownloadingIds] = useState<number[]>([]);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const refreshOfflineSongs = useCallback(async () => {
     try {
@@ -27,7 +29,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
       const mappedSongs: Song[] = dbSongs.map(s => ({
         id: s.id,
         name: s.name,
-        url: s.imageUrl || '', // not used directly for playing, but conforms to Song interface
+        url: s.imageUrl || '',
         status: 'approved',
         author: s.author,
         imageUrl: s.imageUrl,
@@ -55,7 +57,7 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
   const downloadSong = async (song: Song) => {
     const songId = Number(song.id);
     if (isDownloaded(songId)) {
-      toast.info(`Bài hát "${song.name}" đã được tải xuống trước đó.`);
+      toast.info(t('toasts.song_already_offline', { name: song.name }));
       return;
     }
     if (isDownloading(songId)) {
@@ -68,13 +70,13 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
     const isPremium = user?.role === 'PREMIUM' || user?.role === 'ADMIN';
 
     if (!isPremium) {
-      toast.error('Tải nhạc offline là tính năng PREMIUM! Vui lòng nâng cấp tài khoản để sử dụng. 💎');
+      toast.error(t('toasts.premium_offline_required'));
       return;
     }
 
     try {
       setDownloadingIds(prev => [...prev, songId]);
-      toast.info(`Đang tải xuống bài hát "${song.name}"...`);
+      toast.info(t('toasts.downloading_song', { name: song.name }));
 
       // 1. Fetch audio blob
       const audioResponse = await fetch(song.url);
@@ -99,11 +101,11 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
       // 3. Save to IndexedDB
       await offlineDb.saveSong(song, audioBlob, imageBlob);
 
-      toast.success(`Đã tải xong bài hát "${song.name}" thành công!`);
+      toast.success(t('toasts.download_song_success', { name: song.name }));
       await refreshOfflineSongs();
     } catch (err) {
       console.error('Download error for song:', song.name, err);
-      toast.error(`Lỗi tải nhạc "${song.name}". Vui lòng thử lại sau.`);
+      toast.error(t('toasts.download_song_error', { name: song.name }));
     } finally {
       setDownloadingIds(prev => prev.filter(id => id !== songId));
     }
@@ -113,11 +115,11 @@ export const OfflineProvider = ({ children }: { children: ReactNode }) => {
     try {
       const songToDelete = offlineSongs.find(s => s.id === Number(songId));
       await offlineDb.deleteSong(songId);
-      toast.success(`Đã xóa bài hát "${songToDelete?.name || ''}" khỏi danh sách offline.`);
+      toast.success(t('toasts.removed_offline_song', { name: songToDelete?.name || '' }));
       await refreshOfflineSongs();
     } catch (e) {
       console.error('Delete offline song error:', e);
-      toast.error('Không thể xóa bài hát offline.');
+      toast.error(t('toasts.cannot_delete_offline'));
     }
   };
 

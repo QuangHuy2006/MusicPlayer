@@ -10,8 +10,10 @@ import { MdExplore } from "react-icons/md";
 import GlobalPlayer from "../components/GlobalPlayer";
 import NotificationPanel from "../components/NotificationPanel";
 import TitleBar from "../components/TitleBar";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useNotification } from "../context/NotificationContext";
 import packageJson from "../../package.json";
+import { useTranslation } from "react-i18next";
 
 import { API_BASE } from "../config.tsx";
 import type { User } from "../interface/user";
@@ -22,7 +24,7 @@ interface ReleaseAsset {
 }
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
-
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -160,12 +162,10 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
       }
     };
 
-    // Check updates after 3s to let the app initialize smoothly
-    const timeout = setTimeout(checkUpdates, 3000);
-    return () => clearTimeout(timeout);
+    checkUpdates();
+    const updateInterval = setInterval(checkUpdates, 15 * 60 * 1000);
+    return () => clearInterval(updateInterval);
   }, []);
-
-  // Removed redundant useEffect that caused set-state-in-effect
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,14 +179,18 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify({ refreshToken: localStorage.getItem("refresh_token") })
-      });
+      const token = localStorage.getItem("token");
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (token && refreshToken) {
+        await fetch(`${API_BASE}/api/auth/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ refreshToken })
+        });
+      }
     } catch { /* ignore */ }
     localStorage.removeItem("token");
     localStorage.removeItem("refresh_token");
@@ -195,18 +199,18 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   };
 
   const navItems = [
-    { path: "/dashboard", icon: <MdExplore size={24} />, label: "Khám Phá", color: "from-blue-500 to-cyan-400" },
-    { path: "/leaderboard", icon: <FaTrophy size={20} />, label: "Xếp Hạng", color: "from-amber-500 to-yellow-400" },
-    { path: "/history", icon: <FaHistory size={20} />, label: "Gần Đây", color: "from-amber-500 to-orange-400" },
-    { path: "/liked-songs", icon: <FaHeart size={20} />, label: "Yêu Thích", color: "from-rose-500 to-pink-400" },
-    { path: "/playlist", icon: <FaList size={20} />, label: "Playlist", color: "from-emerald-500 to-teal-400" },
-    { path: "/my-songs", icon: <FaMusic size={20} />, label: "Của Tôi", color: "from-indigo-500 to-violet-400" },
-    { path: "/offline", icon: <FaDownload size={18} />, label: "Nhạc Offline", color: "from-sky-500 to-indigo-400" },
-    { path: "/profile", icon: <FaUserCircle size={20} />, label: "Profile", color: "from-cyan-500 to-blue-400" },
+    { path: "/dashboard", icon: <MdExplore size={24} />, label: t('nav.explore'), color: "from-blue-500 to-cyan-400" },
+    { path: "/leaderboard", icon: <FaTrophy size={20} />, label: t('nav.leaderboard'), color: "from-amber-500 to-yellow-400" },
+    { path: "/history", icon: <FaHistory size={20} />, label: t('nav.history'), color: "from-amber-500 to-orange-400" },
+    { path: "/liked-songs", icon: <FaHeart size={20} />, label: t('nav.favorites'), color: "from-rose-500 to-pink-400" },
+    { path: "/playlist", icon: <FaList size={20} />, label: t('nav.playlists'), color: "from-emerald-500 to-teal-400" },
+    { path: "/my-songs", icon: <FaMusic size={20} />, label: t('nav.my_songs'), color: "from-indigo-500 to-violet-400" },
+    { path: "/offline", icon: <FaDownload size={18} />, label: t('nav.offline_music'), color: "from-sky-500 to-indigo-400" },
+    { path: "/profile", icon: <FaUserCircle size={20} />, label: t('nav.profile'), color: "from-cyan-500 to-blue-400" },
   ];
 
   if (isAdmin) {
-    navItems.push({ path: "/admin", icon: <FaUserShield size={22} />, label: "Quản Trị", color: "from-slate-700 to-slate-900" });
+    navItems.push({ path: "/admin", icon: <FaUserShield size={22} />, label: t('nav.admin'), color: "from-slate-700 to-slate-900" });
   }
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -221,7 +225,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
           {/* Toggle Button */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="absolute -right-3 top-24 w-6 h-6 bg-[#1a1a1a] text-white border border-white/10 rounded-full flex items-center justify-center hover:scale-110 hover:bg-[#2a2a2a] hover:border-emerald-500/50 transition-all z-50 shadow-lg"
+            className="absolute -right-3 top-24 w-6 h-6 bg-[#1a1a1a] text-white border border-white/10 rounded-full flex items-center justify-center hover:scale-110 hover:bg-[#2a2a2a] hover:border-emerald-500/50 transition-all z-50 shadow-lg cursor-pointer"
           >
             {isCollapsed ? <FaChevronRight size={10} /> : <FaChevronLeft size={10} />}
           </button>
@@ -245,7 +249,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
           {/* Navigation */}
           <nav className="flex-1 px-4 space-y-1.5 custom-scrollbar overflow-y-auto overflow-x-hidden pb-4">
             <p className={`px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 mt-2 transition-opacity duration-300 ${isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
-              Khám Phá
+              {t('nav.explore')}
             </p>
             {navItems.map((item) => {
               const isActive = location.pathname.startsWith(item.path);
@@ -266,66 +270,61 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                     {item.icon}
                   </span>
                   {!isCollapsed && (
-                    <span className={`text-sm font-semibold tracking-wide animate-[fade-in_0.3s_ease-out] whitespace-nowrap z-10 ${isActive ? 'text-white' : ''}`}>{item.label}</span>
+                    <span className="font-semibold text-sm tracking-wide z-10 truncate">
+                      {item.label}
+                    </span>
+                  )}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   )}
                 </Link>
               );
             })}
           </nav>
-
-
-          {/* Version info */}
-          <div className={`p-6 border-t border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-wider ${isCollapsed ? 'text-center' : 'pl-8'}`}>
-            {isCollapsed ? `v${packageJson.version}` : `Phiên bản v${packageJson.version}`}
-          </div>
         </aside>
 
-        <div className="flex-1 flex flex-col h-full relative">
+        {/* ===== MAIN CONTENT AREA ===== */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-b from-[#121212] via-[#080808] to-[#050505]">
 
-          {/* Top Header */}
-          <header className={`h-20 flex items-center justify-between px-6 md:px-10 z-40 border-b border-white/5 bg-black/40 backdrop-blur-xl safe-top sticky top-0`}>
-            {/* Navigation Arrows & Search */}
-            <div className="flex items-center gap-6 flex-1">
-              <div className="hidden md:flex items-center gap-2">
-                <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400 transition-all border border-white/5">
-                  <FaChevronLeft />
-                </button>
-                <button onClick={() => navigate(1)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400 transition-all border border-white/5">
-                  <FaChevronRight />
-                </button>
-              </div>
+          {/* Top Header / App Bar */}
+          <header className="h-20 border-b border-white/5 flex items-center justify-between px-6 md:px-10 z-40 bg-[#080808]/40 backdrop-blur-md">
 
+            {/* Global Search Bar */}
+            <div className="flex-1 max-w-xl flex items-center gap-3">
               <form onSubmit={handleSearch} className="relative w-full max-w-md group">
                 <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Tìm bài hát, nghệ sĩ..."
+                  placeholder={t('nav.search_placeholder')}
                   className="w-full bg-white/5 border border-white/5 rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 hover:bg-white/10 hover:border-white/10 transition-all placeholder:text-gray-500 font-medium text-white shadow-inner"
                 />
               </form>
             </div>
 
-            {/* Notification Bell & Profile */}
-            <div className="flex items-center gap-4 md:gap-6">
+            {/* Right Action Controls: Language Switcher, Notifications, Profile */}
+            <div className="flex items-center gap-3 md:gap-5">
+              <LanguageSwitcher />
+
               {onlineVersion && (
                 <button
                   onClick={() => setShowUpdateModal(true)}
                   className="relative p-2.5 text-amber-500 hover:text-amber-400 transition-colors animate-pulse flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 rounded-xl border border-amber-500/20 shadow-lg shadow-amber-500/10 cursor-pointer"
-                  title={`Có bản cập nhật mới v${onlineVersion}`}
+                  title={`v${onlineVersion}`}
                 >
-                  <FaDownload size={16} className="text-amber-500" />
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                  <FaDownload size={14} />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping"></span>
                 </button>
               )}
 
+              {/* Notification Bell */}
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2.5 text-slate-400 hover:text-[var(--accent-gold)] transition-colors"
+                className="relative p-2.5 text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 cursor-pointer"
+                title={t('nav.notifications')}
               >
-                <FaBell size={20} />
+                <FaBell size={16} />
                 {unreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -342,9 +341,9 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-white truncate max-w-[120px]">{userData?.name || "Người dùng"}</p>
+                    <p className="text-sm font-semibold text-white truncate max-w-[120px]">{userData?.name || "User"}</p>
                     {isPremium && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#444] text-white uppercase tracking-widest shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#444] text-white uppercase tracking-widest shrink-0 font-bold">
                         PRO
                       </span>
                     )}
@@ -352,8 +351,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="text-slate-500 hover:text-rose-500 transition-colors p-2 ml-2 bg-white/5 rounded-full hover:bg-white/10"
-                  title="Đăng xuất"
+                  className="text-slate-500 hover:text-rose-500 transition-colors p-2 ml-2 bg-white/5 rounded-full hover:bg-white/10 cursor-pointer"
+                  title={t('nav.logout')}
                 >
                   <FaSignOutAlt size={16} />
                 </button>
@@ -361,7 +360,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
 
               {/* Mobile Menu Toggle (Simplified) */}
               <div className="lg:hidden flex items-center gap-3">
-                <button onClick={handleLogout} className="text-slate-500 hover:text-rose-500 p-2" title="Đăng xuất">
+                <button onClick={handleLogout} className="text-slate-500 hover:text-rose-500 p-2 cursor-pointer" title={t('nav.logout')}>
                   <FaSignOutAlt size={18} />
                 </button>
                 <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
@@ -382,73 +381,59 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
           <GlobalPlayer />
         </div>
 
-        {/* ==========================================
-          SYSTEM UPDATE DIALOG (Modal)
-          ========================================== */}
+        {/* SYSTEM UPDATE DIALOG */}
         {showUpdateModal && (
           <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4 animate-[fade-in_0.3s_ease-out]">
             <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-2xl border border-amber-500/20 rounded-3xl p-8 shadow-[0_0_80px_rgba(245,158,11,0.15)] relative overflow-hidden text-center">
 
-              {/* Top golden laser line */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
 
               {downloadStatus === 'idle' ? (
                 <>
-                  {/* Glowing upgrade icon container */}
                   <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 animate-[bounce-slow_4s_infinite_ease-in-out]">
                     <FaDownload className="text-white text-3xl" />
                   </div>
 
                   <h3 className="text-2xl font-black tracking-tight mb-2 uppercase text-white">
-                    Cập Nhật Hệ Thống
+                    {t('nav.update_title')}
                   </h3>
                   <p className="text-slate-400 text-sm font-semibold tracking-wide mb-6">
-                    Đã phát hiện phiên bản ứng dụng mới!
+                    {t('nav.update_desc', { version: onlineVersion, current: packageJson.version })}
                   </p>
 
-                  {/* Version comparison panel */}
                   <div className="flex items-center justify-center gap-6 bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 font-semibold">
                     <div className="text-center">
-                      <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-1">Phiên bản hiện tại</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black block mb-1">Current</span>
                       <span className="text-sm font-bold text-slate-400">v{packageJson.version}</span>
                     </div>
                     <div className="h-8 w-[1px] bg-white/10"></div>
                     <div className="text-center">
-                      <span className="text-[10px] text-amber-500 uppercase tracking-widest font-black block mb-1">Phiên bản mới nhất</span>
+                      <span className="text-[10px] text-amber-500 uppercase tracking-widest font-black block mb-1">Latest</span>
                       <span className="text-sm font-black text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">v{onlineVersion}</span>
                     </div>
                   </div>
 
-                  {/* Release notes preview */}
                   <div className="text-left bg-white/5 border border-white/5 rounded-2xl p-4 text-xs font-semibold text-slate-400 leading-relaxed mb-8 max-h-32 overflow-y-auto custom-scrollbar">
-                    <p className="text-white font-bold mb-1 flex items-center gap-1.5">🚀 Nhật ký cập nhật:</p>
-                    <ul className="list-disc pl-4 space-y-1">
-                      <li>Bổ sung dải trình diễn sóng nhạc 3D Premium lung linh.</li>
-                      <li>Tự động giải mã tag lời nhạc (USLT) trực tiếp từ file MP3.</li>
-                      <li>Cải tiến giao diện Cosmic Gold VIP sang trọng, đẳng cấp.</li>
-                      <li>Tối ưu hóa tốc độ tải và hiệu suất bộ nhớ ứng dụng.</li>
-                    </ul>
+                    <p className="text-white font-bold mb-1">{t('nav.update_note')}</p>
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={startInAppUpdate}
                       className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-amber-500/20 cursor-pointer"
                     >
-                      Tải & Cập Nhật Ngay
+                      {t('nav.download_update')}
                     </button>
                     <button
                       onClick={() => setShowUpdateModal(false)}
                       className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
                     >
-                      Để Sau
+                      {t('nav.remind_later')}
                     </button>
                   </div>
                 </>
               ) : downloadStatus === 'downloading' ? (
                 <div className="py-6">
-                  {/* Spinning loader */}
                   <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
                     <div className="absolute inset-0 rounded-full border-4 border-white/5"></div>
                     <div className="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
@@ -458,22 +443,14 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                   </div>
 
                   <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
-                    Đang Tải Bản Cập Nhật
+                    {t('nav.download_update')}
                   </h3>
-                  <p className="text-slate-400 text-xs font-semibold mb-6 px-4">
-                    Đang tải file cài đặt trực tiếp từ hệ thống GitHub Releases...
-                  </p>
-
-                  {/* Progress bar */}
                   <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-2 border border-white/5 max-w-xs mx-auto">
                     <div
                       className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)] transition-all duration-300"
                       style={{ width: `${downloadProgress}%` }}
                     ></div>
                   </div>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2">
-                    Vui lòng không đóng ứng dụng
-                  </p>
                 </div>
               ) : downloadStatus === 'completed' ? (
                 <div className="py-8">
@@ -481,11 +458,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                     ✓
                   </div>
                   <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
-                    Tải Hoàn Tất!
+                    OK
                   </h3>
-                  <p className="text-slate-400 text-sm font-semibold mb-6 px-4">
-                    Đang khởi chạy trình cài đặt mới và tự động khởi động lại MusicPlayer...
-                  </p>
                   <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
                 </div>
               ) : (
@@ -493,34 +467,15 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                   <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 text-3xl">
                     ⚠
                   </div>
-                  <h3 className="text-xl font-black tracking-tight mb-2 uppercase text-white">
-                    Tải Thất Bại
-                  </h3>
                   <p className="text-rose-400/90 text-xs font-bold mb-6 px-4">
-                    Lỗi: {downloadErrorMsg}
+                    Error: {downloadErrorMsg}
                   </p>
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={startInAppUpdate}
                       className="w-full py-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 text-white font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
                     >
-                      Thử Tải Lại
-                    </button>
-                    <button
-                      onClick={() => {
-                        const finalUrl = downloadUrl || `https://github.com/QuangHuy2006/MusicPlayer/releases/download/v${onlineVersion}/MusicPlayer%20Setup%20${onlineVersion}.exe`;
-                        const ipc = window.ipcRenderer;
-                        if (ipc) {
-                          ipc.send('open-external', finalUrl);
-                        } else {
-                          window.open(finalUrl, '_blank');
-                        }
-                        setShowUpdateModal(false);
-                        setDownloadStatus('idle');
-                      }}
-                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black uppercase text-xs tracking-widest transition-all duration-300 cursor-pointer"
-                    >
-                      Tải Thủ Công (Trình Duyệt)
+                      {t('nav.download_update')}
                     </button>
                     <button
                       onClick={() => {
@@ -529,7 +484,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
                       }}
                       className="w-full py-3 rounded-2xl text-slate-500 hover:text-slate-400 text-xs font-bold transition-all cursor-pointer"
                     >
-                      Đóng
+                      Close
                     </button>
                   </div>
                 </div>
@@ -539,6 +494,7 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
           </div>
         )}
       </div>
+
       {/* ===== MOBILE NAV ===== */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom))] bg-black border-t border-[#222] z-50 px-2 flex items-start pt-2 justify-around safe-bottom">
         {navItems.slice(0, 5).map((item) => {

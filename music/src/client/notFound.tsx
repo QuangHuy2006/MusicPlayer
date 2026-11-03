@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
 import { FaHome, FaFrown, FaArrowLeft } from "react-icons/fa";
 
 const NotFound = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -30,9 +32,9 @@ const NotFound = () => {
           <FaFrown style={styles.icon} />
         </div>
         <h1 style={styles.code}>404</h1>
-        <h2 style={styles.title}>Trang không tồn tại</h2>
+        <h2 style={styles.title}>{t("not_found.title")}</h2>
         <p style={styles.message}>
-          Rất tiếc, trang bạn đang tìm kiếm không có hoặc đã bị di chuyển.
+          {t("not_found.desc")}
         </p>
         <div
           style={{
@@ -43,13 +45,13 @@ const NotFound = () => {
           }}
         >
           <button style={styles.button} onClick={() => navigate(-1)}>
-            <FaArrowLeft style={styles.btnIcon} /> Quay lại
+            <FaArrowLeft style={styles.btnIcon} /> {t("not_found.go_back")}
           </button>
           <button
             style={{ ...styles.button, ...styles.buttonPrimary }}
             onClick={() => navigate("/")}
           >
-            <FaHome style={styles.btnIcon} /> Về trang chủ
+            <FaHome style={styles.btnIcon} /> {t("not_found.go_home")}
           </button>
         </div>
       </div>

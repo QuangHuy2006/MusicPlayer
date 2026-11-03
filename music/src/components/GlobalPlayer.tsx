@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaVolumeUp, FaVolumeMute, FaHeart, FaRegHeart, FaSlidersH, FaTimes, FaMicrophoneAlt, FaCrown, FaRandom, FaSync } from 'react-icons/fa';
@@ -8,6 +9,7 @@ import type { User } from '../interface/user';
 import { getSong } from '../utils/offlineDb';
 
 export default function GlobalPlayer() {
+  const { t } = useTranslation();
   const { currentSong, isPlaying, togglePlay, setIsPlaying, playNext, playPrevious, volume, setVolume, isRandom, isRepeat, toggleRandom, toggleRepeat } = usePlayer();
   const { likedSongIds, toggleLike } = useLike();
 
@@ -642,27 +644,27 @@ export default function GlobalPlayer() {
                     <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-400 to-[var(--accent-gold)] flex items-center justify-center shadow-[0_0_40px_rgba(212,175,55,0.6)] mb-6 animate-bounce-slow">
                       <FaCrown className="text-black text-4xl" />
                     </div>
-                    <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-[var(--accent-gold)] mb-3">Nâng cấp Studio Pro</h3>
+                    <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-[var(--accent-gold)] mb-3">{t('player.upgrade_now')}</h3>
                     <div className="space-y-3 text-sm text-slate-300 mb-8 bg-white/5 p-4 rounded-2xl border border-white/10 text-left">
-                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Mở khóa âm thanh xoay 8D Surround</p>
-                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Nghe nhạc Lossless / 320kbps sắc nét</p>
-                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> Tùy chỉnh Preset EQ chuyên nghiệp</p>
+                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> {t('player.spatial_8d')}</p>
+                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> {t('player.quality_lossless')}</p>
+                      <p className="flex items-center gap-3"><span className="text-cyan-400">✓</span> {t('player.equalizer_preset')}</p>
                     </div>
                     <button
                       onClick={() => setUpgradeStep('payment')}
                       className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-[var(--accent-gold)] to-amber-600 text-black font-black text-lg shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:scale-105 transition-all mb-4 relative overflow-hidden group"
                     >
                       <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
-                      Chỉ 29.000đ / tháng
+                      {t('premium_prompt.unlock_button')}
                     </button>
-                    <button onClick={() => setShowUpgrade(false)} className="text-sm text-slate-500 hover:text-white transition-colors">Để sau</button>
+                    <button onClick={() => setShowUpgrade(false)} className="text-sm text-slate-500 hover:text-white transition-colors">{t('nav.remind_later')}</button>
                   </div>
                 )}
 
                 {upgradeStep === 'payment' && (
                   <div className="animate-[scale-in_0.3s_ease-out] w-full flex flex-col items-center">
-                    <h3 className="text-xl font-bold text-white mb-2">Thanh toán Chuyển khoản</h3>
-                    <p className="text-xs text-slate-400 mb-6 text-center">Quét mã QR bên dưới để nâng cấp Premium</p>
+                    <h3 className="text-xl font-bold text-white mb-2">{t('premium_prompt.payment_title')}</h3>
+                    <p className="text-xs text-slate-400 mb-6 text-center">{t('premium_prompt.notice')}</p>
 
                     <div className="p-4 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.2)] mb-6 relative">
                       <div className="absolute -top-3 -right-3 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">Auto Active</div>
@@ -675,19 +677,19 @@ export default function GlobalPlayer() {
 
                     <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 mb-6 space-y-2">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Ngân hàng:</span>
+                        <span className="text-slate-400">{t('premium_prompt.bank')}:</span>
                         <span className="text-white font-bold">MB Bank</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Số tài khoản:</span>
+                        <span className="text-slate-400">{t('premium_prompt.account_number')}:</span>
                         <span className="text-[var(--accent-gold)] font-bold">0789088909</span>
                       </div>
                       <div className="flex justify-between text-xs pt-2 border-t border-white/5">
-                        <span className="text-slate-400">Nội dung CK:</span>
+                        <span className="text-slate-400">{t('premium_prompt.transfer_content')}:</span>
                         <span className="text-[var(--accent-gold)] font-black text-lg">MP{user?.id}</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Số tiền:</span>
+                        <span className="text-slate-400">{t('premium_prompt.amount')}:</span>
                         <span className="text-white font-bold">29.000 VNĐ</span>
                       </div>
                     </div>
@@ -695,7 +697,7 @@ export default function GlobalPlayer() {
                     {user?.role === 'PREMIUM_PENDING' ? (
                       <div className="w-full py-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex flex-col items-center gap-2 animate-pulse">
                         <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="font-bold text-sm uppercase tracking-widest">Đang chờ Admin duyệt...</span>
+                        <span className="font-bold text-sm uppercase tracking-widest">{t('my_songs.status_pending')}</span>
                         <p className="text-[10px] text-amber-500/70">Vui lòng đợi trong giây lát, Admin đang xác nhận giao dịch của bạn</p>
                       </div>
                     ) : (
@@ -703,18 +705,18 @@ export default function GlobalPlayer() {
                         onClick={handleUpgrade}
                         className="w-full py-3 rounded-xl bg-[var(--accent-gold)] text-black font-black hover:scale-105 transition-all shadow-[0_0_20px_rgba(212,175,55,0.3)]"
                       >
-                        Xác nhận đã chuyển khoản
+                        {t('admin.confirm_payment')}
                       </button>
                     )}
-                    <button onClick={() => setUpgradeStep('intro')} className="mt-4 text-sm text-slate-500 hover:text-white transition-colors">Quay lại</button>
+                    <button onClick={() => setUpgradeStep('intro')} className="mt-4 text-sm text-slate-500 hover:text-white transition-colors">{t('not_found.go_back')}</button>
                   </div>
                 )}
 
                 {upgradeStep === 'processing' && (
                   <div className="animate-[fade-in_0.3s_ease-out] flex flex-col items-center">
                     <div className="w-16 h-16 border-4 border-white/10 border-t-[var(--accent-gold)] rounded-full animate-spin mb-6"></div>
-                    <h3 className="text-lg font-bold text-white">Đang xác thực giao dịch...</h3>
-                    <p className="text-sm text-slate-400">Vui lòng không đóng cửa sổ này</p>
+                    <h3 className="text-lg font-bold text-white">{t('modals.adding')}</h3>
+                    <p className="text-sm text-slate-400">{t('player.add_lyrics_hint')}</p>
                   </div>
                 )}
               </div>
@@ -724,7 +726,7 @@ export default function GlobalPlayer() {
               {/* Quality */}
               <div>
                 <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span> Chất lượng
+                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span> {t('player.sound_quality')}
                 </h4>
                 <div className="grid grid-cols-3 gap-2">
                   {(['normal', '320', 'lossless'] as const).map(q => (
@@ -744,7 +746,7 @@ export default function GlobalPlayer() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Hiệu ứng Không gian
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> {t('player.audio_effects')}
                   </h4>
                   <span className="text-[10px] font-black bg-cyan-400/20 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-400/30 animate-pulse">HOT</span>
                 </div>
@@ -759,7 +761,7 @@ export default function GlobalPlayer() {
                       <span className="font-black text-[15px]">8D</span>
                     </div>
                     <div className="text-left">
-                      <p className={`font-bold text-[15px] transition-colors ${is8D ? 'text-cyan-400' : 'text-slate-300'}`}>Âm thanh 8D Surround</p>
+                      <p className={`font-bold text-[15px] transition-colors ${is8D ? 'text-cyan-400' : 'text-slate-300'}`}>{t('player.spatial_8d')}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">Trải nghiệm âm thanh xoay vòng 360 độ</p>
                     </div>
                   </div>
@@ -772,12 +774,12 @@ export default function GlobalPlayer() {
               {/* EQ */}
               <div>
                 <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Bộ chỉnh âm (EQ)
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span> {t('player.equalizer_preset')}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
                   {(
                     [
-                      { id: 'flat', name: 'Bình thường' },
+                      { id: 'flat', name: t('player.eq_flat') },
                       { id: 'bass', name: 'Super Bass' },
                       { id: 'vocal', name: 'Clear Vocal' },
                       { id: 'loudness', name: 'Cinematic' },
@@ -859,6 +861,7 @@ function KaraokeOverlay({
   analyserRef: React.MutableRefObject<AnalyserNode | null>;
   isPremium: boolean;
 }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Request Animation Frame for Visualizer
@@ -1026,8 +1029,8 @@ function KaraokeOverlay({
         {lines.length === 0 ? (
           <div className="text-center space-y-4">
             <FaMicrophoneAlt className="text-6xl text-gray-800 mx-auto" />
-            <p className="text-2xl font-bold text-gray-500">Bài hát này chưa có lời</p>
-            <p className="text-slate-600">Thêm lời bài hát khi upload để sử dụng Karaoke mode!</p>
+            <p className="text-2xl font-bold text-gray-500">{t('player.no_lyrics_karaoke')}</p>
+            <p className="text-slate-600">{t('player.add_lyrics_hint')}</p>
           </div>
         ) : (
           <div

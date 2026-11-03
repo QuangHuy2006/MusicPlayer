@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MdClose } from "react-icons/md";
@@ -19,6 +20,7 @@ const AddToPlaylistModal = ({
   songId,
   onAdded,
 }: AddToPlaylistModalProps) => {
+  const { t } = useTranslation();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState<number | null>(null);
@@ -61,12 +63,12 @@ const AddToPlaylistModal = ({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.msg);
-      toast.success("Đã thêm bài hát vào playlist");
+      toast.success(t("toasts.song_added_to_playlist"));
       onAdded?.();
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Đã xảy ra lỗi";
-      toast.error(message || "Lỗi thêm bài hát");
+      toast.error(message || t("toasts.add_song_playlist_error"));
     } finally {
       setAdding(null);
     }
@@ -94,8 +96,8 @@ const AddToPlaylistModal = ({
                 <FaListUl size={20} />
              </div>
              <div>
-                <h2 className="text-xl font-bold text-white drop-shadow-md">Thêm vào Playlist</h2>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">Chọn một danh sách để lưu bài hát</p>
+                <h2 className="text-xl font-bold text-white drop-shadow-md">{t("modals.add_to_playlist_title")}</h2>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">{t("modals.add_to_playlist_desc")}</p>
              </div>
           </div>
           <button 
@@ -116,12 +118,12 @@ const AddToPlaylistModal = ({
           ) : playlists.length === 0 ? (
             <div className="text-center py-12 px-6 bg-black/20 rounded-[24px] border border-dashed border-white/10">
               <FaMusic size={40} className="mx-auto mb-4 opacity-10 text-[var(--accent-gold)]" />
-              <p className="text-slate-400 font-medium">Bạn chưa có playlist nào.</p>
+              <p className="text-slate-400 font-medium">{t("modals.no_playlists")}</p>
               <button 
                 onClick={onClose}
                 className="mt-4 text-[var(--accent-blue)] text-sm font-bold hover:underline"
               >
-                Tạo playlist mới ngay!
+                {t("modals.create_playlist_now")}
               </button>
             </div>
           ) : (
@@ -146,7 +148,7 @@ const AddToPlaylistModal = ({
                           {pl.name}
                         </span>
                         <span className="block text-[10px] text-slate-500 uppercase tracking-wider font-bold mt-0.5">
-                          {isAdding ? 'Đang xử lý...' : 'Nhấn để thêm'}
+                          {isAdding ? '{t("modals.adding")}' : '{t("modals.click_to_add")}'}
                         </span>
                       </div>
                     </div>

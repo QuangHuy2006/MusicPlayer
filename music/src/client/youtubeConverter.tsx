@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { FaYoutube, FaDownload, FaMusic, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { useToast } from '../context/ToastContext';
 import { API_BASE } from '../config.tsx';
+import { useTranslation } from 'react-i18next';
 
 export default function YoutubeConverter() {
+  const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -12,7 +14,7 @@ export default function YoutubeConverter() {
   const handleDownload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) {
-      toast.error('Vui lòng nhập link YouTube!');
+      toast.error(t('toasts.enter_yt_link'));
       return;
     }
 
@@ -20,7 +22,6 @@ export default function YoutubeConverter() {
       setIsDownloading(true);
       setProgress(10);
 
-      // We'll simulate some progress before the actual stream begins
       const progressInterval = setInterval(() => {
         setProgress((prev) => (prev < 80 ? prev + Math.random() * 15 : prev));
       }, 500);
@@ -38,7 +39,7 @@ export default function YoutubeConverter() {
       setProgress(90);
 
       if (!response.ok) {
-        let errorMsg = 'Lỗi khi tải nhạc. Vui lòng kiểm tra lại link.';
+        let errorMsg = t('toasts.yt_download_error');
         try {
           const errData = await response.json();
           if (errData.msg) errorMsg = errData.msg;
@@ -48,7 +49,6 @@ export default function YoutubeConverter() {
         throw new Error(errorMsg);
       }
 
-      // Check filename from Content-Disposition if available
       let filename = 'audio.m4a';
       const disposition = response.headers.get('Content-Disposition');
       if (disposition && disposition.indexOf('attachment') !== -1) {
@@ -59,19 +59,18 @@ export default function YoutubeConverter() {
         }
       }
 
-      // Blob processing
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = decodeURIComponent(filename); // decode URI component in case it's encoded
+      a.download = decodeURIComponent(filename);
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(downloadUrl);
 
       setProgress(100);
-      toast.success('Tải thành công! File đã được lưu.');
+      toast.success(t('toasts.yt_download_success'));
 
       setTimeout(() => {
         setIsDownloading(false);
@@ -83,7 +82,7 @@ export default function YoutubeConverter() {
       console.error(error);
       setIsDownloading(false);
       setProgress(0);
-      toast.error((error as Error).message || 'Lỗi khi kết nối đến máy chủ.');
+      toast.error((error as Error).message || t('toasts.yt_connect_error'));
     }
   };
 
@@ -99,22 +98,21 @@ export default function YoutubeConverter() {
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-300 to-red-400 drop-shadow-sm mb-4 tracking-tight">
-            Tải Nhạc YouTube
+            {t('youtube.title')}
           </h1>
           <p className="text-slate-400 text-lg max-w-md mx-auto">
-            Chuyển đổi video YouTube yêu thích của bạn thành tệp âm thanh chỉ với một cú nhấp chuột.
+            {t('youtube.desc')}
           </p>
         </div>
 
         {/* Converter Card */}
         <div className="glass-panel p-8 rounded-3xl relative overflow-hidden animate-[slide-up_0.5s_ease-out_0.1s_both]">
-          {/* Decorative background glow */}
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
 
           <form onSubmit={handleDownload} className="relative z-10 space-y-6">
             <div>
               <label htmlFor="url" className="block text-sm font-medium text-slate-300 mb-2 ml-1">
-                Đường dẫn Video YouTube
+                {t('youtube.input_label')}
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -126,7 +124,7 @@ export default function YoutubeConverter() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   disabled={isDownloading}
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder={t('youtube.placeholder')}
                   className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner disabled:opacity-50"
                 />
               </div>
@@ -135,7 +133,7 @@ export default function YoutubeConverter() {
             <button
               type="submit"
               disabled={isDownloading || !url.trim()}
-              className="w-full relative group overflow-hidden rounded-2xl p-[1px] disabled:opacity-50 transition-all duration-300"
+              className="w-full relative group overflow-hidden rounded-2xl p-[1px] disabled:opacity-50 transition-all duration-300 cursor-pointer"
             >
               <span className="absolute inset-0 bg-gradient-to-r from-red-500 via-rose-500 to-red-500 rounded-2xl opacity-70 group-hover:opacity-100 blur-sm transition-opacity"></span>
               <span className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-2xl"></span>
@@ -143,12 +141,12 @@ export default function YoutubeConverter() {
                 {isDownloading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span className="font-semibold text-white tracking-wide">Đang xử lý & Tải về...</span>
+                    <span className="font-semibold text-white tracking-wide">{t('youtube.processing')}</span>
                   </>
                 ) : (
                   <>
                     <FaDownload className="text-white" />
-                    <span className="font-semibold text-white tracking-wide">Tải Nhạc Ngay</span>
+                    <span className="font-semibold text-white tracking-wide">{t('youtube.download_now')}</span>
                   </>
                 )}
               </div>
@@ -158,7 +156,7 @@ export default function YoutubeConverter() {
           {/* Progress Bar (Visible during download) */}
           <div className={`mt-6 transition-all duration-500 ${isDownloading ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'}`}>
             <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium">
-              <span>Đang trích xuất âm thanh...</span>
+              <span>{t('youtube.extracting')}</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -175,13 +173,13 @@ export default function YoutubeConverter() {
         {/* Info badges */}
         <div className="flex flex-wrap items-center justify-center gap-4 mt-8 text-sm text-slate-400 animate-[fade-in_0.5s_ease-out_0.2s_both]">
           <div className="flex items-center gap-2 bg-slate-800/30 px-4 py-2 rounded-full border border-white/5">
-            <FaCheckCircle className="text-green-400" /> Tốc độ cao
+            <FaCheckCircle className="text-green-400" /> {t('youtube.badge_speed')}
           </div>
           <div className="flex items-center gap-2 bg-slate-800/30 px-4 py-2 rounded-full border border-white/5">
-            <FaCheckCircle className="text-green-400" /> Âm thanh tốt nhất
+            <FaCheckCircle className="text-green-400" /> {t('youtube.badge_quality')}
           </div>
           <div className="flex items-center gap-2 bg-slate-800/30 px-4 py-2 rounded-full border border-white/5">
-            <FaExclamationCircle className="text-amber-400" /> Chỉ sử dụng cá nhân
+            <FaExclamationCircle className="text-amber-400" /> {t('youtube.badge_personal')}
           </div>
         </div>
       </div>

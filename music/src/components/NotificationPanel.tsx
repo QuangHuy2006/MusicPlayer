@@ -3,6 +3,7 @@ import {
   FaBell, FaCheckCircle, FaTimesCircle, FaCommentAlt,
   FaCog, FaTimes, FaCheckDouble
 } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface NotificationPanelProps {
 
 export default function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
+  const { t } = useTranslation();
 
   if (!isOpen) return null;
 
@@ -24,15 +26,14 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
   };
 
   const getTimeDiff = (dateStr: string) => {
-    // eslint-disable-next-line react-hooks/purity
     const diff = Date.now() - new Date(dateStr).getTime();
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return 'Vừa xong';
-    if (minutes < 60) return `${minutes} phút trước`;
+    if (minutes < 1) return t('nav.just_now');
+    if (minutes < 60) return t('nav.minutes_ago', { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} giờ trước`;
+    if (hours < 24) return t('nav.hours_ago', { count: hours });
     const days = Math.floor(hours / 24);
-    return `${days} ngày trước`;
+    return t('nav.days_ago', { count: days });
   };
 
   return (
@@ -45,7 +46,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
         <div className="p-5 border-b border-white/5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <FaBell className="text-[var(--accent-gold)]" />
-            <h3 className="text-lg font-black text-white">Thông báo</h3>
+            <h3 className="text-lg font-black text-white">{t('nav.notifications')}</h3>
             {unreadCount > 0 && (
               <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full">
                 {unreadCount}
@@ -56,12 +57,12 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-xs text-[var(--accent-gold)] hover:text-white font-bold flex items-center gap-1 transition-colors"
+                className="text-xs text-[var(--accent-gold)] hover:text-white font-bold flex items-center gap-1 transition-colors cursor-pointer"
               >
-                <FaCheckDouble size={12} /> Đọc tất cả
+                <FaCheckDouble size={12} /> {t('nav.mark_all_read')}
               </button>
             )}
-            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white transition-colors">
+            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer">
               <FaTimes size={16} />
             </button>
           </div>
@@ -72,7 +73,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
           {notifications.length === 0 ? (
             <div className="py-16 text-center">
               <FaBell className="text-4xl text-slate-600 mx-auto mb-4 opacity-30" />
-              <p className="text-slate-500 text-sm">Không có thông báo nào</p>
+              <p className="text-slate-500 text-sm">{t('nav.no_notifications')}</p>
             </div>
           ) : (
             <div className="p-2 space-y-1">

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { FaCheckCircle, FaExclamationCircle, FaInfoCircle, FaTimes } from 'react-icons/fa';
+import { translateMessage } from '../i18n';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -25,7 +26,8 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 
   const addToast = useCallback((message: string, type: ToastType) => {
     const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, message, type }]);
+    const localized = translateMessage(message);
+    setToasts(prev => [...prev, { id, message: localized, type }]);
 
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
